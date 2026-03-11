@@ -2504,7 +2504,7 @@ app.post("/api/login", async (req, res) => {
       [u.id]
     );
 
-    req.session.user = { id: u.id, username: u.username, role: u.role, is_approved: u.is_approved };
+    req.session.user = { id: u.id, username: u.username, email: u.email, role: u.role, is_approved: u.is_approved };
     res.json({ ok: true, user: req.session.user });
     
   } catch (e) {
@@ -2877,7 +2877,7 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     await db.q(
       `INSERT INTO user_invites (id, email, first_name, last_name, token, invited_by, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [inviteId, email, first_name || null, last_name || null, token, req.session.user.username, expiresAt]
+      [inviteId, email, first_name || null, last_name || null, token, req.session.user.email || req.session.user.username, expiresAt]
     );
     
     // Trimite email
