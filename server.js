@@ -2912,6 +2912,8 @@ app.delete("/api/invites/:id", isAdmin, async (req, res) => {
 // GET /api/test-email - Testează configurația email (doar admin)
 app.get("/api/test-email", isAdmin, async (req, res) => {
   try {
+    console.log("📧 Test email requested by:", req.session.user.username);
+    
     const testResult = await sendEmailWithTimeout(
       req.session.user.username,
       "Test openBill Email",
@@ -2919,18 +2921,28 @@ app.get("/api/test-email", isAdmin, async (req, res) => {
       "Test Email - Acesta este un email de test."
     );
     
+    console.log("📧 Test email result:", testResult);
+    
     res.json({
       ok: testResult.success,
       message: testResult.success ? "Email de test trimis" : "Eroare la trimitere",
       error: testResult.error || null,
       config: {
-        host: process.env.EMAIL_HOST,
-        user: process.env.EMAIL_USER,
+        host: process.env.EMAIL_HOST || 'not set',
+        user: process.env.EMAIL_USER || 'not set',
         passConfigured: !!process.env.EMAIL_PASS
       }
     });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error("📧 Test email error:", e);
+    res.status(500).json({ 
+      error: e.message,
+      config: {
+        host: process.env.EMAIL_HOST || 'not set',
+        user: process.env.EMAIL_USER || 'not set',
+        passConfigured: !!process.env.EMAIL_PASS
+      }
+    });
   }
 });
 

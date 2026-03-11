@@ -676,14 +676,14 @@
         
         const data = await res.json();
         
-        if (data.ok) {
+        if (res.ok && data.ok) {
           resultDiv.style.background = 'rgba(16, 185, 129, 0.1)';
           resultDiv.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-          resultDiv.innerHTML = `✅ <strong>Email trimis cu succes!</strong><br>Verifică inboxul tău (${data.config.user})`;
+          resultDiv.innerHTML = `✅ <strong>Email trimis cu succes!</strong><br>Verifică inboxul tău (${data.config?.user || 'admin'})`;
         } else {
           resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
           resultDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-          resultDiv.innerHTML = `❌ <strong>Eroare la trimitere</strong><br>${data.error || 'Verifică logurile'}<br><br>Config: ${data.config.host} / ${data.config.user}`;
+          resultDiv.innerHTML = `❌ <strong>Eroare la trimitere</strong><br>${data.error || 'Verifică logurile'}<br><br>Config: ${data.config?.host || 'n/a'} / ${data.config?.user || 'n/a'}`;
         }
       } catch (err) {
         clearTimeout(timeoutId);
