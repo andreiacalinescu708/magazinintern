@@ -130,17 +130,6 @@
       </a>
       <div class="navbar-actions">
         <button class="btn btn-ghost btn-icon" id="btnToggleTheme" title="Schimbă tema">🌙</button>
-        <div class="user-menu" id="userMenuContainer">
-          <button class="btn btn-primary btn-sm" id="btnUserDropdown">
-            <span id="navUsername">User</span> ▼
-          </button>
-          <div class="dropdown-menu" id="userDropdown">
-            <a href="profil.html" class="dropdown-item">👤 Profil</a>
-            <a href="schimba_parola.html" class="dropdown-item">🔒 Schimbă parola</a>
-            <div class="dropdown-divider"></div>
-            <button class="dropdown-item text-danger" id="btnLogout">🚪 Logout</button>
-          </div>
-        </div>
       </div>
     </div>
   </nav>
@@ -208,56 +197,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <script src="script.js"></script>
-  <script>
-    // Dropdown functionality
-    const btnUserDropdown = document.getElementById('btnUserDropdown');
-    const userDropdown = document.getElementById('userDropdown');
-    
-    btnUserDropdown?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      userDropdown.classList.toggle('show');
-    });
-    
-    document.addEventListener('click', () => {
-      userDropdown?.classList.remove('show');
-    });
-    
-    // Load user info
-    async function loadUserInfo() {
-      try {
-        const res = await fetch('/api/me');
-        if (!res.ok) return;
-        
-        const user = await res.json();
-        
-        // Format: "Prenume N." (ex: Andrei C.) sau username dacă nu e setat
-        const displayName = user.first_name && user.last_name 
-          ? `${user.first_name} ${user.last_name[0]}.` 
-          : user.username;
-        
-        document.getElementById('navUsername').textContent = displayName;
-        document.getElementById('userName').textContent = displayName;
-        document.getElementById('userRole').textContent = user.role === 'admin' ? 'Administrator' : 'Utilizator';
-        
-        // Avatar cu inițiale
-        const initials = user.first_name && user.last_name 
-          ? (user.first_name[0] + user.last_name[0]).toUpperCase()
-          : user.username[0].toUpperCase();
-        document.getElementById('userAvatar').textContent = initials;
-        
-      } catch (err) {
-        console.error('Eroare la încărcarea userului:', err);
-      }
-    }
-    
-    // Logout
-    document.getElementById('btnLogout')?.addEventListener('click', async () => {
-      await fetch('/logout', { method: 'POST' });
-      window.location.href = 'login.html';
-    });
-    
-    loadUserInfo();
-  </script>
+
   <script>
 (function() {
   const input = document.getElementById('raportSold');
