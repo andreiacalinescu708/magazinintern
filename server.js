@@ -2885,17 +2885,26 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     
     const fullName = [first_name, last_name].filter(Boolean).join(' ');
     const displayName = fullName || email;
+    const inviterName = req.session.user.first_name && req.session.user.last_name 
+      ? `${req.session.user.first_name} ${req.session.user.last_name}` 
+      : req.session.user.username;
+    const inviterEmail = req.session.user.email || 'support@openbill.ro';
     
-    const emailSubject = "Invitație pentru cont openBill";
+    const emailSubject = "Ai fost invitat să te alături echipei noastre - openBill";
     const emailText = `Bună ${displayName},
 
-Ai fost invitat să te alături platformei openBill.
+Bun venit în echipa noastră! 🎉
 
-Pentru a-ți crea contul, accesează linkul de mai jos (valabil 7 zile):
+${inviterName} te invită să te alături platformei openBill pentru a colabora împreună la gestionarea eficientă a operațiunilor companiei.
+
+openBill este soluția modernă pentru managementul stocurilor, facturilor și operațiunilor de business - totul într-un singur loc, simplu și intuitiv.
+
+Pentru a-ți activa contul și a intra în echipă, accesează linkul de mai jos (valabil 7 zile):
 ${inviteLink}
 
-Dacă nu tu ai solicitat această invitație, te rugăm să ignori acest email.
+Dacă ai întrebări, nu ezita să contactezi pe ${inviterName} la ${inviterEmail}.
 
+Cu drag,
 Echipa openBill
 `;
     const emailHtml = `
@@ -2904,34 +2913,98 @@ Echipa openBill
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-    .content { background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; }
-    .button { display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 600; }
-    .link { word-break: break-all; color: #3b82f6; }
-    .footer { margin-top: 30px; font-size: 12px; color: #64748b; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #334155; background: #f1f5f9; margin: 0; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; padding: 40px 30px; text-align: center; }
+    .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
+    .header p { margin: 10px 0 0; opacity: 0.9; font-size: 16px; }
+    .content { padding: 40px 30px; }
+    .welcome-box { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-left: 4px solid #10b981; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+    .welcome-box h3 { margin: 0 0 10px; color: #065f46; font-size: 18px; }
+    .welcome-box p { margin: 0; color: #047857; font-size: 14px; }
+    .inviter-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin: 25px 0; display: flex; align-items: center; gap: 15px; }
+    .inviter-avatar { width: 50px; height: 50px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 20px; }
+    .inviter-info h4 { margin: 0 0 5px; color: #1e293b; font-size: 16px; }
+    .inviter-info p { margin: 0; color: #64748b; font-size: 14px; }
+    .button-container { text-align: center; margin: 30px 0; }
+    .button { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: transform 0.2s; }
+    .button:hover { transform: translateY(-2px); }
+    .link-box { background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0; }
+    .link-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .link { word-break: break-all; color: #0ea5e9; font-family: monospace; font-size: 13px; }
+    .expiry { text-align: center; color: #94a3b8; font-size: 13px; margin-top: 20px; }
+    .expiry strong { color: #64748b; }
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 25px 0; }
+    .feature { text-align: center; padding: 15px; }
+    .feature-icon { font-size: 24px; margin-bottom: 8px; }
+    .feature-text { font-size: 12px; color: #64748b; }
+    .footer { background: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; }
+    .footer p { margin: 5px 0; font-size: 13px; color: #94a3b8; }
+    .footer a { color: #0ea5e9; text-decoration: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🎉 Bine ai venit la openBill!</h1>
+      <h1>🎉 Bun venit în echipă!</h1>
+      <p>openBill - Platforma ta de business</p>
     </div>
     <div class="content">
-      <p>Bună <strong>${displayName}</strong>,</p>
-      <p>Ai fost invitat de <strong>${req.session.user.username}</strong> să te alături platformei <strong>openBill</strong>.</p>
-      <p>Pentru a-ți crea contul, apasă butonul de mai jos:</p>
-      <center>
-        <a href="${inviteLink}" class="button">Creează contul</a>
-      </center>
-      <p>Sau copiază linkul manual:</p>
-      <p class="link">${inviteLink}</p>
-      <p><small>Linkul este valabil <strong>7 zile</strong>.</small></p>
-      <div class="footer">
-        <p>Dacă nu tu ai solicitat această invitație, te rugăm să ignori acest email.</p>
-        <p>Echipa openBill</p>
+      <div class="welcome-box">
+        <h3>👋 Salut, ${displayName}!</h3>
+        <p>Ai primit o invitație specială să faci parte din echipa noastră. Împreună vom construi succesul!</p>
       </div>
+      
+      <div class="inviter-box">
+        <div class="inviter-avatar">${inviterName.charAt(0).toUpperCase()}</div>
+        <div class="inviter-info">
+          <h4>${inviterName}</h4>
+          <p>Te invită să te alături echipei noastre pe openBill</p>
+        </div>
+      </div>
+
+      <p style="color: #475569; font-size: 15px; line-height: 1.7;">
+        <strong>openBill</strong> este soluția modernă pentru managementul stocurilor, facturilor și operațiunilor de business - totul într-un singur loc, simplu și intuitiv.
+      </p>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">📦</div>
+          <div class="feature-text">Management Stocuri</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <div class="feature-text">Rapoarte Live</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🤝</div>
+          <div class="feature-text">Colaborare Echipă</div>
+        </div>
+      </div>
+
+      <p style="text-align: center; color: #64748b; margin-bottom: 20px;">
+        Gata să începi? Creează-ți contul acum:
+      </p>
+
+      <div class="button-container">
+        <a href="${inviteLink}" class="button">Creează Contul Meu →</a>
+      </div>
+
+      <div class="link-box">
+        <div class="link-label">Link alternativ (copiază și lipește în browser):</div>
+        <div class="link">${inviteLink}</div>
+      </div>
+
+      <p class="expiry">⏰ Acest link este valabil <strong>7 zile</strong></p>
+
+      <p style="text-align: center; color: #64748b; font-size: 13px; margin-top: 25px;">
+        Ai întrebări? Contactează-l pe <strong>${inviterName}</strong> la <a href="mailto:${inviterEmail}">${inviterEmail}</a>
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p>Dacă nu tu ai solicitat această invitație, te rugăm să ignori acest email.</p>
+      <p>© 2026 openBill - Toate drepturile rezervate | <a href="https://openbill.ro">openbill.ro</a></p>
     </div>
   </div>
 </body>
