@@ -549,7 +549,7 @@
           return;
         }
         
-        let html = '<table><thead><tr><th>Email</th><th>Nume</th><th>Status</th><th>Invitat de</th><th>Data</th><th>Expiră</th></tr></thead><tbody>';
+        let html = '<table><thead><tr><th>Email</th><th>Nume</th><th>Status</th><th>Invitat de</th><th>Data</th><th>Expiră</th><th>Acțiuni</th></tr></thead><tbody>';
         
         for (const invite of invites) {
           const statusClass = invite.status === 'pending' ? 'badge-pending' : 
@@ -561,6 +561,14 @@
           const expiresAt = new Date(invite.expires_at).toLocaleDateString('ro-RO');
           const fullName = [invite.first_name, invite.last_name].filter(Boolean).join(' ') || '-';
           
+          // Butoane doar pentru invitațiile pending
+          const isPending = invite.status === 'pending';
+          const actions = isPending ? `
+            <button onclick="viewInviteLink('${invite.token}', '${escapeHtml(invite.email)}')" title="Vizualizează link" style="background: #3b82f6; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-right: 4px;">🔗</button>
+            <button onclick="resendInvite('${invite.id}', '${escapeHtml(invite.email)}')" title="Retrimite email" style="background: #f59e0b; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-right: 4px;">📧</button>
+            <button onclick="deleteInvite('${invite.id}', '${escapeHtml(invite.email)}')" title="Șterge invitația" style="background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;">🗑️</button>
+          ` : '<span style="color: #64748b;">-</span>';
+          
           html += `
             <tr>
               <td>${escapeHtml(invite.email)}</td>
@@ -569,6 +577,7 @@
               <td>${escapeHtml(invite.invited_by)}</td>
               <td>${createdAt}</td>
               <td>${expiresAt}</td>
+              <td>${actions}</td>
             </tr>
           `;
         }
@@ -578,6 +587,70 @@
         
       } catch (err) {
         list.innerHTML = `<p class="empty-state" style="color: #ef4444;">Eroare: ${err.message}</p>`;
+      }
+    }
+
+    // Vizualizează link invitație
+    function viewInviteLink(token, email) {
+      const link = `${window.location.origin}/register.html?invite=${token}`;
+      alert(`🔗 Link invitație pentru ${email}:\n\n${link}\n\nLinkul a fost copiat în clipboard.`);
+      navigator.clipboard.writeText(link);
+    }
+    
+    // Retrimite invitația
+    async function resendInvite(id, email) {
+      if (!confirm(`Retrimi invitația pentru ${email}?`)) return;
+      
+      try {
+        const res = await fetch(`/api/invites/${id}/resend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          alert('Eroare: ' + (data.error || 'Nu s-a putut retrimite invitația'));
+          return;
+        }
+        
+        if (data.emailSent) {
+          alert(`✅ Email retrimis cu succes către ${email}`);
+        } else {
+          alert(`⚠️ Emailul nu a putut fi trimis.\n\nLink: ${data.inviteLink}`);
+        }
+        
+        // Reîncarcă lista
+        loadInvites();
+        
+      } catch (err) {
+        alert('Eroare la retrimire: ' + err.message);
+      }
+    }
+    
+    // Șterge invitația
+    async function deleteInvite(id, email) {
+      if (!confirm(`Ștergi invitația pentru ${email}?\n\nAceastă acțiune este ireversibilă.`)) return;
+      
+      try {
+        const res = await fetch(`/api/invites/${id}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          alert('Eroare: ' + (data.error || 'Nu s-a putut șterge invitația'));
+          return;
+        }
+        
+        alert('✅ Invitație ștearsă');
+        
+        // Reîncarcă lista
+        loadInvites();
+        
+      } catch (err) {
+        alert('Eroare la ștergere: ' + err.message);
       }
     }
 

@@ -2878,6 +2878,85 @@ app.get("/api/invites/validate/:token", async (req, res) => {
   }
 });
 
+// DELETE /api/invites/:id - Șterge o invitație (doar admin)
+app.delete("/api/invites/:id", isAdmin, async (req, res) => {
+  try {
+    await db.q(
+      "DELETE FROM user_invites WHERE id = $1",
+      [req.params.id]
+    );
+    res.json({ ok: true, message: "Invitație ștearsă" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/invites/:id/resend - Retrimite o invitație (doar admin)
+app.post("/api/invites/:id/resend", isAdmin, async (req, res) => {
+  try {
+    // Obține datele invitației
+    const r = await db.q(
+      "SELECT * FROM user_invites WHERE id = $1",
+      [req.params.id]
+    );
+    
+    if (r.rows.length === 0) {
+      return res.status(404).json({ error: "Invitație negăsită" });
+    }
+    
+    const invite = r.rows[0];
+    
+    if (invite.status !== 'pending') {
+      return res.status(400).json({ error: "Invitația nu mai este activă" });
+    }
+    
+    if (new Date(invite.expires_at) < new Date()) {
+      return res.status(400).json({ error: "Invitația a expirat" });
+    }
+    
+    // Generează linkul
+    const inviteLink = `${req.protocol}://${req.get('host')}/register.html?invite=${invite.token}`;
+    
+    // Trimite email
+    const fullName = [invite.first_name, invite.last_name].filter(Boolean).join(' ');
+    const displayName = fullName || invite.email;
+    
+    const emailSubject = "Invitație pentru cont openBill";
+    const emailText = `Bună ${displayName},\n\nAi fost invitat să te alături platformei openBill.\n\nPentru a-ți crea contul, accesează linkul de mai jos:\n${inviteLink}\n\nEchipa openBill`;
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+      <h1>🎉 Invitație openBill</h1>
+    </div>
+    <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px;">
+      <p>Bună <strong>${displayName}</strong>,</p>
+      <p>Ai fost invitat să te alături platformei <strong>openBill</strong>.</p>
+      <p><a href="${inviteLink}" style="display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px;">Creează contul</a></p>
+      <p>Sau copiază linkul: ${inviteLink}</p>
+      <p><small>Linkul este valabil până la ${new Date(invite.expires_at).toLocaleDateString('ro-RO')}.</small></p>
+    </div>
+  </div>
+</body>
+</html>`;
+    
+    const emailResult = await sendEmail(invite.email, emailSubject, emailHtml, emailText);
+    
+    res.json({ 
+      ok: true, 
+      message: emailResult.success ? "Email retrimis" : "Emailul nu a putut fi trimis",
+      inviteLink,
+      emailSent: emailResult.success
+    });
+    
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Endpoint pentru schimbarea parolei
 app.post('/api/schimba-parola', async (req, res) => {
   const { username, parolaVeche, parolaNoua } = req.body;
