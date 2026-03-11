@@ -3012,7 +3012,7 @@ app.get("/api/products/search", async (req, res) => {
     // Seed dezactivat - baza de date porneste goala
     // await seedClientsFromFileIfEmpty();
     // await seedProductsFromFileIfEmpty();
-    // await ensureDefaultAdmin();
+    await ensureDefaultAdmin();  // Creaza admin implicit daca nu exista useri
     // await seedInitialData();
   } catch (e) {
     console.error("❌ DB init error (pornesc fără DB):", e?.message || e);
