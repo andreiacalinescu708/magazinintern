@@ -1501,6 +1501,11 @@ function getFullProduct(item) {
 
 
   async function loadClientsAdmin() {
+    // Dacă suntem pe clienti.html, nu facem nimic - pagina are propriul handler
+    if (document.getElementById('clientDetails') && window.location.pathname.includes('clienti.html')) {
+      return;
+    }
+    
     const res = await apiFetch("/api/clients-flat");
     const clients = await res.json();
 
