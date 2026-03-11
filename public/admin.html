@@ -664,10 +664,16 @@
       resultDiv.style.display = 'block';
       resultDiv.style.background = 'rgba(59, 130, 246, 0.1)';
       resultDiv.style.border = '1px solid rgba(59, 130, 246, 0.3)';
-      resultDiv.innerHTML = '⏳ Se testează configurația...';
+      resultDiv.innerHTML = '⏳ Se testează configurația (max 15 secunde)...';
+      
+      // Abort controller pentru timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       
       try {
-        const res = await fetch('/api/test-email');
+        const res = await fetch('/api/test-email', { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         const data = await res.json();
         
         if (data.ok) {
@@ -680,9 +686,14 @@
           resultDiv.innerHTML = `❌ <strong>Eroare la trimitere</strong><br>${data.error || 'Verifică logurile'}<br><br>Config: ${data.config.host} / ${data.config.user}`;
         }
       } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          resultDiv.innerHTML = `⏰ <strong>Timeout</strong><br>Request-ul a durat prea mult. Verifică logurile în Railway.`;
+        } else {
+          resultDiv.innerHTML = `❌ <strong>Eroare:</strong> ${err.message}`;
+        }
         resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
         resultDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-        resultDiv.innerHTML = `❌ <strong>Eroare:</strong> ${err.message}`;
       }
     }
 
