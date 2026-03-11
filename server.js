@@ -40,6 +40,46 @@ async function testSendGridAPI() {
   }
 }
 
+// Funcție pentru trimitere email prin SendGrid API (HTTP)
+async function sendEmailViaSendGridAPI(to, subject, html, text) {
+  console.log("📧 Sending via SendGrid API (HTTP)...");
+  
+  const body = {
+    personalizations: [{
+      to: [{ email: to }]
+    }],
+    from: { email: process.env.EMAIL_FROM || 'support@openbill.ro', name: 'openBill' },
+    subject: subject,
+    content: [
+      { type: 'text/plain', value: text },
+      { type: 'text/html', value: html }
+    ]
+  };
+  
+  try {
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.EMAIL_PASS}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    
+    if (response.ok || response.status === 202) {
+      console.log("📧 SendGrid API send SUCCESS");
+      return { success: true, messageId: 'sendgrid-api-' + Date.now() };
+    } else {
+      const errorText = await response.text();
+      console.log("📧 SendGrid API send FAILED:", errorText);
+      return { success: false, error: errorText };
+    }
+  } catch (err) {
+    console.log("📧 SendGrid API send ERROR:", err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // Configurare Email (Gmail sau SendGrid)
 let emailTransporter = null;
 if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
@@ -124,6 +164,14 @@ async function sendEmailWithTimeout(to, subject, html, text, timeoutMs = 30000) 
 }
 
 async function sendEmail(to, subject, html, text) {
+  const isSendGrid = process.env.EMAIL_HOST && process.env.EMAIL_HOST.includes('sendgrid');
+  
+  // Dacă e SendGrid, folosim API HTTP în loc de SMTP
+  if (isSendGrid) {
+    console.log("📧 Using SendGrid API (HTTP) instead of SMTP");
+    return sendEmailViaSendGridAPI(to, subject, html, text);
+  }
+  
   if (!emailTransporter) {
     console.log("📧 Email transporter not configured");
     return { success: false, error: "Email not configured" };
