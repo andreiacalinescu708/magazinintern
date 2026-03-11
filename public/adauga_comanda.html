@@ -541,20 +541,22 @@
     }
 
     function initTabs() {
+      // Pentru tab-urile dinamice generate din categorii
       const tabs = document.querySelectorAll('.tab-btn');
-      const contents = document.querySelectorAll('.tab-content');
       
       tabs.forEach(tab => {
         tab.onclick = () => {
-          const target = tab.dataset.tab;
+          const targetId = tab.getAttribute('data-tab');
+          if (!targetId) return;
           
           // Dezactivăm toate tab-urile
-          tabs.forEach(t => t.classList.remove('active'));
-          contents.forEach(c => c.classList.remove('active'));
+          document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
           
           // Activăm tab-ul curent
           tab.classList.add('active');
-          document.getElementById('tab-' + target).classList.add('active');
+          const content = document.getElementById(targetId);
+          if (content) content.classList.add('active');
         };
       });
     }
