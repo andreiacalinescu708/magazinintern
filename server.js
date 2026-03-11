@@ -3211,6 +3211,67 @@ app.delete("/api/clients/:id/prices/:productId", async (req, res) => {
   }
 });
 
+// POST import produse din JSON
+app.post("/api/import-products", async (req, res) => {
+  try {
+    if (!db.hasDb()) {
+      return res.status(500).json({ error: "Baza de date nu este configurată" });
+    }
+    
+    const list = readProductsAsList();
+    let added = 0;
+    let updated = 0;
+    
+    for (const p of list) {
+      const name = String(p.name || "").trim();
+      if (!name) continue;
+      
+      const id = (p.id != null && String(p.id).trim() !== "") ? String(p.id) : crypto.randomUUID();
+      const gtinClean = normalizeGTIN(p.gtin || "") || null;
+      
+      const gtinsArr = []
+        .concat(gtinClean ? [gtinClean] : [])
+        .concat(Array.isArray(p.gtins) ? p.gtins : [])
+        .map(normalizeGTIN)
+        .filter(Boolean);
+      
+      const category = String(p.category || "Altele").trim() || "Altele";
+      const price = (p.price != null && p.price !== "") ? Number(p.price) : null;
+      
+      // Verifică dacă produsul există deja
+      const checkRes = await db.q(`SELECT id FROM products WHERE id = $1`, [id]);
+      const exists = checkRes.rows.length > 0;
+      
+      await db.q(
+        `INSERT INTO products (id, name, gtin, gtins, category, price, active)
+         VALUES ($1,$2,$3,$4::jsonb,$5,$6,true)
+         ON CONFLICT (id) DO UPDATE SET
+           name = EXCLUDED.name,
+           gtin = EXCLUDED.gtin,
+           gtins = EXCLUDED.gtins,
+           category = EXCLUDED.category,
+           price = EXCLUDED.price,
+           active = true`,
+        [id, name, gtinClean, JSON.stringify(gtinsArr), category, 
+         (Number.isFinite(price) ? price : null)]
+      );
+      
+      if (exists) {
+        updated++;
+      } else {
+        added++;
+      }
+    }
+    
+    console.log(`✅ Import produse finalizat: ${added} adăugate, ${updated} actualizate`);
+    res.json({ success: true, added, updated, total: list.length });
+    
+  } catch (err) {
+    console.error("Eroare import produse:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
 // GET căutare produse
 app.get("/api/products/search", async (req, res) => {
   try {
