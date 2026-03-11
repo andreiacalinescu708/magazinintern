@@ -140,6 +140,24 @@ await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
   await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`);
   await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position TEXT`);
 
+  // Tabel pentru invitații utilizatori
+  await q(`
+    CREATE TABLE IF NOT EXISTS user_invites (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      first_name TEXT,
+      last_name TEXT,
+      token TEXT UNIQUE NOT NULL,
+      invited_by TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ
+    )
+  `);
+  await q(`CREATE INDEX IF NOT EXISTS idx_invites_token ON user_invites(token)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_invites_email ON user_invites(email)`);
+
 // Asigură-te că adminul existent rămâne aprobat (pentru compatibilitate)
 await q(`UPDATE users SET is_approved = true WHERE role = 'admin'`);
 await q(`UPDATE users SET is_approved = false WHERE is_approved IS NULL`);

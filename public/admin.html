@@ -159,6 +159,7 @@
     <div class="tabs">
       <button class="tab active" onclick="showTab('pending')">⏳ În Așteptare</button>
       <button class="tab" onclick="showTab('locked')">🔒 Blocați</button>
+      <button class="tab" onclick="showTab('invites')">📧 Invitații</button>
       <button class="tab" onclick="showTab('all')">👥 Toți Utilizatorii</button>
     </div>
 
@@ -176,6 +177,18 @@
       <h3>🔒 Utilizatori blocați temporar</h3>
       <div id="errorLocked" class="error-box"></div>
       <div id="lockedList">
+        <p class="empty-state">Se încarcă...</p>
+      </div>
+    </div>
+
+    <!-- Secțiunea Invitații -->
+    <div id="tab-invites" class="card" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3>📧 Invitații trimise</h3>
+        <button class="btn-approve" onclick="openInviteModal()">+ Invită Utilizator</button>
+      </div>
+      <div id="errorInvites" class="error-box"></div>
+      <div id="invitesList">
         <p class="empty-state">Se încarcă...</p>
       </div>
     </div>
@@ -199,6 +212,37 @@
     </div>
   </div>
 
+  <!-- Modal Invitație -->
+  <div id="inviteModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #1e293b; border-radius: 1rem; padding: 2rem; width: 90%; max-width: 500px; border: 1px solid #334155;">
+      <h3 style="margin-top: 0; margin-bottom: 1.5rem;">📧 Invită Utilizator Nou</h3>
+      <div id="inviteError" class="error-box" style="margin-bottom: 1rem;"></div>
+      <div id="inviteSuccess" style="display: none; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;"></div>
+      
+      <form id="inviteForm">
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;">Nume</label>
+          <input type="text" id="inviteFirstName" style="width: 100%; padding: 0.75rem; background: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; color: white; font-size: 1rem; box-sizing: border-box;" placeholder="Ex: Popescu">
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;">Prenume</label>
+          <input type="text" id="inviteLastName" style="width: 100%; padding: 0.75rem; background: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; color: white; font-size: 1rem; box-sizing: border-box;" placeholder="Ex: Ion">
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;">Email *</label>
+          <input type="email" id="inviteEmail" required style="width: 100%; padding: 0.75rem; background: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; color: white; font-size: 1rem; box-sizing: border-box;" placeholder="ex: ion.popescu@firma.ro">
+        </div>
+        
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+          <button type="button" onclick="closeInviteModal()" style="padding: 0.75rem 1.5rem; background: transparent; border: 1px solid #334155; border-radius: 0.5rem; color: #94a3b8; cursor: pointer;">Anulează</button>
+          <button type="submit" style="padding: 0.75rem 1.5rem; background: #10b981; border: none; border-radius: 0.5rem; color: white; font-weight: 600; cursor: pointer;">Trimite Invitație</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="script.js"></script>
   
   <script>
@@ -217,6 +261,7 @@
       // Încarcă datele specifice
       if (tabName === 'pending') loadPending();
       if (tabName === 'locked') loadLocked();
+      if (tabName === 'invites') loadInvites();
       if (tabName === 'all') loadAllUsers();
     }
 
@@ -410,6 +455,119 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+    }
+
+    // ========== INVITE FUNCTIONS ==========
+    
+    function openInviteModal() {
+      document.getElementById('inviteModal').style.display = 'flex';
+      document.getElementById('inviteError').style.display = 'none';
+      document.getElementById('inviteSuccess').style.display = 'none';
+      document.getElementById('inviteForm').reset();
+    }
+    
+    function closeInviteModal() {
+      document.getElementById('inviteModal').style.display = 'none';
+    }
+    
+    // Închide modalul la click în afară
+    document.getElementById('inviteModal').addEventListener('click', (e) => {
+      if (e.target.id === 'inviteModal') closeInviteModal();
+    });
+    
+    // Trimite invitație
+    document.getElementById('inviteForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('inviteEmail').value.trim();
+      const firstName = document.getElementById('inviteFirstName').value.trim();
+      const lastName = document.getElementById('inviteLastName').value.trim();
+      
+      try {
+        const res = await fetch('/api/invites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, first_name: firstName, last_name: lastName })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          document.getElementById('inviteError').textContent = data.error || 'Eroare la trimiterea invitației';
+          document.getElementById('inviteError').style.display = 'block';
+          return;
+        }
+        
+        // Afișează mesaj de succes cu linkul (pentru testare)
+        const successDiv = document.getElementById('inviteSuccess');
+        successDiv.innerHTML = `
+          <strong>✅ Invitație trimisă cu succes!</strong><br><br>
+          <strong>Email:</strong> ${escapeHtml(data.email)}<br>
+          <strong>Nume:</strong> ${escapeHtml(data.first_name || '-')} ${escapeHtml(data.last_name || '-')}<br><br>
+          <strong>Link invitație (pentru testare):</strong><br>
+          <a href="${data.inviteLink}" target="_blank" style="color: #34d399; word-break: break-all;">${data.inviteLink}</a>
+        `;
+        successDiv.style.display = 'block';
+        document.getElementById('inviteError').style.display = 'none';
+        
+        // Resetează formularul după 3 secunde
+        setTimeout(() => {
+          document.getElementById('inviteForm').reset();
+          document.getElementById('inviteSuccess').style.display = 'none';
+        }, 10000);
+        
+      } catch (err) {
+        document.getElementById('inviteError').textContent = 'Eroare la trimiterea invitației: ' + err.message;
+        document.getElementById('inviteError').style.display = 'block';
+      }
+    });
+    
+    // Încarcă lista de invitații
+    async function loadInvites() {
+      const list = document.getElementById('invitesList');
+      list.innerHTML = '<p class="empty-state">Se încarcă...</p>';
+      
+      try {
+        const res = await fetch('/api/invites');
+        if (!res.ok) throw new Error('Eroare la încărcarea invitațiilor');
+        
+        const invites = await res.json();
+        
+        if (invites.length === 0) {
+          list.innerHTML = '<p class="empty-state">Nu există invitații trimise încă.</p>';
+          return;
+        }
+        
+        let html = '<table><thead><tr><th>Email</th><th>Nume</th><th>Status</th><th>Invitat de</th><th>Data</th><th>Expiră</th></tr></thead><tbody>';
+        
+        for (const invite of invites) {
+          const statusClass = invite.status === 'pending' ? 'badge-pending' : 
+                             invite.status === 'used' ? 'badge-approved' : 'badge-danger';
+          const statusText = invite.status === 'pending' ? 'În așteptare' : 
+                            invite.status === 'used' ? 'Folosită' : 'Expirată';
+          
+          const createdAt = new Date(invite.created_at).toLocaleDateString('ro-RO');
+          const expiresAt = new Date(invite.expires_at).toLocaleDateString('ro-RO');
+          const fullName = [invite.first_name, invite.last_name].filter(Boolean).join(' ') || '-';
+          
+          html += `
+            <tr>
+              <td>${escapeHtml(invite.email)}</td>
+              <td>${escapeHtml(fullName)}</td>
+              <td><span class="badge ${statusClass}">${statusText}</span></td>
+              <td>${escapeHtml(invite.invited_by)}</td>
+              <td>${createdAt}</td>
+              <td>${expiresAt}</td>
+            </tr>
+          `;
+        }
+        
+        html += '</tbody></table>';
+        list.innerHTML = html;
+        
+      } catch (err) {
+        list.innerHTML = `<p class="empty-state" style="color: #ef4444;">Eroare: ${err.message}</p>`;
+      }
     }
 
     // Inițializare

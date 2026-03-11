@@ -2325,19 +2325,58 @@ app.post("/api/login", async (req, res) => {
 // Register 
 app.post("/api/register", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, inviteToken } = req.body;
 
     if (!username || !password) return res.status(400).json({ error: "Date lipsă" });
     if (!db.hasDb()) return res.status(500).json({ error: "DB neconfigurat" });
 
+    // Verifică token de invitație dacă există
+    let inviteData = null;
+    if (inviteToken) {
+      const inviteRes = await db.q(
+        `SELECT email, first_name, last_name, status, expires_at
+         FROM user_invites
+         WHERE token = $1`,
+        [inviteToken]
+      );
+      
+      if (inviteRes.rows.length === 0) {
+        return res.status(400).json({ error: "Token de invitație invalid" });
+      }
+      
+      inviteData = inviteRes.rows[0];
+      
+      if (inviteData.status !== 'pending') {
+        return res.status(400).json({ error: "Invitația a fost deja folosită" });
+      }
+      
+      if (new Date(inviteData.expires_at) < new Date()) {
+        return res.status(400).json({ error: "Invitația a expirat" });
+      }
+      
+      // Verifică că username-ul (email) corespunde cu cel din invitație
+      if (username.trim().toLowerCase() !== inviteData.email.toLowerCase()) {
+        return res.status(400).json({ error: "Email-ul trebuie să corespundă cu cel din invitație" });
+      }
+    } else {
+      // Fără invitație, înregistrarea nu este permisă
+      return res.status(403).json({ error: "Înregistrarea este permisă doar prin invitație" });
+    }
+
     const passwordHash = bcrypt.hashSync(password, 10);
 
-    // failed_attempts = 0 by default
+    // Creează userul cu datele din invitație
     const r = await db.q(
-      `INSERT INTO users (username, password_hash, role, active, is_approved, failed_attempts)
-       VALUES ($1,$2,'user',true,false,0)
-       RETURNING id, username, role, is_approved`,
-      [username.trim(), passwordHash]
+      `INSERT INTO users (username, password_hash, role, active, is_approved, failed_attempts, first_name, last_name, email)
+       VALUES ($1,$2,'user',true,false,0,$3,$4,$5)
+       RETURNING id, username, role, is_approved, first_name, last_name`,
+      [username.trim(), passwordHash, inviteData.first_name || null, inviteData.last_name || null, inviteData.email]
+    );
+    
+    // Marchează invitația ca folosită
+    await db.q(
+      `UPDATE user_invites SET status = 'used', used_at = NOW() WHERE token = $1`,
+      [inviteToken]
     );
 
     res.json({ 
@@ -2605,7 +2644,122 @@ app.put("/api/me", requireAuth, async (req, res) => {
   }
 });
 
-// Endpoint pentru schimbarea parolei
+// ========== INVITE SYSTEM ==========
+const crypto = require('crypto');
+
+// Generează token unic pentru invitație
+function generateInviteToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// POST /api/invites - Trimite invitație (doar admin)
+app.post("/api/invites", isAdmin, async (req, res) => {
+  try {
+    const { email, first_name, last_name } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email-ul este obligatoriu" });
+    }
+    
+    // Verifică dacă email-ul e deja folosit
+    const existingUser = await db.q(
+      "SELECT id FROM users WHERE username = $1",
+      [email]
+    );
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: "Există deja un utilizator cu acest email" });
+    }
+    
+    // Verifică dacă există deja o invitație activă
+    const existingInvite = await db.q(
+      "SELECT id FROM user_invites WHERE email = $1 AND status = 'pending' AND expires_at > NOW()",
+      [email]
+    );
+    if (existingInvite.rows.length > 0) {
+      return res.status(400).json({ error: "Există deja o invitație activă pentru acest email" });
+    }
+    
+    // Generează token și salvează invitația
+    const token = generateInviteToken();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // Expiră în 7 zile
+    
+    const inviteId = crypto.randomUUID();
+    await db.q(
+      `INSERT INTO user_invites (id, email, first_name, last_name, token, invited_by, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [inviteId, email, first_name || null, last_name || null, token, req.session.user.username, expiresAt]
+    );
+    
+    // Trimite email (sau returnează link-ul pentru testare)
+    const inviteLink = `${req.protocol}://${req.get('host')}/register.html?invite=${token}`;
+    
+    // TODO: Integrare serviciu email (SendGrid, AWS SES, etc.)
+    // Pentru moment, returnăm link-ul în răspuns
+    console.log(`🔗 Link invitație pentru ${email}: ${inviteLink}`);
+    
+    res.json({ 
+      ok: true, 
+      message: "Invitație creată cu succes",
+      inviteLink, // Doar pentru testare
+      email,
+      first_name,
+      last_name
+    });
+    
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/invites - Lista invitații (doar admin)
+app.get("/api/invites", isAdmin, async (req, res) => {
+  try {
+    const r = await db.q(
+      `SELECT i.*, u.username as invited_by_name
+       FROM user_invites i
+       LEFT JOIN users u ON i.invited_by = u.username
+       ORDER BY i.created_at DESC`
+    );
+    res.json(r.rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/invites/validate/:token - Validează un token de invitație
+app.get("/api/invites/validate/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    const r = await db.q(
+      `SELECT email, first_name, last_name, status, expires_at
+       FROM user_invites
+       WHERE token = $1`,
+      [token]
+    );
+    
+    if (r.rows.length === 0) {
+      return res.status(404).json({ error: "Invitație invalidă" });
+    }
+    
+    const invite = r.rows[0];
+    
+    if (invite.status !== 'pending') {
+      return res.status(400).json({ error: "Invitația a fost deja folosită" });
+    }
+    
+    if (new Date(invite.expires_at) < new Date()) {
+      return res.status(400).json({ error: "Invitația a expirat" });
+    }
+    
+    res.json({ ok: true, invite });
+    
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Endpoint pentru schimbarea parolei
 app.post('/api/schimba-parola', async (req, res) => {
   const { username, parolaVeche, parolaNoua } = req.body;

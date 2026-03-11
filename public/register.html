@@ -59,29 +59,109 @@
     <div class="authHeader">
       <div class="authLogo">👤</div>
       <h1>Creează cont</h1>
-      <p class="muted">Alege un username și o parolă.</p>
+      <p class="muted" id="inviteSubtitle">Se validează invitația...</p>
     </div>
 
-    <form id="registerForm" class="authForm" autocomplete="on">
+    <div id="inviteError" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; text-align: center;"></div>
+
+    <form id="registerForm" class="authForm" autocomplete="on" style="display: none;">
       <label class="authLabel">
-        Username
-        <input id="regUser" class="authInput" type="text" autocomplete="username" required placeholder="Introdu username" />
+        Email (Username)
+        <input id="regUser" class="authInput" type="email" autocomplete="username" required placeholder="Introdu email" readonly style="opacity: 0.7;" />
       </label>
 
       <label class="authLabel">
         Parolă
-        <input id="regPass" class="authInput" type="password" autocomplete="new-password" required placeholder="Introdu parola" />
+        <input id="regPass" class="authInput" type="password" autocomplete="new-password" required placeholder="Minim 6 caractere" />
       </label>
 
       <button id="btnRegister" class="authBtn" type="submit">Creează cont</button>
       <div id="registerMsg" class="authMsg"></div>
     </form>
 
-    <div class="authFooter">
+    <div class="authFooter" id="authFooter" style="display: none;">
       <a class="authLinkBtn" href="login.html">Am deja cont</a>
     </div>
   </div>
 
   <script src="script.js"></script>
+  <script>
+    // Gestionare invitație
+    (async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const inviteToken = urlParams.get('invite');
+      
+      const subtitle = document.getElementById('inviteSubtitle');
+      const errorDiv = document.getElementById('inviteError');
+      const form = document.getElementById('registerForm');
+      const footer = document.getElementById('authFooter');
+      
+      if (!inviteToken) {
+        subtitle.textContent = '';
+        errorDiv.innerHTML = '<strong>⛔ Înregistrare prin invitație obligatorie</strong><br><br>Pentru a crea un cont, trebuie să primești o invitație de la administrator.<br>Contactează administratorul companiei pentru a primi acces.';
+        errorDiv.style.display = 'block';
+        return;
+      }
+      
+      try {
+        // Validează tokenul
+        const res = await fetch(`/api/invites/validate/${inviteToken}`);
+        const data = await res.json();
+        
+        if (!res.ok) {
+          subtitle.textContent = '';
+          errorDiv.innerHTML = `<strong>⛔ Invitație invalidă</strong><br><br>${data.error || 'Linkul de invitație nu este valid.'}`;
+          errorDiv.style.display = 'block';
+          return;
+        }
+        
+        // Pre-completează emailul
+        document.getElementById('regUser').value = data.invite.email;
+        subtitle.innerHTML = `Completează datele pentru a finaliza înregistrarea.<br><small style="color: #64748b;">Invitație pentru: <strong>${data.invite.first_name || ''} ${data.invite.last_name || ''}</strong></small>`;
+        form.style.display = 'block';
+        footer.style.display = 'block';
+        
+        // Modifică handler-ul formularului pentru a include tokenul
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          const msg = document.getElementById('registerMsg');
+          msg.textContent = '';
+          
+          const username = document.getElementById('regUser').value.trim();
+          const password = document.getElementById('regPass').value;
+          
+          if (!username || !password) {
+            msg.textContent = 'Completează toate câmpurile';
+            return;
+          }
+          
+          if (password.length < 6) {
+            msg.textContent = 'Parola trebuie să aibă minim 6 caractere';
+            return;
+          }
+          
+          const res = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, inviteToken })
+          });
+          
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            msg.textContent = data.error || 'Eroare la înregistrare';
+            return;
+          }
+          
+          alert('✅ Cont creat cu succes! Contul tău este în așteptarea aprobării administratorului.');
+          location.href = 'login.html';
+        };
+        
+      } catch (err) {
+        subtitle.textContent = '';
+        errorDiv.innerHTML = `<strong>⛔ Eroare</strong><br><br>${err.message}`;
+        errorDiv.style.display = 'block';
+      }
+    })();
+  </script>
 </body>
 </html>
