@@ -158,6 +158,14 @@ function isAdmin(req, res, next) {
   next();
 }
 
+// Middleware pentru verificare autentificare (orice user)
+function requireAuth(req, res, next) {
+  if (!req.session?.user) {
+    return res.status(401).json({ error: "Nu ești autentificat." });
+  }
+  next();
+}
+
 app.get("/api/version", (req, res) => {
   res.json({
     version: "2026-02-22-1",
