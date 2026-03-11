@@ -48,19 +48,22 @@ if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) 
   console.log("📧 Email transporter configurat pentru:", process.env.EMAIL_USER);
   console.log("📧 Folosind serviciu:", isGmail ? 'gmail' : 'custom');
   
-  // Verifică conexiunea la pornire
-  emailTransporter.verify((error, success) => {
-    if (error) {
-      console.error("📧 Eroare verificare SMTP:", error);
-    } else {
-      console.log("📧 SMTP server ready");
-    }
-  });
+  console.log("📧 Email transporter configurat cu succes");
 } else {
   console.log("📧 Email transporter not configured - missing env vars");
   console.log("📧 EMAIL_HOST:", process.env.EMAIL_HOST ? 'setat' : 'lipsă');
   console.log("📧 EMAIL_USER:", process.env.EMAIL_USER ? 'setat' : 'lipsă');
   console.log("📧 EMAIL_PASS:", process.env.EMAIL_PASS ? 'setat' : 'lipsă');
+}
+
+// Wrapper cu timeout pentru sendEmail
+async function sendEmailWithTimeout(to, subject, html, text, timeoutMs = 10000) {
+  return Promise.race([
+    sendEmail(to, subject, html, text),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email timeout - operation took too long')), timeoutMs)
+    )
+  ]);
 }
 
 async function sendEmail(to, subject, html, text) {
@@ -84,7 +87,8 @@ async function sendEmail(to, subject, html, text) {
     console.log("📧 Email sent:", info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (err) {
-    console.error("📧 Email error:", err);
+    console.error("📧 Email error:", err.message);
+    console.error("📧 Error details:", err);
     return { success: false, error: err.message };
   }
 }
@@ -2824,7 +2828,7 @@ Echipa openBill
 </body>
 </html>`;
     
-    const emailResult = await sendEmail(email, emailSubject, emailHtml, emailText);
+    const emailResult = await sendEmailWithTimeout(email, emailSubject, emailHtml, emailText);
     console.log(`📧 Email result for ${email}:`, emailResult);
     
     res.json({ 
@@ -2908,7 +2912,7 @@ app.delete("/api/invites/:id", isAdmin, async (req, res) => {
 // GET /api/test-email - Testează configurația email (doar admin)
 app.get("/api/test-email", isAdmin, async (req, res) => {
   try {
-    const testResult = await sendEmail(
+    const testResult = await sendEmailWithTimeout(
       req.session.user.username,
       "Test openBill Email",
       "<h1>Test Email</h1><p>Acesta este un email de test.</p>",
