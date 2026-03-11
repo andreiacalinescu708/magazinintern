@@ -229,10 +229,14 @@
         if (!res.ok) return;
         
         const user = await res.json();
-        document.getElementById('navUsername').textContent = user.username;
-        document.getElementById('userName').textContent = user.first_name && user.last_name 
-          ? `${user.first_name} ${user.last_name}` 
+        
+        // Format: "Prenume N." (ex: Andrei C.) sau username dacă nu e setat
+        const displayName = user.first_name && user.last_name 
+          ? `${user.first_name} ${user.last_name[0]}.` 
           : user.username;
+        
+        document.getElementById('navUsername').textContent = displayName;
+        document.getElementById('userName').textContent = displayName;
         document.getElementById('userRole').textContent = user.role === 'admin' ? 'Administrator' : 'Utilizator';
         
         // Avatar cu inițiale
