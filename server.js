@@ -73,6 +73,10 @@ if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) 
   
   console.log("📧 Email transporter configurat");
   console.log("📧 Folosind serviciu:", isSendGrid ? 'sendgrid' : isGmail ? 'gmail' : 'custom');
+  console.log("📧 EMAIL_PASS setat:", process.env.EMAIL_PASS ? "DA (lungime: " + process.env.EMAIL_PASS.length + ")" : "NU");
+  if (isSendGrid) {
+    console.log("📧 SendGrid API Key format valid:", process.env.EMAIL_PASS && process.env.EMAIL_PASS.startsWith('SG.'));
+  }
   
   console.log("📧 Email transporter configurat cu succes");
 } else {
