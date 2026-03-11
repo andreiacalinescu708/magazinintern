@@ -2645,8 +2645,6 @@ app.put("/api/me", requireAuth, async (req, res) => {
 });
 
 // ========== INVITE SYSTEM ==========
-const crypto = require('crypto');
-
 // Generează token unic pentru invitație
 function generateInviteToken() {
   return crypto.randomBytes(32).toString('hex');
