@@ -166,7 +166,6 @@
       color: #64748b;
     }
     
-    /* Detalii client */
     .detail-row {
       margin-bottom: 1rem;
     }
@@ -192,7 +191,6 @@
       font-size: 0.9rem;
     }
     
-    /* Categorie editor */
     .category-editor {
       display: flex;
       gap: 0.5rem;
@@ -218,7 +216,6 @@
     .msg.success { color: #10b981; }
     .msg.error { color: #ef4444; }
     
-    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -238,7 +235,7 @@
       background: #1e293b;
       border-radius: 1rem;
       width: 90%;
-      max-width: 600px;
+      max-width: 500px;
       max-height: 90vh;
       overflow-y: auto;
       border: 1px solid #334155;
@@ -279,19 +276,8 @@
       font-size: 0.9rem;
     }
     
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-    
-    @media (max-width: 600px) {
-      .form-row { grid-template-columns: 1fr; }
-    }
-    
     .hidden { display: none !important; }
     
-    /* Preturi speciale */
     .price-item {
       display: flex;
       gap: 0.5rem;
@@ -362,28 +348,17 @@
             <input type="text" id="newName" class="input" placeholder="ex: Farmacia Tei" required>
           </div>
           
-          <div class="form-row">
-            <div class="form-group">
-              <label>CUI Firmă</label>
-              <input type="text" id="newCui" class="input" placeholder="RO12345678">
-            </div>
-            
-            <div class="form-group">
-              <label>Grup *</label>
-              <select id="newGroup" class="input" required onchange="onGroupChange()">
-                <option value="">-- Selectează --</option>
-                <option value="Craiova">📍 Craiova</option>
-                <option value="Exterior">🌍 Exterior</option>
-              </select>
-            </div>
+          <div class="form-group">
+            <label>CUI Firmă</label>
+            <input type="text" id="newCui" class="input" placeholder="RO12345678">
           </div>
           
-          <div class="form-group" id="zoneGroup">
-            <label>Zonă / Categorie *</label>
-            <select id="newZone" class="input">
-              <option value="">-- Selectează zona --</option>
+          <div class="form-group">
+            <label>Categorie / Zonă *</label>
+            <select id="newCategory" class="input" required>
+              <option value="">-- Selectează sau introdu nouă --</option>
             </select>
-            <input type="text" id="newCategoryText" class="input" placeholder="Sau introdu categorie nouă...">
+            <input type="text" id="newCategoryText" class="input" placeholder="Sau introdu categorie nouă..." style="margin-top: 0.5rem;">
           </div>
           
           <hr style="border-color: #334155; margin: 1.5rem 0;">
@@ -415,20 +390,6 @@
     let selectedClient = null;
     let products = [];
 
-    // Zone predefinite pentru Exterior
-    const exteriorZones = [
-      'Vâlcea - Râmnicu Vâlcea',
-      'Vâlcea - Drăgășani',
-      'Gorj - Târgu Jiu',
-      'Gorj - Motru',
-      'Mehedinți - Drobeta',
-      'Olt - Slatina',
-      'Olt - Caracal',
-      'Teleorman - Alexandria',
-      'Argeș - Pitești',
-      'Argeș - Câmpulung'
-    ];
-
     // Încarcă date la pornire
     async function init() {
       await Promise.all([
@@ -454,6 +415,8 @@
       try {
         const res = await fetch('/api/client-categories');
         allCategories = await res.json();
+        // Populează dropdown-ul din modal
+        populateCategorySelect();
       } catch (e) {
         console.error('Eroare la încărcarea categoriilor:', e);
       }
@@ -466,6 +429,28 @@
       } catch (e) {
         console.error('Eroare la încărcarea produselor:', e);
       }
+    }
+
+    function populateCategorySelect() {
+      const select = document.getElementById('newCategory');
+      const currentOptions = Array.from(select.options).map(o => o.value);
+      
+      // Păstrează doar prima opțiune (placeholder)
+      select.innerHTML = '<option value="">-- Selectează sau introdu nouă --</option>';
+      
+      // Adaugă categoriile existente
+      allCategories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+      });
+      
+      // Adaugă opțiunea pentru categorie nouă
+      const newOption = document.createElement('option');
+      newOption.value = '__new__';
+      newOption.textContent = '+ Adaugă categorie nouă...';
+      select.appendChild(newOption);
     }
 
     function renderClientList(clients) {
@@ -487,7 +472,7 @@
 
     function selectClient(id) {
       selectedClient = allClients.find(c => c.id === id);
-      renderClientList(allClients); // re-render pentru highlight
+      renderClientList(allClients);
       renderClientDetails();
     }
 
@@ -512,11 +497,6 @@
         <h2 style="margin-top: 0; margin-bottom: 0.5rem;">${escapeHtml(c.name)}</h2>
         
         ${c.cui ? `<div class="cui-badge">🏢 CUI: ${escapeHtml(c.cui)}</div>` : ''}
-        
-        <div class="detail-row">
-          <div class="detail-label">Grup</div>
-          <div class="detail-value">${escapeHtml(c.group || '-')}</div>
-        </div>
         
         <div class="detail-row">
           <div class="detail-label">Categorie / Zonă</div>
@@ -594,7 +574,7 @@
           msg.textContent = '✅ Categorie salvată!';
           msg.className = 'msg success';
           selectedClient.category = category;
-          await loadCategories(); // Reîncarcă lista de categorii
+          await loadCategories();
           setTimeout(() => {
             renderClientList(allClients);
             renderClientDetails();
@@ -621,46 +601,6 @@
       document.getElementById('addClientForm').reset();
       document.getElementById('pricesContainer').innerHTML = '';
       document.getElementById('formMsg').textContent = '';
-      document.getElementById('zoneGroup').style.display = 'none';
-    }
-
-    function onGroupChange() {
-      const group = document.getElementById('newGroup').value;
-      const zoneSelect = document.getElementById('newZone');
-      const zoneGroup = document.getElementById('zoneGroup');
-      const catInput = document.getElementById('newCategoryText');
-      
-      if (!group) {
-        zoneGroup.style.display = 'none';
-        return;
-      }
-      
-      zoneGroup.style.display = 'block';
-      
-      if (group === 'Craiova') {
-        zoneSelect.innerHTML = '<option value="Craiova">Craiova</option>';
-        zoneSelect.value = 'Craiova';
-        zoneSelect.style.display = 'block';
-        catInput.style.display = 'none';
-      } else if (group === 'Exterior') {
-        zoneSelect.innerHTML = `
-          <option value="">-- Selectează județul --</option>
-          ${exteriorZones.map(z => `<option value="${z}">${z}</option>`).join('')}
-          <option value="__new__">+ Județ nou...</option>
-        `;
-        zoneSelect.style.display = 'block';
-        catInput.style.display = 'none';
-        
-        zoneSelect.onchange = () => {
-          if (zoneSelect.value === '__new__') {
-            catInput.style.display = 'block';
-            catInput.placeholder = 'Introdu numele județului...';
-            catInput.focus();
-          } else {
-            catInput.style.display = 'none';
-          }
-        };
-      }
     }
 
     function addPriceRow() {
@@ -689,14 +629,13 @@
       
       const name = document.getElementById('newName').value.trim();
       const cui = document.getElementById('newCui').value.trim();
-      const group = document.getElementById('newGroup').value;
-      const zone = document.getElementById('newZone').value;
-      const catInput = document.getElementById('newCategoryText').value.trim();
+      const categorySelect = document.getElementById('newCategory').value;
+      const categoryText = document.getElementById('newCategoryText').value.trim();
       
-      let category = zone === '__new__' ? catInput : (zone || group);
+      let category = categorySelect === '__new__' ? categoryText : (categorySelect || categoryText);
       
-      if (!name || !group || !category) {
-        document.getElementById('formMsg').textContent = '❌ Completează toate câmpurile obligatorii';
+      if (!name || !category) {
+        document.getElementById('formMsg').textContent = '❌ Completează numele și categoria';
         document.getElementById('formMsg').className = 'msg error';
         return;
       }
@@ -716,7 +655,7 @@
         const res = await fetch('/api/clients', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, cui, group, category, prices })
+          body: JSON.stringify({ name, cui, category, prices })
         });
         
         if (res.ok) {
@@ -746,6 +685,13 @@
         (c.category && c.category.toLowerCase().includes(q))
       );
       renderClientList(filtered);
+    };
+
+    // Închide modal la click în afară
+    document.getElementById('addModal').onclick = (e) => {
+      if (e.target === document.getElementById('addModal')) {
+        closeModal();
+      }
     };
 
     // Escape HTML
