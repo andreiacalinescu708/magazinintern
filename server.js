@@ -3182,6 +3182,35 @@ app.get("/api/clients/:id/prices", async (req, res) => {
   }
 });
 
+// DELETE preț special
+app.delete("/api/clients/:id/prices/:productId", async (req, res) => {
+  try {
+    const { id, productId } = req.params;
+    
+    // Ia prețurile curente
+    const r = await db.q(
+      `SELECT prices FROM clients WHERE id = $1`,
+      [id]
+    );
+    
+    if (!r.rows.length) return res.status(404).json({ error: "Client negăsit" });
+    
+    const prices = r.rows[0].prices || {};
+    delete prices[String(productId)];
+    
+    // Salvează
+    await db.q(
+      `UPDATE clients SET prices = $1::jsonb WHERE id = $2`,
+      [JSON.stringify(prices), id]
+    );
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Eroare stergere pret:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
 // GET căutare produse
 app.get("/api/products/search", async (req, res) => {
   try {

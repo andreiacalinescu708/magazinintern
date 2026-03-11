@@ -382,6 +382,43 @@
     </div>
   </div>
 
+  <!-- Modal Adaugă Preț Special -->
+  <div id="priceModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>💰 Adaugă Preț Special</h3>
+        <button class="modal-close" onclick="closePriceModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Caută produs (nume sau GTIN)</label>
+          <input type="text" id="priceSearchInput" class="input" placeholder="Tastează pentru a căuta..." autocomplete="off">
+          <div id="priceSearchResults" style="max-height: 200px; overflow-y: auto; background: #0f172a; border-radius: 0.5rem; margin-top: 0.5rem;"></div>
+        </div>
+        
+        <div id="selectedProductInfo" style="display: none; background: #0f172a; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+          <div style="font-weight: 600; margin-bottom: 0.5rem;">Produs selectat:</div>
+          <div id="selectedProductName" style="color: #38bdf8;"></div>
+          <div id="selectedProductPrice" style="color: #94a3b8; font-size: 0.9rem;"></div>
+          <input type="hidden" id="selectedProductId">
+        </div>
+        
+        <div class="form-group">
+          <label>Preț special (RON) *</label>
+          <input type="number" id="specialPriceInput" class="input" placeholder="0.00" step="0.01" min="0">
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+          <button class="btnPrimary" style="flex: 1;" onclick="saveSpecialPrice()">💾 Salvează Preț</button>
+          <button class="btnSecondary" onclick="closePriceModal()">Anulează</button>
+        </div>
+        
+        <div id="priceMsg" class="msg"></div>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
   
   <script>
@@ -514,20 +551,29 @@
           <div id="categoryMsg" class="msg"></div>
         </div>
         
+        <hr style="border-color: #334155; margin: 1.5rem 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h4 style="margin: 0;">💰 Prețuri Speciale (${priceEntries.length})</h4>
+          <button class="btnSuccess" onclick="openPriceModal()">➕ Adaugă preț</button>
+        </div>
+        
         ${priceEntries.length > 0 ? `
-          <hr style="border-color: #334155; margin: 1.5rem 0;">
-          <h4 style="margin-bottom: 1rem;">💰 Prețuri Speciale (${priceEntries.length})</h4>
-          <div style="background: #0f172a; padding: 1rem; border-radius: 0.5rem;">
-            ${priceEntries.map(([prodId, price]) => {
-              const prod = products.find(p => String(p.id) === String(prodId));
-              const prodName = prod ? prod.name : `Produs ${prodId}`;
-              return `
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #334155;">
+          <div style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; max-height: 300px; overflow-y: auto;">
+            ${priceEntries
+              .map(([prodId, price]) => {
+                const prod = products.find(p => String(p.id) === String(prodId));
+                return { prodId, price, prodName: prod ? prod.name : `Produs ${prodId}` };
+              })
+              .sort((a, b) => a.prodName.localeCompare(b.prodName, 'ro'))
+              .map(({ prodId, price, prodName }) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #334155;">
                   <span>${escapeHtml(prodName)}</span>
-                  <span style="color: #38bdf8; font-weight: 600;">${Number(price).toFixed(2)} RON</span>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: #38bdf8; font-weight: 600;">${Number(price).toFixed(2)} RON</span>
+                    <button class="btn-remove" onclick="removePrice('${prodId}')">✕</button>
+                  </div>
                 </div>
-              `;
-            }).join('')}
+              `).join('')}
           </div>
         ` : '<p style="color: #64748b; font-style: italic;">Nu are prețuri speciale</p>'}
       `;
@@ -691,6 +737,139 @@
     document.getElementById('addModal').onclick = (e) => {
       if (e.target === document.getElementById('addModal')) {
         closeModal();
+      }
+    };
+
+    // ============ PRETURI SPECIALE ============
+    
+    window.openPriceModal = function() {
+      if (!selectedClient) return;
+      document.getElementById('priceModal').classList.add('active');
+      document.getElementById('priceSearchInput').value = '';
+      document.getElementById('priceSearchInput').focus();
+      document.getElementById('priceSearchResults').innerHTML = '';
+      document.getElementById('selectedProductInfo').style.display = 'none';
+      document.getElementById('specialPriceInput').value = '';
+      document.getElementById('priceMsg').textContent = '';
+    };
+    
+    window.closePriceModal = function() {
+      document.getElementById('priceModal').classList.remove('active');
+    };
+    
+    document.getElementById('priceSearchInput').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const resultsDiv = document.getElementById('priceSearchResults');
+      
+      if (!q) {
+        resultsDiv.innerHTML = '';
+        return;
+      }
+      
+      const filtered = products.filter(p => {
+        const nameMatch = p.name && p.name.toLowerCase().includes(q);
+        const gtinMatch = p.gtin && String(p.gtin).includes(q);
+        const gtinsMatch = p.gtins && p.gtins.some(g => String(g).includes(q));
+        return nameMatch || gtinMatch || gtinsMatch;
+      }).slice(0, 10);
+      
+      if (filtered.length === 0) {
+        resultsDiv.innerHTML = '<div style="padding: 1rem; color: #64748b;">Niciun produs gasit</div>';
+        return;
+      }
+      
+      resultsDiv.innerHTML = filtered.map(p => {
+        const gtinText = p.gtin ? ` (GTIN: ${p.gtin})` : '';
+        const currentPrice = p.price ? `<span style="color: #64748b; font-size: 0.85rem;">${Number(p.price).toFixed(2)} RON</span>` : '';
+        return `
+          <div class="client-item" onclick="selectProductForPrice('${p.id}', '${escapeHtml(p.name)}', ${p.price || 0})" style="cursor: pointer;">
+            <span>${escapeHtml(p.name)}${gtinText}</span>
+            ${currentPrice}
+          </div>
+        `;
+      }).join('');
+    });
+    
+    window.selectProductForPrice = function(prodId, prodName, currentPrice) {
+      document.getElementById('selectedProductId').value = prodId;
+      document.getElementById('selectedProductName').textContent = prodName;
+      document.getElementById('selectedProductPrice').textContent = currentPrice > 0 
+        ? `Pret standard: ${currentPrice.toFixed(2)} RON` 
+        : 'Fara pret standard';
+      document.getElementById('selectedProductInfo').style.display = 'block';
+      document.getElementById('priceSearchResults').innerHTML = '';
+      document.getElementById('priceSearchInput').value = '';
+      document.getElementById('specialPriceInput').focus();
+    };
+    
+    window.saveSpecialPrice = async function() {
+      if (!selectedClient) return;
+      
+      const prodId = document.getElementById('selectedProductId').value;
+      const price = document.getElementById('specialPriceInput').value;
+      const msg = document.getElementById('priceMsg');
+      
+      if (!prodId) {
+        msg.textContent = 'Selecteaza un produs';
+        msg.className = 'msg error';
+        return;
+      }
+      
+      if (!price || price <= 0) {
+        msg.textContent = 'Introdu un pret valid';
+        msg.className = 'msg error';
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/clients/${selectedClient.id}/prices`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            product_id: prodId, 
+            price: parseFloat(price) 
+          })
+        });
+        
+        if (res.ok) {
+          msg.textContent = 'Pret salvat!';
+          msg.className = 'msg success';
+          if (!selectedClient.prices) selectedClient.prices = {};
+          selectedClient.prices[prodId] = parseFloat(price);
+          setTimeout(() => {
+            closePriceModal();
+            renderClientDetails();
+          }, 800);
+        } else {
+          const err = await res.json();
+          msg.textContent = err.error || 'Eroare';
+          msg.className = 'msg error';
+        }
+      } catch (e) {
+        msg.textContent = 'Eroare de retea';
+        msg.className = 'msg error';
+      }
+    };
+    
+    window.removePrice = async function(prodId) {
+      if (!selectedClient) return;
+      if (!confirm('Stergi acest pret special?')) return;
+      
+      try {
+        const res = await fetch(`/api/clients/${selectedClient.id}/prices/${prodId}`, {
+          method: 'DELETE'
+        });
+        
+        if (res.ok) {
+          if (selectedClient.prices && selectedClient.prices[prodId]) {
+            delete selectedClient.prices[prodId];
+          }
+          renderClientDetails();
+        } else {
+          alert('Eroare la stergere');
+        }
+      } catch (e) {
+        alert('Eroare de retea');
       }
     };
 
