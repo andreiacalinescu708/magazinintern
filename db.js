@@ -131,6 +131,7 @@ await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
 // În funcția ensureTables(), adaugă:
 await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_failed_at TIMESTAMPTZ`);
 await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INT NOT NULL DEFAULT 0`);
 
 // Asigură-te că adminul existent rămâne aprobat (pentru compatibilitate)
 await q(`UPDATE users SET is_approved = true WHERE role = 'admin'`);
