@@ -3009,10 +3009,10 @@ app.get("/api/products/search", async (req, res) => {
   try {
     await db.ensureTables();
     console.log("✅ DB ready");
-    // Seed dezactivat - baza de date porneste goala
-    // await seedClientsFromFileIfEmpty();
-    // await seedProductsFromFileIfEmpty();
-    await ensureDefaultAdmin();  // Creaza admin implicit daca nu exista useri
+    // Configurare seed: Admin + Produse (fara clienti)
+    // await seedClientsFromFileIfEmpty();  // Dezactivat - clienti goi
+    await seedProductsFromFileIfEmpty();      // Activat - produse din JSON
+    await ensureDefaultAdmin();               // Activat - admin implicit
     // await seedInitialData();
   } catch (e) {
     console.error("❌ DB init error (pornesc fără DB):", e?.message || e);
