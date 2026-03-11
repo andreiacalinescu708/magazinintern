@@ -11,6 +11,43 @@ const path = require("path");
 const db = require("./db");
 const crypto = require("crypto");
 
+// ===== EMAIL CONFIG (Nodemailer) =====
+const nodemailer = require("nodemailer");
+const emailTransporter = process.env.EMAIL_HOST ? nodemailer.createTransporter({
+  host: process.env.EMAIL_HOST,
+  port: parseInt(process.env.EMAIL_PORT) || 587,
+  secure: false, // true pentru port 465
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+}) : null;
+
+async function sendEmail(to, subject, html, text) {
+  if (!emailTransporter) {
+    console.log("📧 Email transporter not configured");
+    return { success: false, error: "Email not configured" };
+  }
+  
+  try {
+    const info = await emailTransporter.sendMail({
+      from: `"openBill" <${process.env.EMAIL_USER || 'noreply@openbill.ro'}>`,
+      to,
+      subject,
+      text,
+      html
+    });
+    console.log("📧 Email sent:", info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (err) {
+    console.error("📧 Email error:", err);
+    return { success: false, error: err.message };
+  }
+}
+
 
 const app = express();
 
@@ -2689,20 +2726,76 @@ app.post("/api/invites", isAdmin, async (req, res) => {
       [inviteId, email, first_name || null, last_name || null, token, req.session.user.username, expiresAt]
     );
     
-    // Trimite email (sau returnează link-ul pentru testare)
+    // Trimite email
     const inviteLink = `${req.protocol}://${req.get('host')}/register.html?invite=${token}`;
     
-    // TODO: Integrare serviciu email (SendGrid, AWS SES, etc.)
-    // Pentru moment, returnăm link-ul în răspuns
-    console.log(`🔗 Link invitație pentru ${email}: ${inviteLink}`);
+    const fullName = [first_name, last_name].filter(Boolean).join(' ');
+    const displayName = fullName || email;
+    
+    const emailSubject = "Invitație pentru cont openBill";
+    const emailText = `Bună ${displayName},
+
+Ai fost invitat să te alături platformei openBill.
+
+Pentru a-ți crea contul, accesează linkul de mai jos (valabil 7 zile):
+${inviteLink}
+
+Dacă nu tu ai solicitat această invitație, te rugăm să ignori acest email.
+
+Echipa openBill
+`;
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; }
+    .button { display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 600; }
+    .link { word-break: break-all; color: #3b82f6; }
+    .footer { margin-top: 30px; font-size: 12px; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎉 Bine ai venit la openBill!</h1>
+    </div>
+    <div class="content">
+      <p>Bună <strong>${displayName}</strong>,</p>
+      <p>Ai fost invitat de <strong>${req.session.user.username}</strong> să te alături platformei <strong>openBill</strong>.</p>
+      <p>Pentru a-ți crea contul, apasă butonul de mai jos:</p>
+      <center>
+        <a href="${inviteLink}" class="button">Creează contul</a>
+      </center>
+      <p>Sau copiază linkul manual:</p>
+      <p class="link">${inviteLink}</p>
+      <p><small>Linkul este valabil <strong>7 zile</strong>.</small></p>
+      <div class="footer">
+        <p>Dacă nu tu ai solicitat această invitație, te rugăm să ignori acest email.</p>
+        <p>Echipa openBill</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+    
+    const emailResult = await sendEmail(email, emailSubject, emailHtml, emailText);
+    console.log(`📧 Email result for ${email}:`, emailResult);
     
     res.json({ 
       ok: true, 
-      message: "Invitație creată cu succes",
-      inviteLink, // Doar pentru testare
+      message: emailResult.success 
+        ? "Invitație trimisă cu succes pe email" 
+        : "Invitație creată, dar emailul nu a putut fi trimis",
+      inviteLink, // Pentru testare (doar dacă emailul eșuează)
       email,
       first_name,
-      last_name
+      last_name,
+      emailSent: emailResult.success
     });
     
   } catch (e) {
