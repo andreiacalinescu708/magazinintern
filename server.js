@@ -87,7 +87,8 @@ if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) 
 }
 
 // Wrapper cu timeout pentru sendEmail
-async function sendEmailWithTimeout(to, subject, html, text, timeoutMs = 10000) {
+async function sendEmailWithTimeout(to, subject, html, text, timeoutMs = 30000) {
+  console.log("📧 Starting sendEmailWithTimeout, timeout:", timeoutMs, "ms");
   return Promise.race([
     sendEmail(to, subject, html, text),
     new Promise((_, reject) => 
@@ -102,10 +103,13 @@ async function sendEmail(to, subject, html, text) {
     return { success: false, error: "Email not configured" };
   }
   
-  console.log("📧 Sending email to:", to);
-  console.log("📧 From:", process.env.EMAIL_USER);
+  console.log("📧 ========== START SEND EMAIL ==========");
+  console.log("📧 To:", to);
+  console.log("📧 From:", process.env.EMAIL_FROM || process.env.EMAIL_USER);
+  console.log("📧 Subject:", subject);
   
   try {
+    console.log("📧 Calling sendMail...");
     const info = await emailTransporter.sendMail({
       from: `"openBill" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       to,
@@ -114,6 +118,7 @@ async function sendEmail(to, subject, html, text) {
       html,
       replyTo: process.env.EMAIL_USER
     });
+    console.log("📧 sendMail completed!");
     console.log("📧 Email sent:", info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (err) {
