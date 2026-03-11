@@ -221,10 +221,20 @@
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <a href="index.html" class="btnBack">← Înapoi</a>
+  <nav class="navbar" style="background: var(--bg-card); border-bottom: 1px solid var(--border-color); margin-bottom: 1rem;">
+    <div class="navbar-inner" style="max-width: 1200px; margin: 0 auto; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between;">
+      <a href="index.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem;">
+        <img src="logo.svg" alt="oBill" style="height: 36px; width: auto;">
+      </a>
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="index.html" class="btnBack" style="text-decoration: none; color: var(--text-secondary);">← Înapoi</a>
+        <div id="userBar"></div>
+      </div>
+    </div>
+  </nav>
+  
+  <div style="text-align: center; margin-bottom: 1.5rem;">
     <h2>⚙️ Setări Companie</h2>
-    <div id="userBar"></div>
   </div>
 
   <div class="container">
@@ -238,7 +248,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Denumire Firmă *</label>
-            <input type="text" id="compName" class="input" placeholder="Fast Medical Distribution" required>
+            <input type="text" id="compName" class="input" placeholder="openBill" required>
           </div>
           
           <div class="form-group">
@@ -250,7 +260,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Serie SmartBill</label>
-            <input type="text" id="compSeries" class="input" placeholder="FMD">
+            <input type="text" id="compSeries" class="input" placeholder="oBill">
           </div>
           
           <div class="form-group">

@@ -2812,7 +2812,7 @@ function selectProductByGTIN(gtin) {
             </p>
             <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); padding: 20px; border-radius: 12px; margin-bottom: 30px; min-width: 300px;">
               <div style="color: #22c55e; font-weight: 700; font-size: 1.2rem;">
-                ${freshOrder.smartbillSeries || 'FMD'} ${freshOrder.smartbillNumber || '-'}
+                ${freshOrder.smartbillSeries || 'oBill'} ${freshOrder.smartbillNumber || '-'}
               </div>
               <div style="color: #cbd5e1; font-size: 0.875rem; margin-top: 8px;">
                 Emisă la: ${new Date(freshOrder.createdAt).toLocaleDateString('ro-RO')}

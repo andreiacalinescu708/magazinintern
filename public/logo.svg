@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
+  <rect width="200" height="60" rx="8" fill="#0f172a"/>
+  <circle cx="30" cy="30" r="18" stroke="#3b82f6" stroke-width="3" fill="none"/>
+  <text x="55" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#3b82f6">o</text>
+  <text x="72" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#e2e8f0">Bill</text>
+  <circle cx="30" cy="30" r="6" fill="#22c55e"/>
+</svg>

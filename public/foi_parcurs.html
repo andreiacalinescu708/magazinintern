@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Foi de Parcurs - Fast Medical Distribution</title>
+  <title>Foi de Parcurs - oBill</title>
   <link rel="stylesheet" href="global.css" />
   <style>
     .trip-container { max-width: 1200px; margin: 0 auto; }
@@ -475,9 +475,8 @@
   <!-- Navbar -->
   <nav class="navbar no-print">
     <div class="navbar-inner">
-      <a href="index.html" class="navbar-brand">
-        <div class="navbar-brand-icon">⚕️</div>
-        <span>Fast Medical Distribution</span>
+      <a href="index.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem;">
+        <img src="logo.svg" alt="oBill" style="height: 36px; width: auto;">
       </a>
       <div class="navbar-actions">
         <button class="btn btn-ghost" onclick="location.href='index.html'">← Înapoi</button>
@@ -1215,7 +1214,7 @@
         printContainer.innerHTML = `
           <div class="print-header">
             <h1>FOAIE DE PARCURS</h1>
-            <h2>Fast Medical Distribution SRL</h2>
+            <h2>openBill SRL</h2>
             <div class="cui">CUI: RO47095864</div>
             <div class="trip-number">Nr. ${tripNumber}</div>
             <div class="date">Data: ${formatDate(sheet.date)}</div>
