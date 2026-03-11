@@ -99,6 +99,96 @@
       font-weight: 500;
     }
     
+    /* Select cu buton adăugare */
+    .select-with-add {
+      display: flex;
+      gap: var(--space-2);
+      align-items: center;
+    }
+    
+    .select-with-add select {
+      flex: 1;
+    }
+    
+    .btn-add {
+      padding: var(--space-2) var(--space-3);
+      background: var(--success-500);
+      color: white;
+      border: none;
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      font-size: 1.2rem;
+      line-height: 1;
+      transition: all 0.2s;
+    }
+    
+    .btn-add:hover {
+      background: var(--success-600);
+      transform: scale(1.05);
+    }
+    
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      width: 90%;
+      max-width: 400px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+    
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+    
+    .modal-body {
+      padding: var(--space-5);
+    }
+    
+    .modal-footer {
+      display: flex;
+      gap: var(--space-3);
+      margin-top: var(--space-4);
+    }
+    
     .trip-sheet-list {
       display: flex;
       flex-direction: column;
@@ -405,16 +495,22 @@
 
         <div class="form-group">
           <label>👤 Șofer</label>
-          <select id="tripDriver" required>
-            <option value="">Selectează șofer...</option>
-          </select>
+          <div class="select-with-add">
+            <select id="tripDriver" required>
+              <option value="">Selectează șofer...</option>
+            </select>
+            <button type="button" class="btn-add" onclick="openAddDriverModal()" title="Adaugă șofer nou">➕</button>
+          </div>
         </div>
 
         <div class="form-group">
           <label>🚗 Număr Înmatriculare</label>
-          <select id="tripVehicle" required>
-            <option value="">Selectează mașina...</option>
-          </select>
+          <div class="select-with-add">
+            <select id="tripVehicle" required>
+              <option value="">Selectează mașina...</option>
+            </select>
+            <button type="button" class="btn-add" onclick="openAddVehicleModal()" title="Adaugă mașină nouă">➕</button>
+          </div>
           <div id="kmInfo" class="km-info">
             Ultimul KM înregistrat pentru această mașină: <strong id="lastKmDisplay">0</strong>
           </div>
@@ -490,6 +586,48 @@
     </div>
   </main>
 
+  <!-- Modal Adaugă Șofer -->
+  <div class="modal no-print" id="addDriverModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>👤 Adaugă Șofer Nou</h3>
+        <button class="modal-close" onclick="closeAddDriverModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nume și Prenume *</label>
+          <input type="text" id="newDriverName" placeholder="ex: Ion Popescu" required>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-success" onclick="saveNewDriver()" style="flex: 1;">💾 Salvează</button>
+          <button class="btn btn-ghost" onclick="closeAddDriverModal()">Anulează</button>
+        </div>
+        <div id="driverMsg" style="margin-top: var(--space-3); font-size: 0.9rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Adaugă Mașină -->
+  <div class="modal no-print" id="addVehicleModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🚗 Adaugă Mașină Nouă</h3>
+        <button class="modal-close" onclick="closeAddVehicleModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Număr Înmatriculare *</label>
+          <input type="text" id="newVehiclePlate" placeholder="ex: DJ 12 ABC" required style="text-transform: uppercase;">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-success" onclick="saveNewVehicle()" style="flex: 1;">💾 Salvează</button>
+          <button class="btn btn-ghost" onclick="closeAddVehicleModal()">Anulează</button>
+        </div>
+        <div id="vehicleMsg" style="margin-top: var(--space-3); font-size: 0.9rem;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Bon Alimentar -->
   <div class="modal-overlay no-print" id="fuelModal">
     <div class="modal-content">
@@ -555,6 +693,110 @@
       const random = Math.floor(100 + Math.random() * 900);
       return `FP-${dateStr}-${random}`;
     }
+
+    // ========== Modal Șoferi ==========
+    function openAddDriverModal() {
+      document.getElementById('addDriverModal').classList.add('active');
+      document.getElementById('newDriverName').value = '';
+      document.getElementById('newDriverName').focus();
+      document.getElementById('driverMsg').textContent = '';
+    }
+    
+    function closeAddDriverModal() {
+      document.getElementById('addDriverModal').classList.remove('active');
+    }
+    
+    async function saveNewDriver() {
+      const name = document.getElementById('newDriverName').value.trim();
+      const msg = document.getElementById('driverMsg');
+      
+      if (!name) {
+        msg.textContent = '❌ Introdu numele șoferului';
+        msg.style.color = '#ef4444';
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/drivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          msg.textContent = '✅ Șofer adăugat!';
+          msg.style.color = '#10b981';
+          // Reîncarcă lista și selectează noul șofer
+          await loadDrivers();
+          document.getElementById('tripDriver').value = data.id;
+          setTimeout(closeAddDriverModal, 500);
+        } else {
+          const err = await res.json();
+          msg.textContent = '❌ ' + (err.error || 'Eroare');
+          msg.style.color = '#ef4444';
+        }
+      } catch (e) {
+        msg.textContent = '❌ Eroare de rețea';
+        msg.style.color = '#ef4444';
+      }
+    }
+    
+    // ========== Modal Mașini ==========
+    function openAddVehicleModal() {
+      document.getElementById('addVehicleModal').classList.add('active');
+      document.getElementById('newVehiclePlate').value = '';
+      document.getElementById('newVehiclePlate').focus();
+      document.getElementById('vehicleMsg').textContent = '';
+    }
+    
+    function closeAddVehicleModal() {
+      document.getElementById('addVehicleModal').classList.remove('active');
+    }
+    
+    async function saveNewVehicle() {
+      const plate = document.getElementById('newVehiclePlate').value.trim().toUpperCase();
+      const msg = document.getElementById('vehicleMsg');
+      
+      if (!plate) {
+        msg.textContent = '❌ Introdu numărul de înmatriculare';
+        msg.style.color = '#ef4444';
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/vehicles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plate_number: plate })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          msg.textContent = '✅ Mașină adăugată!';
+          msg.style.color = '#10b981';
+          // Reîncarcă lista și selectează noua mașină
+          await loadVehicles();
+          document.getElementById('tripVehicle').value = data.id;
+          setTimeout(closeAddVehicleModal, 500);
+        } else {
+          const err = await res.json();
+          msg.textContent = '❌ ' + (err.error || 'Eroare');
+          msg.style.color = '#ef4444';
+        }
+      } catch (e) {
+        msg.textContent = '❌ Eroare de rețea';
+        msg.style.color = '#ef4444';
+      }
+    }
+    
+    // Închide modalurile la click în afară
+    document.getElementById('addDriverModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('addDriverModal')) closeAddDriverModal();
+    });
+    document.getElementById('addVehicleModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('addVehicleModal')) closeAddVehicleModal();
+    });
 
     async function loadDrivers() {
       try {
