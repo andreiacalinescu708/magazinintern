@@ -276,6 +276,17 @@ p {
   border-color: rgba(239, 68, 68, 0.5);
 }
 
+.btn-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning-500);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.btn-warning:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);

@@ -157,9 +157,8 @@
         <p>Clienți, comenzi mobile și verificare prețuri</p>
         <div class="dashboard-actions">
           <a href="adauga_comanda.html" class="btn btn-success">👥 Lista Clienți</a>
-          <a href="checkprice.html" class="btn btn-secondary">💰 Produse și Prețuri</a>
-          <!-- În dashboard-grid, cardul Teren, în dashboard-actions: -->
-<a href="foi_parcurs.html" class="btn btn-success">📋 Foi de Parcurs</a>
+          <a href="checkprice.html" class="btn btn-success">💰 Produse și Prețuri</a>
+          <a href="foi_parcurs.html" class="btn btn-success">📋 Foi de Parcurs</a>
         </div>
       </div>
 
@@ -170,8 +169,8 @@
         <p>Recepție marfă, gestiune stoc și procesare comenzi</p>
         <div class="dashboard-actions">
           <a href="stock.html" class="btn btn-primary">➕ Recepție marfă</a>
-          <a href="checkstock.html" class="btn btn-secondary">📋 Inventar stoc</a>
-          <a href="orders.html" class="btn btn-secondary">🧾 Comenzi</a>
+          <a href="checkstock.html" class="btn btn-primary">📋 Inventar stoc</a>
+          <a href="orders.html" class="btn btn-primary">🧾 Comenzi</a>
         </div>
       </div>
 
@@ -181,20 +180,15 @@
         <h3>Birou</h3>
         <p>Administrare, rapoarte și setări sistem</p>
         <div class="dashboard-actions">
-          <a href="clienti.html" class="btn" style="background: #f59e0b; color: #000; border: 1px solid #f59e0b;">⚙️ Administrare clienți</a>
-          <a href="companie.html" class="btn" style="background: #0284c7; color: white; border: 1px solid #0284c7;">🏢 Companie</a>
+          <a href="clienti.html" class="btn btn-warning">⚙️ Administrare clienți</a>
+          <a href="companie.html" class="btn btn-warning">🏢 Companie</a>
           <button class="btn btn-ghost" disabled style="opacity: 0.5;">📈 Rapoarte (în curând)</button>
           
           <!-- Secțiune Solduri Clienți -->
-          
-            
-            
-            
-            <input type="file" id="raportSold" accept=".xlsx" style="display: none;">
-<button class="btn" onclick="document.getElementById('raportSold').click()" 
-        style="width: 100%; background: #f59e0b; color: #000; border: 1px solid #f59e0b; margin-bottom: 8px;">
-  📁 Încarcă Raport Excel
-</button>
+          <input type="file" id="raportSold" accept=".xlsx" style="display: none;">
+          <button class="btn btn-warning" onclick="document.getElementById('raportSold').click()" style="width: 100%; margin-bottom: 8px;">
+            📁 Încarcă Raport Excel
+          </button>
             
             <div id="statusRaport" style="font-size: 0.875rem; margin-bottom: 4px;"></div>
             <div id="lastUploadInfo" style="font-size: 0.75rem; color: var(--text-muted);"></div>
