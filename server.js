@@ -43,6 +43,14 @@ async function testSendGridAPI() {
 // Funcție pentru trimitere email prin SendGrid API (HTTP)
 async function sendEmailViaSendGridAPI(to, subject, html, text) {
   console.log("📧 Sending via SendGrid API (HTTP)...");
+  console.log("📧 To:", to);
+  console.log("📧 Subject:", subject);
+  console.log("📧 From:", process.env.EMAIL_FROM || 'support@openbill.ro');
+  
+  if (!to || typeof to !== 'string' || !to.includes('@')) {
+    console.log("📧 ERROR: Invalid recipient email:", to);
+    return { success: false, error: "Invalid recipient email: " + to };
+  }
   
   const body = {
     personalizations: [{
@@ -2846,14 +2854,31 @@ app.post("/api/invites", isAdmin, async (req, res) => {
   try {
     const { email, first_name, last_name } = req.body;
     
+    console.log("📧 INVITE REQUEST received:");
+    console.log("  - email:", email);
+    console.log("  - first_name:", first_name);
+    console.log("  - last_name:", last_name);
+    console.log("  - body:", JSON.stringify(req.body));
+    
     if (!email) {
       return res.status(400).json({ error: "Email-ul este obligatoriu" });
     }
     
+    // Validare format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.log("📧 INVALID EMAIL format:", email);
+      return res.status(400).json({ error: "Format email invalid" });
+    }
+    
+    // Normalize email (lowercase, trim)
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log("📧 Normalized email:", normalizedEmail);
+    
     // Verifică dacă email-ul e deja folosit
     const existingUser = await db.q(
       "SELECT id FROM users WHERE username = $1",
-      [email]
+      [normalizedEmail]
     );
     if (existingUser.rows.length > 0) {
       return res.status(400).json({ error: "Există deja un utilizator cu acest email" });
@@ -2862,7 +2887,7 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     // Verifică dacă există deja o invitație activă
     const existingInvite = await db.q(
       "SELECT id FROM user_invites WHERE email = $1 AND status = 'pending' AND expires_at > NOW()",
-      [email]
+      [normalizedEmail]
     );
     if (existingInvite.rows.length > 0) {
       return res.status(400).json({ error: "Există deja o invitație activă pentru acest email" });
@@ -2877,7 +2902,7 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     await db.q(
       `INSERT INTO user_invites (id, email, first_name, last_name, token, invited_by, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [inviteId, email, first_name || null, last_name || null, token, req.session.user.email || req.session.user.username, expiresAt]
+      [inviteId, normalizedEmail, first_name || null, last_name || null, token, req.session.user.email || req.session.user.username, expiresAt]
     );
     
     // Trimite email
@@ -3010,7 +3035,8 @@ Echipa openBill
 </body>
 </html>`;
     
-    const emailResult = await sendEmailWithTimeout(email, emailSubject, emailHtml, emailText);
+    const emailResult = await sendEmailWithTimeout(normalizedEmail, emailSubject, emailHtml, emailText);
+    console.log("📧 Email send result:", emailResult);
     console.log(`📧 Email result for ${email}:`, emailResult);
     
     res.json({ 
@@ -3019,7 +3045,7 @@ Echipa openBill
         ? "Invitație trimisă cu succes pe email" 
         : "Invitație creată, dar emailul nu a putut fi trimis",
       inviteLink, // Pentru testare (doar dacă emailul eșuează)
-      email,
+      email: normalizedEmail,
       first_name,
       last_name,
       emailSent: emailResult.success
