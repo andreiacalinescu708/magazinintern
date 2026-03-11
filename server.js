@@ -2913,6 +2913,23 @@ app.delete("/api/invites/:id", isAdmin, async (req, res) => {
 app.get("/api/test-email", isAdmin, async (req, res) => {
   try {
     console.log("📧 Test email requested by:", req.session.user.username);
+    console.log("📧 EMAIL_HOST:", process.env.EMAIL_HOST);
+    console.log("📧 EMAIL_USER:", process.env.EMAIL_USER);
+    console.log("📧 EMAIL_PASS length:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
+    
+    // Verifică dacă transporter e configurat
+    if (!emailTransporter) {
+      return res.json({
+        ok: false,
+        error: "Email transporter not configured - check env vars",
+        config: {
+          host: process.env.EMAIL_HOST || 'not set',
+          user: process.env.EMAIL_USER || 'not set',
+          passConfigured: !!process.env.EMAIL_PASS,
+          passLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0
+        }
+      });
+    }
     
     const testResult = await sendEmailWithTimeout(
       req.session.user.username,
