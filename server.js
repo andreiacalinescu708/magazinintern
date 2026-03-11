@@ -13,18 +13,41 @@ const crypto = require("crypto");
 
 // ===== EMAIL CONFIG (Nodemailer) =====
 const nodemailer = require("nodemailer");
-const emailTransporter = process.env.EMAIL_HOST ? nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT) || 587,
-  secure: false, // true pentru port 465
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-}) : null;
+
+// Configurare Gmail cu TLS corect
+let emailTransporter = null;
+if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  const isGmail = process.env.EMAIL_HOST.includes('gmail') || process.env.EMAIL_HOST.includes('google');
+  
+  emailTransporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: parseInt(process.env.EMAIL_PORT) || 587,
+    secure: false, // Gmail folosește STARTTLS pe port 587
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    },
+    tls: {
+      rejectUnauthorized: false,
+      ciphers: 'SSLv3'
+    },
+    debug: true, // Logare detaliată
+    logger: true
+  });
+  
+  console.log("📧 Email transporter configurat pentru:", process.env.EMAIL_USER);
+  
+  // Verifică conexiunea la pornire
+  emailTransporter.verify((error, success) => {
+    if (error) {
+      console.error("📧 Eroare verificare SMTP:", error);
+    } else {
+      console.log("📧 SMTP server ready");
+    }
+  });
+} else {
+  console.log("📧 Email transporter not configured - missing env vars");
+}
 
 async function sendEmail(to, subject, html, text) {
   if (!emailTransporter) {
@@ -32,13 +55,17 @@ async function sendEmail(to, subject, html, text) {
     return { success: false, error: "Email not configured" };
   }
   
+  console.log("📧 Sending email to:", to);
+  console.log("📧 From:", process.env.EMAIL_USER);
+  
   try {
     const info = await emailTransporter.sendMail({
-      from: `"openBill" <${process.env.EMAIL_USER || 'noreply@openbill.ro'}>`,
+      from: `"openBill" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       text,
-      html
+      html,
+      replyTo: process.env.EMAIL_USER
     });
     console.log("📧 Email sent:", info.messageId);
     return { success: true, messageId: info.messageId };
