@@ -722,6 +722,158 @@ app.put("/api/clients/:id/category", async (req, res) => {
   }
 });
 
+// ===== COMPANY SETTINGS API =====
+app.get("/api/company-settings", async (req, res) => {
+  try {
+    if (db.hasDb()) {
+      const r = await db.q(`SELECT * FROM company_settings WHERE id = 'default'`);
+      if (r.rows.length > 0) {
+        return res.json(r.rows[0]);
+      }
+    }
+    // fallback default
+    res.json({
+      name: 'Fast Medical Distribution',
+      cui: 'RO47095864',
+      smartbill_series: 'FMD',
+      address: '',
+      city: '',
+      county: '',
+      phone: ''
+    });
+  } catch (e) {
+    console.error("GET /api/company-settings error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+app.put("/api/company-settings", async (req, res) => {
+  try {
+    const { name, cui, smartbill_series, address, city, county, phone } = req.body;
+    
+    if (db.hasDb()) {
+      await db.q(
+        `INSERT INTO company_settings (id, name, cui, smartbill_series, address, city, county, phone, updated_at)
+         VALUES ('default', $1, $2, $3, $4, $5, $6, $7, NOW())
+         ON CONFLICT (id) DO UPDATE SET
+           name = EXCLUDED.name,
+           cui = EXCLUDED.cui,
+           smartbill_series = EXCLUDED.smartbill_series,
+           address = EXCLUDED.address,
+           city = EXCLUDED.city,
+           county = EXCLUDED.county,
+           phone = EXCLUDED.phone,
+           updated_at = NOW()`,
+        [name, cui, smartbill_series, address, city, county, phone]
+      );
+      return res.json({ success: true, message: "Setări salvate" });
+    }
+    
+    res.json({ success: true, message: "Setări salvate (fallback)" });
+  } catch (e) {
+    console.error("PUT /api/company-settings error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// ===== CLIENT CATEGORIES MANAGEMENT API =====
+// Adaugă categorie nouă
+app.post("/api/client-categories", async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: "Numele categoriei este obligatoriu" });
+    }
+    
+    const trimmedName = String(name).trim();
+    
+    // Verifică dacă există deja
+    if (db.hasDb()) {
+      const check = await db.q(`SELECT 1 FROM clients WHERE category = $1 LIMIT 1`, [trimmedName]);
+      if (check.rows.length > 0) {
+        return res.status(400).json({ error: "Categoria există deja" });
+      }
+    }
+    
+    // Crează o înregistrare dummy pentru a "rezerva" categoria
+    // Sau pur și simplu returnează succes - categoriile sunt date de clients.category
+    res.json({ success: true, message: "Categorie creată" });
+  } catch (e) {
+    console.error("POST /api/client-categories error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// Redenumește categorie
+app.put("/api/client-categories/rename", async (req, res) => {
+  try {
+    const { oldName, newName } = req.body;
+    if (!oldName || !newName || !String(newName).trim()) {
+      return res.status(400).json({ error: "Numele vechi și nou sunt obligatorii" });
+    }
+    
+    const trimmedNew = String(newName).trim();
+    
+    if (db.hasDb()) {
+      await db.q(
+        `UPDATE clients SET category = $1 WHERE category = $2`,
+        [trimmedNew, oldName]
+      );
+      return res.json({ success: true, message: "Categorie redenumită" });
+    }
+    
+    // fallback local
+    const clients = readJson(CLIENTS_FILE, []);
+    let modified = false;
+    clients.forEach(c => {
+      if (c.category === oldName) {
+        c.category = trimmedNew;
+        modified = true;
+      }
+    });
+    if (modified) writeJson(CLIENTS_FILE, clients);
+    
+    res.json({ success: true, message: "Categorie redenumită" });
+  } catch (e) {
+    console.error("PUT /api/client-categories/rename error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// Șterge categorie (setează clienții la null)
+app.delete("/api/client-categories", async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: "Numele categoriei este obligatoriu" });
+    }
+    
+    if (db.hasDb()) {
+      await db.q(
+        `UPDATE clients SET category = NULL WHERE category = $1`,
+        [name]
+      );
+      return res.json({ success: true, message: "Categorie ștearsă" });
+    }
+    
+    // fallback local
+    const clients = readJson(CLIENTS_FILE, []);
+    let modified = false;
+    clients.forEach(c => {
+      if (c.category === name) {
+        c.category = null;
+        modified = true;
+      }
+    });
+    if (modified) writeJson(CLIENTS_FILE, clients);
+    
+    res.json({ success: true, message: "Categorie ștearsă" });
+  } catch (e) {
+    console.error("DELETE /api/client-categories error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
 // ===== CLIENTS ADAPTERS (for new flat clients.json) =====
 function buildClientsTreeFromFlat(flat) {
   const tree = {};

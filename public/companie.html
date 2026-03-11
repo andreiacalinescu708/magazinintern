@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Setări Companie</title>
+  
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="global.css">
+  
+  <style>
+    body { 
+      background: #0f172a; 
+      color: white; 
+      font-family: 'Segoe UI', sans-serif; 
+      margin: 0;
+      min-height: 100vh;
+    }
+    
+    .topbar { 
+      background: #0284c7; 
+      padding: 1rem 2rem; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .topbar h2 { margin: 0; font-size: 1.5rem; }
+    
+    .btnBack { 
+      color: white; 
+      text-decoration: none; 
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      background: rgba(255,255,255,0.15);
+      border-radius: 0.5rem;
+      transition: background 0.3s;
+    }
+    .btnBack:hover { background: rgba(255,255,255,0.25); }
+    
+    .container { 
+      max-width: 1200px; 
+      margin: 2rem auto; 
+      padding: 0 1rem;
+    }
+    
+    .card { 
+      background: #1e293b; 
+      border-radius: 1rem; 
+      padding: 1.5rem; 
+      border: 1px solid #334155;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #0284c7;
+    }
+    
+    .card-header h3 { margin: 0; font-size: 1.25rem; }
+    
+    .input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #334155;
+      border-radius: 0.5rem;
+      background: #0f172a;
+      color: white;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .input:focus {
+      outline: none;
+      border-color: #0284c7;
+    }
+    
+    .btnPrimary {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+    .btnPrimary:hover { background: #0369a1; }
+    
+    .btnSuccess {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btnSuccess:hover { background: #059669; }
+    
+    .btnDanger {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btnDanger:hover { background: #dc2626; }
+    
+    .btnSecondary {
+      background: #334155;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btnSecondary:hover { background: #475569; }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    
+    @media (max-width: 600px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+    
+    .msg {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      min-height: 1.5rem;
+    }
+    
+    .msg.success { color: #10b981; }
+    .msg.error { color: #ef4444; }
+    
+    /* Categorii list */
+    .category-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .category-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #334155;
+      background: #0f172a;
+      margin-bottom: 0.5rem;
+      border-radius: 0.5rem;
+    }
+    
+    .category-name {
+      font-weight: 500;
+      flex: 1;
+    }
+    
+    .category-count {
+      color: #94a3b8;
+      font-size: 0.85rem;
+      margin-right: 1rem;
+    }
+    
+    .category-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .category-edit {
+      display: flex;
+      gap: 0.5rem;
+      flex: 1;
+    }
+    
+    .category-edit input {
+      margin-bottom: 0;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #64748b;
+    }
+    
+    .add-category-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #334155;
+    }
+    
+    .add-category-row input {
+      flex: 1;
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="index.html" class="btnBack">← Înapoi</a>
+    <h2>⚙️ Setări Companie</h2>
+    <div id="userBar"></div>
+  </div>
+
+  <div class="container">
+    <!-- Detalii Companie -->
+    <div class="card">
+      <div class="card-header">
+        <h3>🏢 Detalii Firmă</h3>
+      </div>
+      
+      <form id="companyForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Denumire Firmă *</label>
+            <input type="text" id="compName" class="input" placeholder="Fast Medical Distribution" required>
+          </div>
+          
+          <div class="form-group">
+            <label>CUI *</label>
+            <input type="text" id="compCui" class="input" placeholder="RO12345678" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Serie SmartBill</label>
+            <input type="text" id="compSeries" class="input" placeholder="FMD">
+          </div>
+          
+          <div class="form-group">
+            <label>Telefon</label>
+            <input type="text" id="compPhone" class="input" placeholder="0771 123 456">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Adresă</label>
+          <input type="text" id="compAddress" class="input" placeholder="Str. Exemplu nr. 1">
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Oraș</label>
+            <input type="text" id="compCity" class="input" placeholder="Craiova">
+          </div>
+          
+          <div class="form-group">
+            <label>Județ</label>
+            <input type="text" id="compCounty" class="input" placeholder="Dolj">
+          </div>
+        </div>
+        
+        <button type="submit" class="btnPrimary">💾 Salvează Detalii Firmă</button>
+        <div id="companyMsg" class="msg"></div>
+      </form>
+    </div>
+
+    <!-- Categorii Clienți -->
+    <div class="card">
+      <div class="card-header">
+        <h3>📂 Categorii Clienți</h3>
+        <span style="color: #94a3b8; font-size: 0.9rem;">Gestionare completă</span>
+      </div>
+      
+      <div id="categoriesList" class="category-list">
+        <div class="empty-state">Se încarcă categoriile...</div>
+      </div>
+      
+      <div class="add-category-row">
+        <input type="text" id="newCategoryName" class="input" placeholder="Nume categorie nouă...">
+        <button class="btnSuccess" onclick="addCategory()">➕ Adaugă</button>
+      </div>
+      
+      <div id="categoryMsg" class="msg"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  
+  <script>
+    let categories = [];
+    let clients = [];
+    
+    // Încarcă date la pornire
+    async function init() {
+      await Promise.all([
+        loadCompanyDetails(),
+        loadCategories(),
+        loadClients()
+      ]);
+    }
+    
+    // ============ DETALII COMPANIE ============
+    async function loadCompanyDetails() {
+      try {
+        const res = await fetch('/api/company-settings');
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('compName').value = data.name || '';
+          document.getElementById('compCui').value = data.cui || '';
+          document.getElementById('compSeries').value = data.smartbill_series || '';
+          document.getElementById('compAddress').value = data.address || '';
+          document.getElementById('compCity').value = data.city || '';
+          document.getElementById('compCounty').value = data.county || '';
+          document.getElementById('compPhone').value = data.phone || '';
+        }
+      } catch (e) {
+        console.error('Eroare la încărcarea detaliilor companiei:', e);
+      }
+    }
+    
+    document.getElementById('companyForm').onsubmit = async (e) => {
+      e.preventDefault();
+      
+      const data = {
+        name: document.getElementById('compName').value.trim(),
+        cui: document.getElementById('compCui').value.trim(),
+        smartbill_series: document.getElementById('compSeries').value.trim(),
+        address: document.getElementById('compAddress').value.trim(),
+        city: document.getElementById('compCity').value.trim(),
+        county: document.getElementById('compCounty').value.trim(),
+        phone: document.getElementById('compPhone').value.trim()
+      };
+      
+      try {
+        const res = await fetch('/api/company-settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const msg = document.getElementById('companyMsg');
+        if (res.ok) {
+          msg.textContent = '✅ Detalii salvate cu succes!';
+          msg.className = 'msg success';
+        } else {
+          const err = await res.json();
+          msg.textContent = '❌ ' + (err.error || 'Eroare la salvare');
+          msg.className = 'msg error';
+        }
+      } catch (e) {
+        document.getElementById('companyMsg').textContent = '❌ Eroare de rețea';
+        document.getElementById('companyMsg').className = 'msg error';
+      }
+    };
+    
+    // ============ CATEGORII ============
+    async function loadCategories() {
+      try {
+        const res = await fetch('/api/client-categories');
+        categories = await res.json();
+        renderCategories();
+      } catch (e) {
+        console.error('Eroare la încărcarea categoriilor:', e);
+        document.getElementById('categoriesList').innerHTML = 
+          '<div class="empty-state">Eroare la încărcare</div>';
+      }
+    }
+    
+    async function loadClients() {
+      try {
+        const res = await fetch('/api/clients-flat');
+        clients = await res.json();
+        renderCategories(); // Re-render pentru a actualiza numărul de clienți
+      } catch (e) {
+        console.error('Eroare la încărcarea clienților:', e);
+      }
+    }
+    
+    function renderCategories() {
+      const container = document.getElementById('categoriesList');
+      
+      if (categories.length === 0) {
+        container.innerHTML = '<div class="empty-state">Nicio categorie definită</div>';
+        return;
+      }
+      
+      container.innerHTML = categories.map((cat, index) => {
+        const clientCount = clients.filter(c => c.category === cat).length;
+        return `
+          <div class="category-item" id="cat-${index}">
+            <span class="category-name">${escapeHtml(cat)}</span>
+            <span class="category-count">${clientCount} clienți</span>
+            <div class="category-actions">
+              <button class="btnSecondary" onclick="editCategory(${index})">✏️</button>
+              <button class="btnDanger" onclick="deleteCategory('${escapeHtml(cat)}')">🗑️</button>
+            </div>
+          </div>
+          <div class="category-item" id="cat-edit-${index}" style="display: none;">
+            <div class="category-edit">
+              <input type="text" id="cat-input-${index}" class="input" value="${escapeHtml(cat)}">
+              <button class="btnSuccess" onclick="saveCategoryEdit(${index}, '${escapeHtml(cat)}')">💾</button>
+              <button class="btnSecondary" onclick="cancelEdit(${index})">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    async function addCategory() {
+      const input = document.getElementById('newCategoryName');
+      const name = input.value.trim();
+      const msg = document.getElementById('categoryMsg');
+      
+      if (!name) {
+        msg.textContent = '❌ Introdu un nume pentru categorie';
+        msg.className = 'msg error';
+        return;
+      }
+      
+      if (categories.includes(name)) {
+        msg.textContent = '❌ Această categorie există deja';
+        msg.className = 'msg error';
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/client-categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        
+        if (res.ok) {
+          msg.textContent = '✅ Categorie adăugată!';
+          msg.className = 'msg success';
+          input.value = '';
+          await loadCategories();
+        } else {
+          const err = await res.json();
+          msg.textContent = '❌ ' + (err.error || 'Eroare');
+          msg.className = 'msg error';
+        }
+      } catch (e) {
+        msg.textContent = '❌ Eroare de rețea';
+        msg.className = 'msg error';
+      }
+    }
+    
+    function editCategory(index) {
+      document.getElementById(`cat-${index}`).style.display = 'none';
+      document.getElementById(`cat-edit-${index}`).style.display = 'flex';
+      document.getElementById(`cat-input-${index}`).focus();
+    }
+    
+    function cancelEdit(index) {
+      document.getElementById(`cat-${index}`).style.display = 'flex';
+      document.getElementById(`cat-edit-${index}`).style.display = 'none';
+    }
+    
+    async function saveCategoryEdit(index, oldName) {
+      const input = document.getElementById(`cat-input-${index}`);
+      const newName = input.value.trim();
+      const msg = document.getElementById('categoryMsg');
+      
+      if (!newName) {
+        msg.textContent = '❌ Numele nu poate fi gol';
+        msg.className = 'msg error';
+        return;
+      }
+      
+      if (newName === oldName) {
+        cancelEdit(index);
+        return;
+      }
+      
+      if (categories.includes(newName)) {
+        msg.textContent = '❌ Există deja o categorie cu acest nume';
+        msg.className = 'msg error';
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/client-categories/rename', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oldName, newName })
+        });
+        
+        if (res.ok) {
+          msg.textContent = '✅ Categorie actualizată!';
+          msg.className = 'msg success';
+          await loadCategories();
+        } else {
+          const err = await res.json();
+          msg.textContent = '❌ ' + (err.error || 'Eroare');
+          msg.className = 'msg error';
+        }
+      } catch (e) {
+        msg.textContent = '❌ Eroare de rețea';
+        msg.className = 'msg error';
+      }
+    }
+    
+    async function deleteCategory(name) {
+      if (!confirm(`Ești sigur că vrei să ștergi categoria "${name}"?\n\nClienții din această categorie vor rămâne fără categorie.`)) {
+        return;
+      }
+      
+      const msg = document.getElementById('categoryMsg');
+      
+      try {
+        const res = await fetch('/api/client-categories', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        
+        if (res.ok) {
+          msg.textContent = '✅ Categorie ștearsă!';
+          msg.className = 'msg success';
+          await loadCategories();
+          await loadClients();
+        } else {
+          const err = await res.json();
+          msg.textContent = '❌ ' + (err.error || 'Eroare');
+          msg.className = 'msg error';
+        }
+      } catch (e) {
+        msg.textContent = '❌ Eroare de rețea';
+        msg.className = 'msg error';
+      }
+    }
+    
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Init
+    init();
+  </script>
+</body>
+</html>

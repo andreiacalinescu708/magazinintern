@@ -1537,8 +1537,6 @@ function getFullProduct(item) {
   }
 
 
-    const tree = await apiFetch("/api/clients-tree").then(r => r.json());
-
     // map id -> nume produs
     const productNameById = new Map();
     products.forEach(p => productNameById.set(String(p.id), String(p.name || "")));
@@ -1640,12 +1638,12 @@ function getFullProduct(item) {
 
       details.innerHTML = `
         <h3>${escapeHtml(c.name)}</h3>
-        <div><b>Grup:</b> ${escapeHtml(c.group || "-")}</div>
+        ${c.cui ? `<div style="margin-bottom: 0.5rem; color: #64748b;">🏢 CUI: ${escapeHtml(c.cui)}</div>` : ''}
         <div style="margin: 0.5rem 0;">
-          <b>Categorie:</b>
+          <b>Categorie / Zonă:</b> ${escapeHtml(c.category || "-")}
           <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
             <select id="editCatSelect" class="input" style="flex: 1;" onchange="handleCategoryChange(this)">
-              <option value="">-- Selectează --</option>
+              <option value="">-- Schimbă în --</option>
               ${categoryOptions}
             </select>
             <input type="text" id="newCatInput" class="input" placeholder="Categorie nouă..." 
@@ -1709,18 +1707,78 @@ function getFullProduct(item) {
       };
     }
 
-    function renderTreeAdmin() {
+    function renderByCategory() {
+      // Grupează clienții după categorie
+      const byCategory = {};
+      clients.forEach(c => {
+        const cat = c.category || 'Fără categorie';
+        if (!byCategory[cat]) byCategory[cat] = [];
+        byCategory[cat].push(c);
+      });
+      
+      // Sortează categoriile
+      const sortedCats = Object.keys(byCategory).sort();
+      
       box.innerHTML = "";
-      box.appendChild(
-        renderTree(
-          tree,
-          (name) => {
-            const client = clients.find(c => c.name === name);
-            if (client) renderClientDetails(client);
-          },
-          { accordion: true } // ✅ collapse/expand
-        )
-      );
+      
+      sortedCats.forEach(cat => {
+        // Header categorie
+        const catHeader = document.createElement('div');
+        catHeader.style.cssText = `
+          background: #1e293b; 
+          padding: 0.75rem 1rem; 
+          margin: 0.5rem 0; 
+          border-radius: 0.5rem;
+          font-weight: 600;
+          color: #38bdf8;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          cursor: pointer;
+        `;
+        catHeader.innerHTML = `
+          <span>${escapeHtml(cat)}</span>
+          <span style="font-size: 0.85rem; color: #64748b;">${byCategory[cat].length} clienți</span>
+        `;
+        
+        // Lista clienților
+        const clientList = document.createElement('div');
+        clientList.style.cssText = 'margin-left: 0.5rem;';
+        
+        // Sortează clienții alfabetic
+        byCategory[cat].sort((a, b) => a.name.localeCompare(b.name, 'ro'));
+        
+        byCategory[cat].forEach(c => {
+          const btn = document.createElement('button');
+          btn.className = 'itembtn';
+          btn.style.cssText = `
+            width: 100%; 
+            text-align: left; 
+            padding: 0.6rem 1rem;
+            margin: 0.25rem 0;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.375rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+          `;
+          btn.textContent = c.name;
+          btn.onclick = () => renderClientDetails(c);
+          clientList.appendChild(btn);
+        });
+        
+        // Toggle functionality
+        let expanded = true;
+        catHeader.onclick = () => {
+          expanded = !expanded;
+          clientList.style.display = expanded ? 'block' : 'none';
+          catHeader.style.opacity = expanded ? '1' : '0.7';
+        };
+        
+        box.appendChild(catHeader);
+        box.appendChild(clientList);
+      });
     }
 
     function renderSearchResults(list) {
@@ -1742,8 +1800,8 @@ function getFullProduct(item) {
   }
 
 
-    // render default (tree)
-    renderTreeAdmin();
+    // render default - by category
+    renderByCategory();
 
     // === legăm SEARCH ===
     if (!searchInput) {
@@ -1760,7 +1818,7 @@ function getFullProduct(item) {
     
 
       if (!q) {
-        renderTreeAdmin();
+        renderByCategory();
         return;
       }
 
