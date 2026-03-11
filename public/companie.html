@@ -281,38 +281,6 @@
       </form>
     </div>
 
-    <!-- Import Produse -->
-    <div class="card">
-      <div class="card-header">
-        <h3>📦 Import Produse</h3>
-        <span style="color: #94a3b8; font-size: 0.9rem;">Din fișier JSON</span>
-      </div>
-      
-      <p style="color: #94a3b8; margin-bottom: 1rem;">
-        Importă produsele din <code>data/products.json</code> în baza de date.
-        Produsele existente vor fi actualizate, cele noi vor fi adăugate.
-      </p>
-      
-      <button class="btnPrimary" onclick="importProducts()">
-        📥 Importă Produse din JSON
-      </button>
-      
-      <div id="importMsg" class="msg"></div>
-      
-      <div id="importStats" style="display: none; background: #0f172a; padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div style="text-align: center;">
-            <div style="font-size: 2rem; color: #10b981;" id="importAdded">0</div>
-            <div style="color: #94a3b8; font-size: 0.85rem;">Adăugate</div>
-          </div>
-          <div style="text-align: center;">
-            <div style="font-size: 2rem; color: #0284c7;" id="importUpdated">0</div>
-            <div style="color: #94a3b8; font-size: 0.85rem;">Actualizate</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Categorii Clienți -->
     <div class="card">
       <div class="card-header">
@@ -348,43 +316,6 @@
       ]);
     }
     
-    // ============ IMPORT PRODUSE ============
-    async function importProducts() {
-      const btn = document.querySelector('button[onclick="importProducts()"]');
-      const msg = document.getElementById('importMsg');
-      const stats = document.getElementById('importStats');
-      
-      btn.disabled = true;
-      btn.textContent = '⏳ Se importă...';
-      msg.textContent = '';
-      stats.style.display = 'none';
-      
-      try {
-        const res = await fetch('/api/import-products', {
-          method: 'POST'
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          msg.textContent = `✅ Import finalizat! ${data.added} adăugate, ${data.updated} actualizate.`;
-          msg.className = 'msg success';
-          document.getElementById('importAdded').textContent = data.added || 0;
-          document.getElementById('importUpdated').textContent = data.updated || 0;
-          stats.style.display = 'block';
-        } else {
-          const err = await res.json();
-          msg.textContent = '❌ ' + (err.error || 'Eroare la import');
-          msg.className = 'msg error';
-        }
-      } catch (e) {
-        msg.textContent = '❌ Eroare de rețea';
-        msg.className = 'msg error';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '📥 Importă Produse din JSON';
-      }
-    }
-
     // ============ DETALII COMPANIE ============
     async function loadCompanyDetails() {
       try {
