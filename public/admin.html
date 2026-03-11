@@ -415,7 +415,7 @@
     // Inițializare
     async function init() {
       try {
-        const res = await fetch('/api/me');
+        const res = await fetch('/api/auth/check');
         const data = await res.json();
         
         if (!data.loggedIn || data.user.role !== 'admin') {
