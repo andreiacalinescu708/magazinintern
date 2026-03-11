@@ -498,14 +498,25 @@
           return;
         }
         
-        // Afișează mesaj de succes cu linkul (pentru testare)
+        // Afișează mesaj de succes cu detalii despre email
         const successDiv = document.getElementById('inviteSuccess');
+        const emailStatus = data.emailSent 
+          ? '✅ Email trimis' 
+          : '⚠️ Emailul nu a putut fi trimis (verifică logurile)';
+        
         successDiv.innerHTML = `
-          <strong>✅ Invitație trimisă cu succes!</strong><br><br>
+          <strong>✅ Invitație creată cu succes!</strong><br><br>
+          <strong>Status email:</strong> ${emailStatus}<br>
           <strong>Email:</strong> ${escapeHtml(data.email)}<br>
           <strong>Nume:</strong> ${escapeHtml(data.first_name || '-')} ${escapeHtml(data.last_name || '-')}<br><br>
-          <strong>Link invitație (pentru testare):</strong><br>
+          ${!data.emailSent ? `<div style="background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+            <strong>⚠️ Nu s-a putut trimite email automat!</strong><br>
+            Trimite manual linkul de mai jos:<br>
+            <a href="${data.inviteLink}" target="_blank" style="color: #34d399; word-break: break-all;">${data.inviteLink}</a>
+          </div>` : `
+          <strong>Link invitație (backup):</strong><br>
           <a href="${data.inviteLink}" target="_blank" style="color: #34d399; word-break: break-all;">${data.inviteLink}</a>
+          `}
         `;
         successDiv.style.display = 'block';
         document.getElementById('inviteError').style.display = 'none';
