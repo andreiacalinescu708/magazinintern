@@ -1,0 +1,1262 @@
+[
+  {
+    "id": "1766331282255",
+    "action": "STOCK_UPDATE",
+    "entity": "stock",
+    "entityId": "17663312663886brywzwfdvt",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "beforeQty": 2333,
+      "afterQty": 2334
+    },
+    "createdAt": "2025-12-21T15:34:42.255Z"
+  },
+  {
+    "id": "1766331451630",
+    "action": "STOCK_DELETE",
+    "entity": "stock",
+    "entityId": "17663312663886brywzwfdvt",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "qty": 2334
+    },
+    "createdAt": "2025-12-21T15:37:31.630Z"
+  },
+  {
+    "id": "1766331704966",
+    "action": "STOCK_UPDATE",
+    "entity": "stock",
+    "entityId": "1766331253391nykqndv0lvh",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "beforeQty": 544,
+      "afterQty": 550
+    },
+    "createdAt": "2025-12-21T15:41:44.966Z"
+  },
+  {
+    "id": "1766331728416",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1766331728415g9pnfcg8je",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "qty": 777
+    },
+    "createdAt": "2025-12-21T15:42:08.416Z"
+  },
+  {
+    "id": "1766331734248",
+    "action": "STOCK_UPDATE",
+    "entity": "stock",
+    "entityId": "1766331728415g9pnfcg8je",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "beforeQty": 777,
+      "afterQty": 780
+    },
+    "createdAt": "2025-12-21T15:42:14.248Z"
+  },
+  {
+    "id": "1766331740485",
+    "action": "STOCK_DELETE",
+    "entity": "stock",
+    "entityId": "1766331728415g9pnfcg8je",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "qty": 780
+    },
+    "createdAt": "2025-12-21T15:42:20.485Z"
+  },
+  {
+    "id": "1766332442479",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "176633244247886vj6i2yorv",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402455555",
+      "qty": 22
+    },
+    "createdAt": "2025-12-21T15:54:02.479Z"
+  },
+  {
+    "id": "1766332677397",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "17663326773967an37ey7693",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "qty": 2323
+    },
+    "createdAt": "2025-12-21T15:57:57.397Z"
+  },
+  {
+    "id": "1766332685118",
+    "action": "STOCK_UPDATE",
+    "entity": "stock",
+    "entityId": "17663326773967an37ey7693",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "beforeQty": 2323,
+      "afterQty": 232
+    },
+    "createdAt": "2025-12-21T15:58:05.118Z"
+  },
+  {
+    "id": "1766335461954",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "17663326773967an37ey7693",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "newQty": 2322
+    },
+    "createdAt": "2025-12-21T16:44:21.955Z"
+  },
+  {
+    "id": "1766335461963",
+    "action": "STOCK_UPDATE",
+    "entity": "stock",
+    "entityId": "17663326773967an37ey7693",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "beforeQty": 232,
+      "afterQty": 2322
+    },
+    "createdAt": "2025-12-21T16:44:21.963Z"
+  },
+  {
+    "id": "1766335483848",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1766335483846ooof8rojg9q",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "qty": 333
+    },
+    "createdAt": "2025-12-21T16:44:43.848Z"
+  },
+  {
+    "id": "1766336223584",
+    "action": "STOCK_DELETE",
+    "entity": "stock",
+    "entityId": "1766335483846ooof8rojg9q",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "expiresAt": "2030-04-30",
+      "qty": 333
+    },
+    "createdAt": "2025-12-21T16:57:03.584Z"
+  },
+  {
+    "id": "1766336229000",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "17663326773967an37ey7693",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "beforeQty": 2322,
+      "afterQty": 23
+    },
+    "createdAt": "2025-12-21T16:57:09.000Z"
+  },
+  {
+    "id": "1766336249740",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "17663362497388awidpbcplg",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "qty": 321
+    },
+    "createdAt": "2025-12-21T16:57:29.740Z"
+  },
+  {
+    "id": "1766336257186",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "17663362497388awidpbcplg",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "beforeQty": 321,
+      "afterQty": 3212
+    },
+    "createdAt": "2025-12-21T16:57:37.186Z"
+  },
+  {
+    "id": "1766336463142",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "17663326773967an37ey7693",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "beforeQty": 23,
+      "afterQty": 232
+    },
+    "createdAt": "2025-12-21T17:01:03.142Z"
+  },
+  {
+    "id": "1766435104734",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1766435104728empgmg49ryb",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "qty": 72
+    },
+    "createdAt": "2025-12-22T20:25:04.734Z"
+  },
+  {
+    "id": "1766438356082",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "17664383560758t4nvkin9qd",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "140242634888",
+      "qty": 22
+    },
+    "createdAt": "2025-12-22T21:19:16.082Z"
+  },
+  {
+    "id": "1766439052330",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1766439052327eswoz0e9m6u",
+    "details": {
+      "productName": "Lady SUPER",
+      "lot": "1402345285",
+      "qty": 222
+    },
+    "createdAt": "2025-12-22T21:30:52.330Z"
+  },
+  {
+    "id": "1766439864064",
+    "action": "STOCK_DELETE",
+    "entity": "stock",
+    "entityId": "1766435104728empgmg49ryb",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "expiresAt": "2030-12-31",
+      "qty": 72
+    },
+    "createdAt": "2025-12-22T21:44:24.064Z"
+  },
+  {
+    "id": "1766511361636",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1766511361629ok5ls1c4i0s",
+    "details": {
+      "productName": "Lady SUPER",
+      "lot": "1402345285",
+      "qty": 22
+    },
+    "createdAt": "2025-12-23T17:36:01.636Z"
+  },
+  {
+    "id": "1766511771513",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "1766511361629ok5ls1c4i0s",
+    "details": {
+      "productName": "Lady SUPER",
+      "lot": "1402345285",
+      "beforeQty": 22,
+      "afterQty": 223
+    },
+    "createdAt": "2025-12-23T17:42:51.513Z"
+  },
+  {
+    "id": "1766511780932",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "1766511361629ok5ls1c4i0s",
+    "details": {
+      "productName": "Lady SUPER",
+      "lot": "1402345285",
+      "beforeQty": 223,
+      "afterQty": 224
+    },
+    "createdAt": "2025-12-23T17:43:00.932Z"
+  },
+  {
+    "id": "1766513221898",
+    "action": "STOCK_DELETE",
+    "entity": "stock",
+    "entityId": "1766511361629ok5ls1c4i0s",
+    "details": {
+      "productName": "Lady SUPER",
+      "lot": "1402345285",
+      "expiresAt": "2030-04-30",
+      "qty": 224
+    },
+    "createdAt": "2025-12-23T18:07:01.898Z"
+  },
+  {
+    "id": "1766513226662",
+    "action": "STOCK_DELETE",
+    "entity": "stock",
+    "entityId": "1766439052327eswoz0e9m6u",
+    "details": {
+      "productName": "Lady SUPER",
+      "lot": "1402345285",
+      "expiresAt": "2030-04-30",
+      "qty": 222
+    },
+    "createdAt": "2025-12-23T18:07:06.662Z"
+  },
+  {
+    "id": "1766513232135",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "17663362497388awidpbcplg",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "beforeQty": 3131,
+      "afterQty": 29
+    },
+    "createdAt": "2025-12-23T18:07:12.135Z"
+  },
+  {
+    "id": "1766513301792",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "17663362497388awidpbcplg",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "beforeQty": 19,
+      "afterQty": 30
+    },
+    "createdAt": "2025-12-23T18:08:21.792Z"
+  },
+  {
+    "id": "1766592627997",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1766592627990zg6x7yq8p1a",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402455555",
+      "qty": 150
+    },
+    "createdAt": "2025-12-24T16:10:27.997Z"
+  },
+  {
+    "id": "1766592659061",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "1766592627990zg6x7yq8p1a",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402455555",
+      "beforeQty": 150,
+      "afterQty": 154
+    },
+    "createdAt": "2025-12-24T16:10:59.061Z"
+  },
+  {
+    "id": "1766593382830",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1766593382829hhh3sc8yea",
+    "details": {
+      "productName": "Lady SUPER",
+      "lot": "1402345285",
+      "qty": 72
+    },
+    "createdAt": "2025-12-24T16:23:02.830Z"
+  },
+  {
+    "id": "1766593414355",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "17663362497388awidpbcplg",
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "beforeQty": 27,
+      "afterQty": 28
+    },
+    "createdAt": "2025-12-24T16:23:34.355Z"
+  },
+  {
+    "id": "1769209462627",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "17692094626196eio0qwcz42",
+    "details": {
+      "productName": "Seni Soft Super– aleze igienice 90x60 a'30",
+      "lot": "1402436091",
+      "qty": 144
+    },
+    "createdAt": "2026-01-23T23:04:22.627Z"
+  },
+  {
+    "id": "1769461209549",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769461209542svzb2wbinx",
+    "details": {
+      "productName": "Seni Active Classic Medium 30",
+      "lot": "1402345285",
+      "qty": 120
+    },
+    "createdAt": "2026-01-26T21:00:09.549Z"
+  },
+  {
+    "id": "1769539709185",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769539709181lnt5uod4nz",
+    "details": {
+      "productName": "Seni Care Lavete \"air-laid\" 36 x 32 см",
+      "lot": "1402436091",
+      "qty": 12
+    },
+    "createdAt": "2026-01-27T18:48:29.185Z"
+  },
+  {
+    "id": "1769541138714",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769541138712jaqovlm0m8q",
+    "details": {
+      "productName": "Seni Active Classic Medium 30",
+      "lot": "1402345285",
+      "qty": 123
+    },
+    "createdAt": "2026-01-27T19:12:18.714Z"
+  },
+  {
+    "id": "1769549456584",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769549456581isnx9uc9h8i",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:30:56.584Z"
+  },
+  {
+    "id": "1769549458995",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769549458993fc39nxckd2s",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:30:58.995Z"
+  },
+  {
+    "id": "1769549459475",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769549459473o4ty8yki5m",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:30:59.475Z"
+  },
+  {
+    "id": "1769549459692",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "17695494596905btkkgt8fk",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:30:59.692Z"
+  },
+  {
+    "id": "1769549459911",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769549459909j4jgnx4w22d",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:30:59.911Z"
+  },
+  {
+    "id": "1769549460160",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769549460158r52w401m4g",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:31:00.160Z"
+  },
+  {
+    "id": "1769549463573",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769549463571a794fc0zrci",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:31:03.573Z"
+  },
+  {
+    "id": "1769549468405",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "17695494684048e6dfu8o9sc",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:31:08.405Z"
+  },
+  {
+    "id": "1769549472882",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769549472880d9bpr7b0tzr",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:31:12.882Z"
+  },
+  {
+    "id": "1769549476436",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769549476434cgndngflmy7",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:31:16.436Z"
+  },
+  {
+    "id": "1769549476836",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769549476834on9bnwr11m8",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:31:16.836Z"
+  },
+  {
+    "id": "1769549477040",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769549477039zginxkpphen",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:31:17.040Z"
+  },
+  {
+    "id": "1769549813248",
+    "action": "STOCK_DELETE",
+    "entity": "stock",
+    "entityId": "1769549477039zginxkpphen",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "expiresAt": "2030-04-30",
+      "qty": 243
+    },
+    "createdAt": "2026-01-27T21:36:53.248Z"
+  },
+  {
+    "id": "1769549831297",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "1769549456581isnx9uc9h8i",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "beforeQty": 243,
+      "afterQty": 243,
+      "beforeLoc": "A",
+      "afterLoc": "B"
+    },
+    "createdAt": "2026-01-27T21:37:11.297Z"
+  },
+  {
+    "id": "1769549843851",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "1769549459473o4ty8yki5m",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "beforeQty": 243,
+      "afterQty": 243,
+      "beforeLoc": "A",
+      "afterLoc": "C"
+    },
+    "createdAt": "2026-01-27T21:37:23.852Z"
+  },
+  {
+    "id": "1769549889523",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "1769549456581isnx9uc9h8i",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "beforeQty": 243,
+      "afterQty": 243,
+      "beforeLoc": "B",
+      "afterLoc": "A"
+    },
+    "createdAt": "2026-01-27T21:38:09.523Z"
+  },
+  {
+    "id": "1769549894575",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "1769549458993fc39nxckd2s",
+    "details": {
+      "productName": "Matopat Universal plasturi a'20",
+      "lot": "1402345285",
+      "beforeQty": 238,
+      "afterQty": 238,
+      "beforeLoc": "A",
+      "afterLoc": "B"
+    },
+    "createdAt": "2026-01-27T21:38:14.575Z"
+  },
+  {
+    "id": "1769726914615",
+    "action": "STOCK_DELETE",
+    "entity": "stock",
+    "entityId": "17663326773967an37ey7693",
+    "details": {
+      "productName": "ACTIVE/CHILOT - XL",
+      "lot": "1402426349",
+      "expiresAt": "2030-12-31",
+      "qty": 172
+    },
+    "createdAt": "2026-01-29T22:48:34.615Z"
+  },
+  {
+    "id": "1769726930605",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "1769461209542svzb2wbinx",
+    "details": {
+      "productName": "Seni Active Classic Medium 30",
+      "lot": "1402345285",
+      "beforeQty": 117,
+      "afterQty": 5,
+      "beforeLoc": "A",
+      "afterLoc": "A"
+    },
+    "createdAt": "2026-01-29T22:48:50.605Z"
+  },
+  {
+    "id": "1769726939622",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "1769541138712jaqovlm0m8q",
+    "details": {
+      "productName": "Seni Active Classic Medium 30",
+      "lot": "1402345285",
+      "beforeQty": 123,
+      "afterQty": 123,
+      "beforeLoc": "A",
+      "afterLoc": "B"
+    },
+    "createdAt": "2026-01-29T22:48:59.622Z"
+  },
+  {
+    "id": "1769727635129",
+    "action": "STOCK_EDIT",
+    "entity": "stock",
+    "entityId": "17663362497388awidpbcplg",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "productName": "SUPER",
+      "lot": "1402345285",
+      "beforeQty": 28,
+      "afterQty": 22,
+      "beforeLoc": "A",
+      "afterLoc": "A"
+    },
+    "createdAt": "2026-01-29T23:00:35.129Z"
+  },
+  {
+    "id": "1769727760959",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "livrata"
+    },
+    "createdAt": "2026-01-29T23:02:40.959Z"
+  },
+  {
+    "id": "1769728788306",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "in_procesare"
+    },
+    "createdAt": "2026-01-29T23:19:48.306Z"
+  },
+  {
+    "id": "1769728789214",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-29T23:19:49.214Z"
+  },
+  {
+    "id": "1769728790963",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "livrata"
+    },
+    "createdAt": "2026-01-29T23:19:50.963Z"
+  },
+  {
+    "id": "1769728792091",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "in_procesare"
+    },
+    "createdAt": "2026-01-29T23:19:52.091Z"
+  },
+  {
+    "id": "1769728792527",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-29T23:19:52.527Z"
+  },
+  {
+    "id": "1769728795278",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769726954378",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gidea FARM",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-29T23:19:55.278Z"
+  },
+  {
+    "id": "1769728795765",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769726954378",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gidea FARM",
+      "newStatus": "livrata"
+    },
+    "createdAt": "2026-01-29T23:19:55.765Z"
+  },
+  {
+    "id": "1769728798895",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "livrata"
+    },
+    "createdAt": "2026-01-29T23:19:58.895Z"
+  },
+  {
+    "id": "1769728800138",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "in_procesare"
+    },
+    "createdAt": "2026-01-29T23:20:00.138Z"
+  },
+  {
+    "id": "1769728801121",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-29T23:20:01.121Z"
+  },
+  {
+    "id": "1769728804064",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "livrata"
+    },
+    "createdAt": "2026-01-29T23:20:04.064Z"
+  },
+  {
+    "id": "1769728804097",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "livrata"
+    },
+    "createdAt": "2026-01-29T23:20:04.097Z"
+  },
+  {
+    "id": "1769728808019",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "in_procesare"
+    },
+    "createdAt": "2026-01-29T23:20:08.019Z"
+  },
+  {
+    "id": "1769728883765",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-29T23:21:23.765Z"
+  },
+  {
+    "id": "1769728885225",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "livrata"
+    },
+    "createdAt": "2026-01-29T23:21:25.225Z"
+  },
+  {
+    "id": "1769728885808",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "in_procesare"
+    },
+    "createdAt": "2026-01-29T23:21:25.808Z"
+  },
+  {
+    "id": "1769728886876",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-29T23:21:26.876Z"
+  },
+  {
+    "id": "1769728888626",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "livrata"
+    },
+    "createdAt": "2026-01-29T23:21:28.626Z"
+  },
+  {
+    "id": "1769728895973",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769726954378",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gidea FARM",
+      "newStatus": "in_procesare"
+    },
+    "createdAt": "2026-01-29T23:21:35.973Z"
+  },
+  {
+    "id": "1769728896931",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "in_procesare"
+    },
+    "createdAt": "2026-01-29T23:21:36.931Z"
+  },
+  {
+    "id": "1769728897188",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769727622075",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gentiana TG. JIU",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-29T23:21:37.188Z"
+  },
+  {
+    "id": "1769728899472",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769726954378",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Gidea FARM",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-29T23:21:39.472Z"
+  },
+  {
+    "id": "1769790325634",
+    "action": "STOCK_ADD",
+    "entity": "stock",
+    "entityId": "1769790325626g5s64lpi48m",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "gtin": "5900516800062",
+      "productName": "Seni Classic Air Large 30",
+      "lot": "1402345285",
+      "qty": 200
+    },
+    "createdAt": "2026-01-30T16:25:25.634Z"
+  },
+  {
+    "id": "1769803922411",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769792520354",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Medifarm",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-30T20:12:02.411Z"
+  },
+  {
+    "id": "1769803922989",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769792520354",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Medifarm",
+      "newStatus": "livrata"
+    },
+    "createdAt": "2026-01-30T20:12:02.989Z"
+  },
+  {
+    "id": "1769891137770",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769792520354",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Medifarm",
+      "newStatus": "in_procesare"
+    },
+    "createdAt": "2026-01-31T20:25:37.770Z"
+  },
+  {
+    "id": "1769891138331",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769792520354",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Medifarm",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-31T20:25:38.332Z"
+  },
+  {
+    "id": "1769891139123",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769792520354",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Medifarm",
+      "newStatus": "gata_de_livrare"
+    },
+    "createdAt": "2026-01-31T20:25:39.123Z"
+  },
+  {
+    "id": "1769891139161",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769792520354",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Medifarm",
+      "newStatus": "gata_de_livrare"
+    },
+    "createdAt": "2026-01-31T20:25:39.161Z"
+  },
+  {
+    "id": "1769891140892",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769792520354",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Medifarm",
+      "newStatus": "livrata"
+    },
+    "createdAt": "2026-01-31T20:25:40.892Z"
+  },
+  {
+    "id": "1769891142463",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769792520354",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Medifarm",
+      "newStatus": "in_procesare"
+    },
+    "createdAt": "2026-01-31T20:25:42.463Z"
+  },
+  {
+    "id": "1769891147260",
+    "action": "ORDER_STATUS",
+    "entity": "order",
+    "entityId": "1769792520354",
+    "user": {
+      "id": "1766340524961",
+      "username": "alex",
+      "role": "user"
+    },
+    "details": {
+      "clientName": "Medifarm",
+      "newStatus": "facturata"
+    },
+    "createdAt": "2026-01-31T20:25:47.260Z"
+  }
+]

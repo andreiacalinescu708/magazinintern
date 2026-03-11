@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Fișă Client - Fast Medical Distribution</title>
+  <link rel="stylesheet" href="global.css" />
+  <style>
+    /* Tab Navigation */
+    .tabs-nav {
+      display: flex;
+      gap: var(--space-1);
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: var(--space-6);
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .tabs-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      padding: var(--space-3) var(--space-4);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      color: var(--text-muted);
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 0.9375rem;
+      font-family: inherit;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .tab-btn.active {
+      color: var(--accent-gold, #fbbf24);
+      border-bottom-color: var(--accent-gold, #fbbf24);
+    }
+
+    .tab-link {
+      padding: var(--space-3) var(--space-4);
+      background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+      color: white !important;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      font-weight: 600;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 0.9375rem;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      transition: all 0.3s;
+    }
+
+    .tab-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .tab-icon {
+      font-size: 1.25rem;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .content-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+    }
+
+    .client-header {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(34, 197, 94, 0.1));
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      margin-bottom: var(--space-6);
+    }
+
+    .client-name {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: var(--space-2);
+    }
+
+    .client-meta {
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      font-size: 0.9375rem;
+    }
+
+    .client-meta-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: var(--space-4);
+      font-size: 0.9375rem;
+    }
+
+    .back-link:hover {
+      color: var(--text-primary);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9375rem;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: var(--space-3);
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .data-table th {
+      color: var(--accent-gold, #fbbf24);
+      font-weight: 600;
+      background: var(--bg-tertiary);
+    }
+
+    .text-right {
+      text-align: right !important;
+    }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-warning { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .badge-success { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .badge-danger { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+    .summary-box {
+      margin-top: var(--space-6);
+      padding: var(--space-4);
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      border-radius: var(--radius-lg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .summary-value { font-size: 1.5rem; font-weight: 800; color: var(--accent-gold, #fbbf24); }
+    .empty-state { text-align: center; padding: var(--space-8); color: var(--text-muted); }
+    .sold-box { background: var(--surface); border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid var(--border-color); }
+    .sold-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+    .sold-value { font-size: 1.4rem; font-weight: bold; color: #ef4444; }
+    .expired { color: #f59e0b; text-align: center; padding: 20px; }
+    
+    /* Stiluri pentru Comenzi */
+    .order-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-4);
+      overflow: hidden;
+    }
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-4);
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+    }
+    .order-id { font-family: monospace; font-size: 0.875rem; color: var(--text-muted); }
+    .order-date { font-weight: 600; }
+    .order-status {
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .status-in_procesare { background: rgba(234, 179, 8, 0.2); color: #fbbf24; }
+    .status-facturata { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .status-gata_de_livrare { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .status-livrata { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .order-body { padding: var(--space-4); }
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-3);
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-2);
+    }
+    .order-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: var(--space-4);
+      padding-top: var(--space-4);
+      border-top: 2px solid var(--border-color);
+    }
+    .order-total-value { font-size: 1.25rem; font-weight: 800; color: var(--primary-400); }
+    
+    /* Stiluri pentru Preturi */
+    .price-input-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .price-list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-3);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-2);
+      border: 1px solid var(--border-color);
+    }
+    .product-search-box {
+      background: var(--bg-tertiary);
+      padding: var(--space-4);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-4);
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="navbar-brand-icon">⚕️</div>
+        <span>FMD</span>
+      </a>
+      <div class="navbar-actions" id="userBar"></div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <a href="adauga_comanda.html" class="back-link">← Înapoi la lista clienți</a>
+
+    <!-- Header Client -->
+    <div class="client-header">
+      <div class="client-name" id="clientName">Se încarcă...</div>
+      <div class="client-meta">
+        <div class="client-meta-item">
+          <span>📁</span>
+          <span id="clientGroup">-</span>
+        </div>
+        <div class="client-meta-item">
+          <span>🏷️</span>
+          <span id="clientCategory">-</span>
+        </div>
+        
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('sold')" id="tab-sold">
+        <span class="tab-icon">📊</span>
+        <span>Sold</span>
+      </button>
+      
+      <button class="tab-btn" onclick="switchTab('comenzi')" id="tab-comenzi">
+        <span class="tab-icon">📦</span>
+        <span>Comenzi</span>
+      </button>
+      
+     
+      
+      <a href="comanda.html" class="tab-link" id="tab-comanda-noua">
+        <span class="tab-icon">➕</span>
+        <span>Comandă Nouă</span>
+      </a>
+      
+      <button class="tab-btn" onclick="switchTab('preturi')" id="tab-preturi">
+        <span class="tab-icon">💲</span>
+        <span>Prețuri Speciale</span>
+      </button>
+    </div>
+
+    <!-- === SOLD (default activ) === -->
+    <div id="content-sold" class="tab-content active">
+      <div class="content-card">
+        <h3 style="color: var(--accent-gold); margin-bottom: var(--space-4);">📊 Situație Sold</h3>
+        
+        <div id="sold-loading">⏳ Se încarcă soldul...</div>
+        
+        <div id="sold-content" style="display: none;">
+          <div class="sold-box">
+            <div class="sold-row" style="border-bottom: none;">
+              <span>Total de plată:</span>
+              <span id="totalSoldAmount" class="sold-value">0.00 RON</span>
+            </div>
+          </div>
+          
+          <details open>
+            <summary>Detalii facturi</summary>
+            <div id="soldDetaliiFacturi"></div>
+          </details>
+          
+          <p class="hint" style="text-align: center; margin-top: 16px;">
+            <small>Actualizat: <span id="soldDataUpdate">-</span></small>
+          </p>
+        </div>
+        
+        <div id="sold-expired" class="expired" style="display: none;"></div>
+      </div>
+    </div>
+
+    <!-- === COMENZI === -->
+    <div id="content-comenzi" class="tab-content">
+      <div class="content-card">
+        <h3 style="color: var(--accent-gold); margin-bottom: var(--space-4);">📦 Istoric Comenzi</h3>
+        
+        <div id="comenzi-loading">⏳ Se încarcă comenzile...</div>
+        
+        <div id="comenzi-stats" style="display: none; margin-bottom: var(--space-4);">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4);">
+            <div class="sold-box" style="text-align: center;">
+              <div id="totalOrders" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-400);">0</div>
+              <div class="hint">Total Comenzi</div>
+            </div>
+            <div class="sold-box" style="text-align: center;">
+              <div id="totalProducts" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-400);">0</div>
+              <div class="hint">Produse</div>
+            </div>
+          <div class="sold-box" style="text-align: center;">
+  <div id="lastSentOrderTotal" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-400);">-</div>
+  <div class="hint">Total ultima comandă trimisă</div>
+</div>
+          </div>
+        </div>
+        
+        <div id="comenzi-lista"></div>
+        
+        <div id="comenzi-empty" class="empty-state" style="display: none;">
+          <div style="font-size: 3rem; margin-bottom: var(--space-4);">📭</div>
+          <p>Nu există comenzi pentru acest client.</p>
+        </div>
+      </div>
+    </div>
+
+    
+
+    
+    <!-- === PREȚURI SPECIALE === -->
+<div id="content-preturi" class="tab-content">
+  <div class="content-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6);">
+      <h3 style="color: var(--accent-gold); margin: 0;">💲 Prețuri Speciale</h3>
+     
+    </div>
+
+    <!-- Search bar elegant -->
+    <div class="product-search-box" style="margin-bottom: var(--space-6);">
+      <div style="position: relative;">
+        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;">🔍</span>
+        <input 
+          id="priceSearchFilter" 
+          type="text" 
+          placeholder="Caută în prețurile speciale..." 
+          style="width: 100%; padding: 12px 12px 12px 40px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);"
+          oninput="filterSpecialPrices()"
+        />
+      </div>
+    </div>
+
+    <div id="clientPricesList">
+      <div class="empty-state">Se încarcă...</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL Preț Special (Adăugare/Editare) -->
+<div id="priceModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+  <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); max-width: 600px; width: 100%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+    
+    <!-- Header -->
+    <div style="padding: var(--space-6); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(34, 197, 94, 0.05));">
+      <h3 style="margin: 0; color: var(--accent-gold);" id="modalTitle">Adaugă Preț Special</h3>
+      <button onclick="closePriceModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 4px;">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div style="padding: var(--space-6); overflow-y: auto;">
+      
+      <!-- Selectare Produs (doar pentru Adăugare) -->
+      <div id="productSelectSection" style="margin-bottom: var(--space-4);">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 500;">Selectează Produs</label>
+        <div style="position: relative; margin-bottom: 12px;">
+          <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">🔍</span>
+          <input 
+            id="modalProductSearch" 
+            type="text" 
+            placeholder="Caută produs (nume / GTIN)..." 
+            style="width: 100%; padding: 12px 12px 12px 40px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary);"
+            oninput="searchProductsInModal()"
+          />
+        </div>
+        
+        <!-- Lista produse căutate -->
+        <div id="modalProductResults" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-tertiary); display: none;"></div>
+        
+        <!-- Produs selectat -->
+        <div id="selectedProductInfo" style="display: none; padding: 16px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: var(--radius-lg); margin-top: 12px;">
+          <div style="font-weight: 600; color: var(--text-primary);" id="selectedProductName"></div>
+          <div style="color: var(--text-muted); font-size: 0.875rem; margin-top: 4px;">GTIN: <span id="selectedProductGtin"></span></div>
+          <div style="color: var(--accent-gold); font-weight: 700; margin-top: 4px;">Preț listă: <span id="selectedProductPrice"></span> RON</div>
+        </div>
+      </div>
+
+      <!-- Preț Special -->
+      <div style="margin-top: var(--space-4);">
+        <label style="display: block; margin-bottom: 8px; color: var(--text-muted); font-weight: 500;">Preț Special (RON)</label>
+        <input 
+          id="modalSpecialPrice" 
+          type="number" 
+          step="0.01" 
+          placeholder="0.00" 
+          style="width: 100%; padding: 12px; border-radius: var(--radius-lg); border: 2px solid var(--primary-600); background: var(--bg-tertiary); color: var(--text-primary); font-size: 1.125rem; font-weight: 600;"
+        />
+        <input type="hidden" id="editingProductId" />
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding: var(--space-6); border-top: 1px solid var(--border-color); display: flex; gap: 12px; justify-content: flex-end; background: var(--bg-tertiary);">
+      <button onclick="closePriceModal()" class="btn" style="background: var(--bg-card); border: 1px solid var(--border-color);">Anulează</button>
+      <button onclick="saveSpecialPrice()" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
+        <span>💾</span>
+        <span>Salvează</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    // === FUNCTII COMUNE ===
+    
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      document.getElementById('tab-' + tabName).classList.add('active');
+      document.getElementById('content-' + tabName).classList.add('active');
+      
+      localStorage.setItem('clientLastTab', tabName);
+      
+      // Încarcă date dacă e necesar
+      if (tabName === 'comenzi' && !window.comenziLoaded) loadComenzi();
+      if (tabName === 'preturi' && !window.preturiLoaded) loadSpecialPrices();
+      if (tabName === 'sold' && !window.soldLoaded) loadSold();
+    }
+
+    // Încarcă date client
+    async function loadClientData() {
+      const client = JSON.parse(localStorage.getItem('clientSelectat') || '{}');
+      if (!client.id) {
+        document.getElementById('clientName').textContent = 'Niciun client selectat';
+        return null;
+      }
+      
+      document.getElementById('clientName').textContent = client.name || 'Client';
+      document.getElementById('clientGroup').textContent = client.group || '-';
+      document.getElementById('clientCategory').textContent = client.category || '-';
+      
+      return client;
+    }
+
+    // === SOLD ===
+    async function loadSold() {
+      window.soldLoaded = true;
+      const client = JSON.parse(localStorage.getItem('clientSelectat') || '{}');
+      if (!client.id) return;
+
+      try {
+        const res = await fetch(`/api/clients/${client.id}/balances`);
+        const data = await res.json();
+        
+        document.getElementById('sold-loading').style.display = 'none';
+        
+        if (data.expired) {
+          document.getElementById('sold-expired').style.display = 'block';
+          document.getElementById('sold-expired').innerHTML = `
+            <div style="font-size: 3rem;">⏰</div>
+            <p>${data.message}</p>
+            <p class="hint">Încarcă raportul nou din secțiunea Birou.</p>
+          `;
+          return;
+        }
+        
+        document.getElementById('sold-content').style.display = 'block';
+        document.getElementById('totalSoldAmount').textContent = data.totalBalance.toFixed(2) + ' RON';
+        const lastUpdate = data.lastUpload && new Date(data.lastUpload).getFullYear() > 2000 
+  ? new Date(data.lastUpload) 
+  : new Date();
+document.getElementById('soldDataUpdate').textContent = new Date(data.lastUpload).toLocaleDateString('ro-RO', {
+  day: '2-digit',
+  month: '2-digit', 
+  year: 'numeric'
+});
+        
+        let html = '';
+        if (data.invoices.length === 0) {
+          html = '<p class="hint">Nu sunt facturi scadente. ✅</p>';
+        } else {
+          html = `<p class="hint">Total facturi: ${data.invoices.length}</p>`;
+          html += '<table class="data-table"><thead><tr><th>Factura</th><th>Data Scadență</th><th>Zile întârziere</th><th style="text-align:right;">Sumă</th></tr></thead><tbody>';
+          
+          data.invoices.forEach(inv => {
+            html += `<tr>
+              <td>${inv.invoice_number}</td>
+              <td>${new Date(inv.due_date).toLocaleDateString('ro-RO')}</td>
+              <td style="color: #ef4444; font-weight: 600;">${inv.days_overdue} zile</td>
+              <td style="text-align:right; font-weight: 600;">${parseFloat(inv.balance_due).toFixed(2)} RON</td>
+            </tr>`;
+          });
+          html += '</tbody></table>';
+        }
+        document.getElementById('soldDetaliiFacturi').innerHTML = html;
+        
+      } catch (err) {
+        document.getElementById('sold-loading').innerHTML = '❌ Eroare la încărcare. <button onclick="loadSold()">Reîncearcă</button>';
+      }
+    }
+    window.prepareEditOrder = function(orderId) {
+  const order = clientOrders.find(o => o.id === orderId);
+  if (order) {
+    localStorage.setItem('editOrder', JSON.stringify(order));
+    location.href = 'editorder.html?id=' + orderId;
+  }
+};
+
+
+    // === COMENZI ===
+async function loadComenzi() {
+  window.comenziLoaded = true;
+  const client = JSON.parse(localStorage.getItem('clientSelectat') || '{}');
+  if (!client.id) return;
+
+  try {
+    const res = await fetch("/api/orders");
+    if (!res.ok) throw new Error("Eroare la încărcare");
+    
+    const allOrders = await res.json();
+    window.clientOrders = allOrders.filter(o => 
+      o.client?.name === client.name || o.client?.id === client.id
+    ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    document.getElementById('comenzi-loading').style.display = 'none';
+    
+    if (clientOrders.length === 0) {
+      document.getElementById('comenzi-empty').style.display = 'block';
+      return;
+    }
+
+    // Statistici
+    const totalProducts = clientOrders.reduce((sum, o) => 
+      sum + (o.items || []).reduce((s, i) => s + (i.qty || 0), 0), 0
+    );
+    // Găsim ultima comandă trimisă la SmartBill
+const sentOrders = clientOrders.filter(o => o.sentToSmartbill);
+const lastSentOrder = sentOrders.length > 0 ? sentOrders[0] : null; // [0] pentru că sunt sortate descrescător
+
+let lastOrderTotal = 0;
+if (lastSentOrder) {
+  lastOrderTotal = (lastSentOrder.items || []).reduce((sum, item) => 
+    sum + ((item.price || item.unitPrice || 0) * (item.qty || 0)), 0
+  );
+}
+
+// Afișăm
+document.getElementById('lastSentOrderTotal').textContent = lastOrderTotal > 0 
+  ? lastOrderTotal.toFixed(2) + ' RON' 
+  : '-';
+
+    document.getElementById('totalOrders').textContent = clientOrders.length;
+    document.getElementById('totalProducts').textContent = totalProducts;
+
+    document.getElementById('comenzi-stats').style.display = 'block';
+
+    // Listează comenzile
+    let html = '';
+    clientOrders.forEach((order) => {
+      const orderTotal = (order.items || []).reduce((sum, item) => 
+        sum + ((item.price || item.unitPrice || 0) * (item.qty || 0)), 0
+      );
+      
+      const dateStr = new Date(order.createdAt).toLocaleDateString("ro-RO");
+      
+      // Status simplificat: doar Trimis / Netrimis
+      let statusBadge = '';
+      let actionButtons = '';
+      
+      if (order.sentToSmartbill) {
+        statusBadge = `<span style="background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;">✅ Trimis</span>`;
+        actionButtons = `
+          
+        `;
+      } else {
+        statusBadge = `<span style="background: rgba(234, 179, 8, 0.2); color: #fbbf24; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;">❌ Netrimis</span>`;
+        
+        if (order.smartbillError) {
+          statusBadge = `<span style="background: rgba(239, 68, 68, 0.2); color: #ef4444; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;">⚠️ Eroare SB</span>`;
+        }
+        
+        actionButtons = `
+          <button class="btn btn-sm btn-primary" onclick="sendOrderToSmartbill('${order.id}')" style="padding: 6px 12px; background: #3b82f6;">
+            📤 Trimite
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="prepareEditOrder('${order.id}')" title="Modifică comanda">✏️ Modifică</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteOrder('${order.id}')" style="padding: 6px 12px; background: #ef4444; color: white; font-weight: 600; min-width: 80px;">
+  🗑️ Șterge
+</button>
+        `;
+      }
+      
+      html += `
+        <div class="order-card" style="border: 1px solid var(--border-color); border-radius: var(--radius-lg); margin-bottom: var(--space-4); overflow: hidden;">
+          <div class="order-header" onclick="this.nextElementSibling.nextElementSibling.style.display = this.nextElementSibling.nextElementSibling.style.display === 'none' ? 'block' : 'none'" style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-4); background: var(--bg-tertiary); cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div>
+                <div class="order-id" style="font-family: monospace; font-size: 0.875rem; color: var(--text-muted);">#${order.id.slice(-6)}</div>
+                <div class="order-date" style="font-weight: 600;">${dateStr}</div>
+              </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 10px;">
+              ${statusBadge}
+            
+            </div>
+          </div>
+          
+          <!-- BUTOANELE ACUM SUNT AICI SUS, VIZIBILE -->
+          <div style="padding: var(--space-3) var(--space-4); background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; flex-wrap: wrap;">
+            ${actionButtons}
+          </div>
+          
+          <div class="order-body" style="display: none; padding: var(--space-4);">
+            ${order.smartbillError ? `<div style="background: rgba(239, 68, 68, 0.2); color: #ef4444; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.875rem;">
+              <strong>Eroare:</strong> ${order.smartbillError}
+            </div>` : ''}
+            
+            ${(order.items || []).map(item => `
+              <div class="order-item" style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-3); background: var(--bg-tertiary); border-radius: var(--radius-lg); margin-bottom: var(--space-2);">
+                <div>
+                  <div style="font-weight: 600;">${item.name}</div>
+                  <div class="hint" style="color: var(--text-muted);">${item.qty} buc × ${(item.price || item.unitPrice || 0).toFixed(2)} RON</div>
+                </div>
+              </div>
+            `).join('')}
+            
+           
+          </div>
+        </div>
+      `;
+    });
+    
+    document.getElementById('comenzi-lista').innerHTML = html;
+    
+  } catch (err) {
+    document.getElementById('comenzi-loading').innerHTML = '❌ Eroare. <button onclick="loadComenzi()">Reîncearcă</button>';
+  }
+}
+
+// Funcții helper
+async function sendOrderToSmartbill(orderId) {
+  if (!confirm('Sigur vrei să trimiți această comandă la SmartBill?\n\nData scadență va fi calculată automat conform termenului de plată al clientului.')) {
+    return;
+  }
+  
+  try {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Se trimite...';
+    
+    const res = await fetch(`/api/orders/${orderId}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok && data.success) {
+      alert(`✅ Comandă trimisă cu succes!\n\nSerie: ${data.smartbillSeries}\nNumăr: ${data.smartbillNumber}\nScadență: ${new Date(data.dueDate).toLocaleDateString('ro-RO')}`);
+      loadComenzi();
+    } else {
+      alert(`❌ Eroare: ${data.error || 'Eroare necunoscută'}`);
+      btn.disabled = false;
+      btn.innerHTML = '📤 Trimite';
+    }
+  } catch (err) {
+    alert('❌ Eroare de rețea');
+  }
+}
+
+async function deleteOrder(orderId) {
+  if (!confirm('Sigur vrei să ștergi această comandă?\n\nStocul va fi returnat în depozit.')) {
+    return;
+  }
+  
+  try {
+    const res = await fetch(`/api/orders/${orderId}`, {
+      method: 'DELETE'
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      alert('✅ Comandă ștearsă');
+      loadComenzi();
+    } else {
+      alert(`❌ ${data.error || 'Eroare la ștergere'}`);
+    }
+  } catch (err) {
+    alert('❌ Eroare de rețea');
+  }
+}
+
+async function loadSpecialPrices() {
+  window.preturiLoaded = true;
+  const client = JSON.parse(localStorage.getItem('clientSelectat') || '{}');
+  if (!client.id) return;
+
+  try {
+    const res = await fetch(`/api/clients/${client.id}/prices`);
+    const data = await res.json();
+    
+    allSpecialPrices = data.prices || [];
+    renderSpecialPrices(allSpecialPrices);
+    
+  } catch (err) {
+    console.error(err);
+    document.getElementById('clientPricesList').innerHTML = '<div class="empty-state">❌ Eroare la încărcare.</div>';
+  }
+}
+
+function renderSpecialPrices(prices) {
+  const listDiv = document.getElementById('clientPricesList');
+  
+  if (!prices || prices.length === 0) {
+    listDiv.innerHTML = '<div class="empty-state"><div style="font-size: 3rem; margin-bottom: var(--space-4);">💤</div><p>Nu există prețuri speciale configurate.</p></div>';
+    return;
+  }
+
+  let html = '';
+  prices.forEach(price => {
+    const standardPrice = parseFloat(price.standard_price || 0).toFixed(2);
+    const specialPrice = parseFloat(price.special_price || 0).toFixed(2);
+    const discount = price.standard_price > 0 
+      ? Math.round((1 - price.special_price / price.standard_price) * 100) 
+      : 0;
+
+    html += `
+      <div class="price-list-item" style="position: relative; padding: var(--space-4);">
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-primary);">${price.product_name}</div>
+          <div style="color: var(--text-muted); font-size: 0.875rem; margin-top: 4px;">GTIN: ${price.gtin || '-'}</div>
+          <div style="margin-top: 8px; display: flex; align-items: center; gap: 12px;">
+            <span style="text-decoration: line-through; color: var(--text-muted); font-size: 0.875rem;">${standardPrice} RON</span>
+            ${discount > 0 ? `<span style="background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">-${discount}%</span>` : ''}
+          </div>
+        </div>
+        <div style="text-align: right; display: flex; align-items: center; gap: var(--space-4);">
+          <div style="color: #22c55e; font-weight: 800; font-size: 1.25rem;">${specialPrice} RON</div>
+          <div style="display: flex; gap: 8px; margin-left: 12px;">
+            <button onclick="openPriceModal('edit', '${price.product_id}', ${price.special_price})" 
+                    style="background: rgba(59, 130, 246, 0.2); border: none; color: #60a5fa; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(59, 130, 246, 0.4)'" 
+                    onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'"
+                    title="Modifică">✏️</button>
+            <button onclick="deleteSpecialPrice('${price.product_id}')" 
+                    style="background: rgba(239, 68, 68, 0.2); border: none; color: #ef4444; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(239, 68, 68, 0.4)'" 
+                    onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'"
+                    title="Șterge">🗑️</button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  listDiv.innerHTML = html;
+}
+
+// Căutare în prețurile existente
+function filterSpecialPrices() {
+  const term = document.getElementById('priceSearchFilter').value.toLowerCase().trim();
+  if (!term) {
+    renderSpecialPrices(allSpecialPrices);
+    return;
+  }
+  
+  const filtered = allSpecialPrices.filter(p => 
+    (p.product_name && p.product_name.toLowerCase().includes(term)) ||
+    (p.gtin && p.gtin.toLowerCase().includes(term))
+  );
+  renderSpecialPrices(filtered);
+}
+
+// Modal funcții
+function openPriceModal(mode, productId = null, currentPrice = null) {
+  const modal = document.getElementById('priceModal');
+  const title = document.getElementById('modalTitle');
+  const productSection = document.getElementById('productSelectSection');
+  const priceInput = document.getElementById('modalSpecialPrice');
+  const editingId = document.getElementById('editingProductId');
+  
+  // Reset
+  document.getElementById('modalProductSearch').value = '';
+  document.getElementById('modalProductResults').innerHTML = '';
+  document.getElementById('modalProductResults').style.display = 'none';
+  document.getElementById('selectedProductInfo').style.display = 'none';
+  selectedModalProduct = null;
+  
+  if (mode === 'edit') {
+    title.textContent = 'Modifică Preț Special';
+    productSection.style.display = 'none';
+    editingId.value = productId;
+    priceInput.value = currentPrice || '';
+    
+    // Găsește numele produsului pentru afișare
+    const product = allSpecialPrices.find(p => p.product_id === productId);
+    if (product) {
+      document.getElementById('selectedProductInfo').style.display = 'block';
+      document.getElementById('selectedProductName').textContent = product.product_name;
+      document.getElementById('selectedProductGtin').textContent = product.gtin || '-';
+      document.getElementById('selectedProductPrice').textContent = parseFloat(product.standard_price || 0).toFixed(2);
+    }
+  } else {
+    title.textContent = 'Adaugă Preț Special';
+    productSection.style.display = 'block';
+    editingId.value = '';
+    priceInput.value = '';
+  }
+  
+  modal.style.display = 'flex';
+  if (mode === 'add') document.getElementById('modalProductSearch').focus();
+  else priceInput.focus();
+}
+
+function closePriceModal() {
+  document.getElementById('priceModal').style.display = 'none';
+}
+
+// Căutare produse în modal
+let searchTimeout;
+async function searchProductsInModal() {
+  const term = document.getElementById('modalProductSearch').value.trim();
+  const resultsDiv = document.getElementById('modalProductResults');
+  
+  if (term.length < 2) {
+    resultsDiv.style.display = 'none';
+    return;
+  }
+  
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/products/search?q=${encodeURIComponent(term)}`);
+      const products = await res.json();
+      
+      if (products.length === 0) {
+        resultsDiv.innerHTML = '<div style="padding: 12px; color: var(--text-muted); text-align: center;">Niciun produs găsit</div>';
+        resultsDiv.style.display = 'block';
+        return;
+      }
+      
+      let html = '';
+      products.forEach(p => {
+        // Verifică dacă produsul are deja preț special
+        const hasSpecialPrice = allSpecialPrices.some(sp => sp.product_id === p.id);
+        const opacity = hasSpecialPrice ? '0.5' : '1';
+        const cursor = hasSpecialPrice ? 'not-allowed' : 'pointer';
+        const bg = hasSpecialPrice ? 'var(--bg-card)' : 'transparent';
+        const title = hasSpecialPrice ? 'Acest produs are deja preț special' : 'Selectează acest produs';
+        
+        html += `
+          <div onclick="${hasSpecialPrice ? '' : `selectModalProduct(${JSON.stringify(p).replace(/"/g, '&quot;')})`}" 
+               style="padding: 12px; border-bottom: 1px solid var(--border-color); cursor: ${cursor}; opacity: ${opacity}; background: ${bg};"
+               title="${title}">
+            <div style="font-weight: 600;">${p.name}</div>
+            <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.875rem; color: var(--text-muted);">
+              <span>GTIN: ${p.gtin || '-'}</span>
+              <span style="color: var(--accent-gold);">${parseFloat(p.price || 0).toFixed(2)} RON</span>
+            </div>
+            ${hasSpecialPrice ? '<div style="color: #f59e0b; font-size: 0.75rem; margin-top: 4px;">⚠️ Are deja preț special configurat</div>' : ''}
+          </div>
+        `;
+      });
+      
+      resultsDiv.innerHTML = html;
+      resultsDiv.style.display = 'block';
+    } catch (e) {
+      console.error(e);
+    }
+  }, 300);
+}
+
+function selectModalProduct(product) {
+  selectedModalProduct = product;
+  document.getElementById('selectedProductInfo').style.display = 'block';
+  document.getElementById('selectedProductName').textContent = product.name;
+  document.getElementById('selectedProductGtin').textContent = product.gtin || '-';
+  document.getElementById('selectedProductPrice').textContent = parseFloat(product.price || 0).toFixed(2);
+  document.getElementById('modalProductResults').style.display = 'none';
+  document.getElementById('modalSpecialPrice').focus();
+}
+
+// Salvare
+async function saveSpecialPrice() {
+  const price = parseFloat(document.getElementById('modalSpecialPrice').value);
+  const editingId = document.getElementById('editingProductId').value;
+  const client = JSON.parse(localStorage.getItem('clientSelectat') || '{}');
+  
+  if (!price || price <= 0) {
+    alert('Introdu un preț valid!');
+    return;
+  }
+  
+  const productId = editingId || (selectedModalProduct ? selectedModalProduct.id : null);
+  if (!productId) {
+    alert('Selectează un produs!');
+    return;
+  }
+  
+  try {
+    await fetch(`/api/clients/${client.id}/prices`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: productId, special_price: price })
+    });
+    
+    closePriceModal();
+    loadSpecialPrices(); // Reîncarcă lista
+    
+    // Afișează notificare de succes (opțional)
+    console.log('✅ Preț salvat cu succes');
+  } catch (err) {
+    alert('Eroare la salvare!');
+  }
+}
+
+// Ștergere
+async function deleteSpecialPrice(productId) {
+  if (!confirm('Sigur vrei să ștergi acest preț special?')) return;
+  
+  const client = JSON.parse(localStorage.getItem('clientSelectat') || '{}');
+  
+  try {
+    // Obține prețurile curente, elimină produsul, apoi salvează
+    const res = await fetch(`/api/clients/${client.id}/prices`);
+    const data = await res.json();
+    
+    const prices = data.prices || [];
+    const updatedPrices = prices.filter(p => p.product_id !== productId);
+    
+    // Transformă înapoi în formatul așteptat de API
+    const pricesObj = {};
+    updatedPrices.forEach(p => {
+      pricesObj[p.product_id] = p.special_price;
+    });
+    
+    await fetch(`/api/clients/${client.id}/prices`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prices: pricesObj })
+    });
+    
+    loadSpecialPrices();
+  } catch (err) {
+    alert('Eroare la ștergere!');
+  }
+}
+
+// Închide modal când dai click în afară
+document.getElementById('priceModal').addEventListener('click', function(e) {
+  if (e.target === this) closePriceModal();
+});
+
+    // Căutare produse pentru prețuri
+    document.getElementById('priceProductSearch')?.addEventListener('input', async function(e) {
+      const term = e.target.value.trim();
+      if (term.length < 2) {
+        document.getElementById('priceProductResults').innerHTML = '';
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/products/search?q=${encodeURIComponent(term)}`);
+        const products = await res.json();
+        
+        let html = '';
+        products.slice(0, 5).forEach(p => {
+          html += `
+            <div class="price-list-item" style="cursor: pointer;" onclick="selectProductForPrice(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+              <div>
+                <div style="font-weight: 600;">${p.name}</div>
+                <div class="hint">GTIN: ${p.gtin}</div>
+              </div>
+              <div>${p.price} RON</div>
+            </div>
+          `;
+        });
+        document.getElementById('priceProductResults').innerHTML = html;
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    function selectProductForPrice(product) {
+      selectedProduct = product;
+      document.getElementById('selectedProductBox').innerHTML = `
+        <div style="font-weight: 600;">${product.name}</div>
+        <div class="hint">Preț standard: ${product.price} RON | GTIN: ${product.gtin}</div>
+      `;
+      document.getElementById('priceProductResults').innerHTML = '';
+      document.getElementById('priceProductSearch').value = '';
+    }
+
+    async function addSpecialPrice() {
+      if (!selectedProduct) return alert('Selectează un produs!');
+      const price = document.getElementById('newSpecialPrice').value;
+      if (!price) return alert('Introdu prețul!');
+      
+      const client = JSON.parse(localStorage.getItem('clientSelectat') || '{}');
+      
+      try {
+        await fetch(`/api/clients/${client.id}/prices`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: selectedProduct.id, special_price: price })
+        });
+        alert('Preț adăugat!');
+        loadSpecialPrices();
+        selectedProduct = null;
+        document.getElementById('selectedProductBox').innerHTML = '<i>(niciun produs selectat)</i>';
+        document.getElementById('newSpecialPrice').value = '';
+      } catch (err) {
+        alert('Eroare la salvare!');
+      }
+    }
+
+   
+
+    // === INIT ===
+    document.addEventListener('DOMContentLoaded', async function() {
+      await loadClientData();
+      loadSold(); // Încarcă implicit soldul
+      
+      const lastTab = localStorage.getItem('clientLastTab');
+      if (lastTab && lastTab !== 'sold') {
+        switchTab(lastTab);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Recepție Marfă - Fast Medical Distribution</title>
+  <link rel="stylesheet" href="global.css" />
+  <style>
+    .scan-section {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(34, 197, 94, 0.1));
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: var(--radius-xl);
+      padding: var(--space-5);
+      margin-bottom: var(--space-6);
+    }
+
+    .scan-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-5);
+    }
+
+    .scan-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .scan-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .btn-scan {
+      background: linear-gradient(135deg, var(--success-600), var(--success-700));
+      color: white;
+      border: none;
+      padding: var(--space-4) var(--space-6);
+      font-size: 1rem;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4);
+    }
+
+    .btn-scan:active {
+      transform: scale(0.98);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-4);
+    }
+
+    @media (min-width: 640px) {
+      .form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .form-group-full {
+      grid-column: 1 / -1;
+    }
+
+    .stock-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .stock-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+
+    .stock-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .stock-item-name {
+      font-weight: 600;
+      margin-bottom: var(--space-1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stock-item-meta {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    .stock-item-meta span {
+      background: rgba(148, 163, 184, 0.1);
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+    }
+
+    .stock-badge {
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 0.9375rem;
+      min-width: 70px;
+      text-align: center;
+    }
+
+    .stock-badge.ok {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success-400);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .stock-badge.low {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning-500);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .stock-badge.critical {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger-500);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* Scanner modal */
+    .scanner-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+    }
+
+    .scanner-overlay.active {
+      display: flex;
+    }
+
+    .scanner-header {
+      padding: var(--space-4);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .scanner-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .scanner-close {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-full);
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scanner-video-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
+    }
+
+    #scanVideo {
+      width: 100%;
+      max-width: 500px;
+      border-radius: var(--radius-xl);
+    }
+
+    .scanner-hint {
+      text-align: center;
+      padding: var(--space-5);
+      color: var(--text-muted);
+    }
+
+    .auto-detect-indicator {
+      position: absolute;
+      right: var(--space-4);
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      background: var(--success-500);
+      border-radius: var(--radius-full);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+    }
+
+    .auto-detect-indicator.show {
+      display: flex;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    /* Product Search Dropdown Styles */
+    .product-search-container {
+      position: relative;
+    }
+
+    .product-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      max-height: 250px;
+      overflow-y: auto;
+      margin-top: 4px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      z-index: 200;
+      display: none;
+    }
+
+    .product-results.show {
+      display: block;
+    }
+
+    .product-result-item {
+      padding: var(--space-3) var(--space-4);
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+      transition: all 0.2s;
+    }
+
+    .product-result-item:hover {
+      background: rgba(59, 130, 246, 0.15);
+    }
+
+    .product-result-item:last-child {
+      border-bottom: none;
+    }
+
+    .product-result-name {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 0.9375rem;
+    }
+
+    .product-result-meta {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .selected-product-display {
+      margin-top: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: var(--radius-md);
+      display: none;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .selected-product-display.show {
+      display: flex;
+    }
+
+    .selected-product-display .check {
+      color: var(--success-400);
+      font-weight: 700;
+    }
+
+    .selected-product-display .name {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .no-results {
+      padding: var(--space-3) var(--space-4);
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+    }
+
+    /* Date input helper text */
+    .date-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="navbar-brand-icon">⚕️</div>
+        <span>FMD</span>
+      </a>
+      <div class="navbar-actions"><div id="userBar"></div>
+        <a href="index.html" class="btn btn-ghost btn-sm">← Înapoi</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- Scanare și Adăugare -->
+    <div class="scan-section">
+      <div class="scan-header">
+        <div class="scan-title">
+          <div class="scan-icon">📷</div>
+          <div>
+            <h2 style="margin: 0; font-size: 1.25rem;">Scanare Cod</h2>
+            <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">Scanează codul de pe produs</p>
+          </div>
+        </div>
+        <button class="btn btn-scan" id="btnScanQR">
+          📷 Scanează
+        </button>
+      </div>
+
+      <div class="form-grid">
+  <div class="form-group form-group-full">
+    <label class="form-label">Cod scanat</label>
+    <div class="input-wrap">
+      <input type="text" id="qrInput" class="form-input" placeholder="Apropie camera de cod..." />
+      <div class="auto-detect-indicator" id="stockAutoOk">✓</div>
+    </div>
+  </div>
+
+  <div class="form-group form-group-full">
+    <label class="form-label">Gestiune</label>
+    <select id="warehouseSelect" class="form-select">
+      <option value="depozit">🏭 Depozit</option>
+      <option value="magazin">🏪 Magazin</option>
+    </select>
+  </div>
+
+  <!-- Acesta e singurul dropdown pentru locatie - apare doar pt Depozit -->
+  <div class="form-group" id="locationGroup">
+    <label class="form-label">Locație Depozit</label>
+    <select id="stockLocation" class="form-select">
+      <option value="A">📍 Locație A</option>
+      <option value="B">📍 Locație B</option>
+      <option value="C">📍 Locație C</option>
+      <option value="R1">📦 Raft R1</option>
+      <option value="R2">📦 Raft R2</option>
+      <option value="R3">📦 Raft R3</option>
+    </select>
+  </div>
+
+  <div class="form-group form-group-full">
+    <label class="form-label">Produs</label>
+    <div class="product-search-container">
+      <div class="input-wrap">
+        <input 
+          type="text" 
+          id="stockProductSearch" 
+          class="form-input" 
+          placeholder="Caută produs după nume..."
+          autocomplete="off"
+        />
+        <div class="auto-detect-indicator" id="productSelectOk" style="display: none;">✓</div>
+      </div>
+      <div id="stockProductResults" class="product-results"></div>
+      <input type="hidden" id="stockProduct" value="" data-name="" data-gtins="[]" />
+      
+      <div id="selectedProductDisplay" class="selected-product-display">
+        <span class="check">✓</span>
+        <span class="name" id="selectedProductName"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">LOT</label>
+    <input type="text" id="stockLot" class="form-input" placeholder="Ex: LOT2024001" />
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Data expirare</label>
+    <input 
+      type="text" 
+      id="stockExpire" 
+      class="form-input" 
+      placeholder="dd.mm.yyyy" 
+      maxlength="10"
+    />
+    <div class="date-hint">Format: zi.lună.an (ex: 31.12.2025)</div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Cantitate</label>
+    <input type="number" id="stockQty" class="form-input" min="1" placeholder="0" />
+  </div>
+
+  <div class="form-group form-group-full">
+    <button class="btn btn-primary btn-lg w-full" id="btnAddStock">
+      ➕ Adaugă în stoc
+    </button>
+  </div>
+</div>
+
+    <!-- Lista Stoc Existent -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">Stoc Existent</h3>
+          <div class="card-subtitle">Ultimele intrări în depozit</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnRefreshStock">🔄 Refresh</button>
+      </div>
+      <div class="stock-list" id="stockList">
+        <!-- Populat din JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Scanner Modal -->
+  <div class="scanner-overlay" id="scannerModal">
+    <div class="scanner-header">
+      <span class="scanner-title">Scanare cod</span>
+      <button class="scanner-close" id="btnCloseScan">✕</button>
+    </div>
+    <div class="scanner-video-container">
+      <video id="scanVideo" autoplay playsinline muted></video>
+    </div>
+    <div class="scanner-hint">
+      Apropie camera de codul de bare sau DataMatrix<br>
+      Scanarea se face automat
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+/* ==============
+   Mobile-first dashboard look (Samsung S25 friendly)
+   DOAR pentru adauga_comanda.html
+============== */
+
+:root{
+  --bg: #0b1220;
+  --panel: rgba(255,255,255,.06);
+  --panel2: rgba(255,255,255,.08);
+  --stroke: rgba(255,255,255,.10);
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.65);
+
+  --brand1: #60a5fa;
+  --brand2: #22c55e;
+
+  --shadow: 0 10px 25px rgba(0,0,0,.35);
+  --radius: 16px;
+  --radius2: 22px;
+
+  --tap: 48px;
+}
+
+/* page base */
+*{ box-sizing:border-box; }
+html, body{ height:100%; }
+body{
+  margin:0;
+  color: var(--text);
+  background:
+    radial-gradient(1100px 600px at 20% -10%, rgba(96,165,250,.22), transparent 60%),
+    radial-gradient(900px 500px at 90% 0%, rgba(34,197,94,.16), transparent 55%),
+    radial-gradient(900px 700px at 50% 120%, rgba(96,165,250,.12), transparent 60%),
+    var(--bg);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a{ color:inherit; }
+
+/* ==============
+   Topbar (override dacă style.css nu există / e slab)
+============== */
+.topbar{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 12px 14px;
+  background: rgba(10, 16, 28, .72);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.topbar-left{ display:flex; align-items:center; gap:10px; min-width: 0; }
+.brand{
+  font-weight: 800;
+  letter-spacing: .2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55vw;
+}
+
+.topbar-right{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.icon-btn{
+  height: 40px;
+  min-width: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.icon-btn:active{ transform: translateY(1px); }
+
+/* userBar fallback styling (dacă style.css lipsește) */
+#userBar .userbar-inner{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+#userBar .user-pill{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  max-width: 44vw;
+}
+#userBar .user-txt{
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#userBar .logout-btn{
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  cursor:pointer;
+}
+#userBar .logout-btn:hover{ background: rgba(255,255,255,.12); }
+
+/* ==============
+   Container / layout
+============== */
+.container{
+  width: min(980px, 100%);
+  margin: 0 auto;
+  padding: 14px 12px 22px;
+}
+
+/* Header actions zone */
+.page-head{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 10px;
+}
+
+/* Hint text */
+.hint{
+  margin: 10px 2px 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ==============
+   Buttons (păstrăm clasele existente)
+============== */
+.btn,
+.linkbtn,
+.itembtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+
+  min-height: var(--tap);
+  padding: 12px 14px;
+  border-radius: var(--radius2);
+
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.07);
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .05s ease, background .15s ease, border-color .15s ease;
+  box-shadow: 0 8px 18px rgba(0,0,0,.18);
+}
+
+.btn:hover,
+.linkbtn:hover,
+.itembtn:hover{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.18);
+}
+
+.btn:active,
+.linkbtn:active,
+.itembtn:active{
+  transform: translateY(1px);
+}
+
+/* “Vizualizează comanda actuală” să arate ca CTA */
+#btnViewCurrentOrder{
+  background: linear-gradient(135deg, rgba(96,165,250,.22), rgba(34,197,94,.18));
+  border-color: rgba(96,165,250,.28);
+}
+
+/* Dashboard link (ultimul) să fie evident pe mobil */
+.container > a.linkbtn[href="index.html"]{
+  width: 100%;
+  margin-top: 12px;
+  background: rgba(96,165,250,.12);
+  border-color: rgba(96,165,250,.22);
+}
+
+/* ==============
+   Search box + dropdown
+============== */
+.client-search{
+  position: relative;
+  margin: 10px 0 14px;
+}
+
+#searchClient{
+  width: 100%;
+  min-height: var(--tap);
+  padding: 12px 14px;
+  border-radius: var(--radius2);
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  outline: none;
+  box-shadow: var(--shadow);
+}
+
+#searchClient::placeholder{ color: rgba(255,255,255,.45); }
+
+#searchClient:focus{
+  border-color: rgba(96,165,250,.40);
+  box-shadow: 0 0 0 4px rgba(96,165,250,.12), var(--shadow);
+}
+
+#clientSearchResults.list{
+  position:absolute;
+  left:0;
+  right:0;
+  top: calc(100% + 8px);
+  z-index: 40;
+  max-height: 55vh;
+  overflow:auto;
+
+  background: rgba(10, 16, 28, .92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 8px;
+}
+
+/* rezultate = butoane full width */
+#clientSearchResults .itembtn{
+  width: 100%;
+  justify-content: flex-start;
+  border-radius: 14px;
+  box-shadow: none;
+  background: rgba(255,255,255,.06);
+}
+
+/* când e gol (innerHTML="") nu vrem chenar mare */
+#clientSearchResults:empty{
+  display:none;
+}
+
+/* ==============
+   Tree / secțiuni (Craiova / Exterior / etc.)
+============== */
+.tree{
+  display:flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Headings generatează JS-ul cu <h4> */
+.tree h4{
+  margin: 10px 4px 8px;
+  font-size: 14px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.70);
+}
+
+/* Containerul generat de renderTree e un <div> cu butoane inăuntru.
+   Le facem “chips grid” */
+.tree > div{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* fiecare sub-grup de butoane: wrap frumos */
+.tree > div > div{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.05);
+}
+
+/* butoane clienți = chips */
+.tree .itembtn{
+  min-height: 40px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  box-shadow: none;
+  background: rgba(255,255,255,.06);
+}
+
+/* ==============
+   Responsive tweaks (desktop)
+============== */
+@media (min-width: 760px){
+  .container{ padding: 18px 18px 28px; }
+  .page-head{
+    flex-direction: row;
+    align-items: center;
+  }
+  .page-head .btn{
+    width: auto;
+  }
+  #btnViewCurrentOrder{
+    width: auto;
+    margin-left: auto;
+  }
+  .brand{ max-width: 420px; }
+}

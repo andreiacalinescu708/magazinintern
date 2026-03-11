@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Creează cont</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="global.css">
+  <style>
+    /* Fix pentru vizibilitate inputuri */
+    .authInput {
+      color: #f8fafc !important; /* Text alb */
+      background: #1e293b !important; /* Fundal închis dar vizibil */
+      border: 2px solid #334155 !important;
+      padding: 0.75rem 1rem !important;
+      border-radius: 0.5rem !important;
+      font-size: 1rem !important;
+      width: 100% !important;
+      margin-top: 0.5rem !important;
+    }
+    
+    .authInput:focus {
+      outline: none !important;
+      border-color: #0284c7 !important;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
+    }
+    
+    /* Placeholder gri deschis */
+    .authInput::placeholder {
+      color: #64748b !important;
+    }
+    
+    /* Label alb */
+    .authLabel {
+      color: #f8fafc !important;
+      font-weight: 500 !important;
+      display: block !important;
+      margin-bottom: 1rem !important;
+    }
+    
+    /* Mesaj eroare */
+    .authMsg {
+      color: #ef4444 !important;
+      margin-top: 1rem !important;
+      font-size: 0.9rem !important;
+      min-height: 1.5rem !important;
+    }
+  </style>
+</head>
+<body class="authBody">
+  <div class="authCard">
+    <div class="authHeader">
+      <div class="authLogo">👤</div>
+      <h1>Creează cont</h1>
+      <p class="muted">Alege un username și o parolă.</p>
+    </div>
+
+    <form id="registerForm" class="authForm" autocomplete="on">
+      <label class="authLabel">
+        Username
+        <input id="regUser" class="authInput" type="text" autocomplete="username" required placeholder="Introdu username" />
+      </label>
+
+      <label class="authLabel">
+        Parolă
+        <input id="regPass" class="authInput" type="password" autocomplete="new-password" required placeholder="Introdu parola" />
+      </label>
+
+      <button id="btnRegister" class="authBtn" type="submit">Creează cont</button>
+      <div id="registerMsg" class="authMsg"></div>
+    </form>
+
+    <div class="authFooter">
+      <a class="authLinkBtn" href="login.html">Am deja cont</a>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Foi de Parcurs - Fast Medical Distribution</title>
+  <link rel="stylesheet" href="global.css" />
+  <style>
+    .trip-container { max-width: 1200px; margin: 0 auto; }
+    
+    .trip-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      margin-bottom: var(--space-6);
+    }
+    
+    .trip-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-6);
+      flex-wrap: wrap;
+      gap: var(--space-4);
+    }
+    
+    .trip-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    
+    .form-group label {
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      color: var(--text-primary);
+      font-size: 1rem;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 3px var(--primary-500-alpha);
+    }
+    
+    .km-display {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary-400);
+      text-align: center;
+      padding: var(--space-4);
+      background: var(--bg-elevated);
+      border-radius: var(--radius-lg);
+      border: 2px solid var(--primary-600);
+    }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      background: var(--bg-elevated);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    
+    .checkbox-group label {
+      margin: 0;
+      cursor: pointer;
+      text-transform: none;
+      font-weight: 500;
+    }
+    
+    .trip-sheet-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+    
+    .trip-sheet-item {
+      background: var(--bg-elevated);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      border: 1px solid var(--border-color);
+      transition: all var(--transition-base);
+    }
+    
+    .trip-sheet-item:hover {
+      border-color: var(--primary-500);
+      transform: translateY(-2px);
+    }
+    
+    .trip-sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-3);
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+    
+    .trip-sheet-meta {
+      display: flex;
+      gap: var(--space-4);
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      flex-wrap: wrap;
+    }
+    
+    .badge {
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .badge-success { background: var(--success-500); color: white; }
+    .badge-warning { background: var(--warning-500); color: black; }
+    
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: var(--space-4);
+    }
+    
+    .modal-overlay.active { display: flex; }
+    
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+    }
+    
+    .modal-header {
+      padding: var(--space-4) var(--space-6);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-body { padding: var(--space-6); }
+    
+    .modal-footer {
+      padding: var(--space-4) var(--space-6);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-3);
+    }
+    
+    /* Info box pentru KM */
+    .km-info {
+      background: var(--info-500-alpha);
+      border: 1px solid var(--info-500);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      font-size: 0.875rem;
+      color: var(--info-400);
+      margin-top: var(--space-2);
+      display: none;
+    }
+    
+    .km-info.show { display: block; }
+    
+    .km-warning {
+      background: var(--warning-500-alpha);
+      border-color: var(--warning-500);
+      color: var(--warning-400);
+    }
+    
+    @media print {
+      @page {
+        margin: 0;
+        size: auto;
+      }
+      
+      body {
+        margin: 20mm;
+        background: white;
+      }
+      
+      .navbar, 
+      .user-bar, 
+      .no-print, 
+      .trip-card:first-of-type,
+      .history-section,
+      h1,
+      .btn,
+      .modal-overlay,
+      .km-info {
+        display: none !important;
+      }
+      
+      body * {
+        visibility: hidden;
+      }
+      
+      .print-sheet, .print-sheet * {
+        visibility: visible;
+      }
+      
+      .print-sheet {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: white;
+        color: black;
+        display: block !important;
+      }
+    }
+    
+    .print-sheet {
+      display: none;
+      background: white;
+      color: black;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .print-sheet.active { display: block; }
+    
+    .print-header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid black;
+      padding-bottom: 20px;
+    }
+    
+    .print-header h1 {
+      margin: 0 0 10px 0;
+      font-size: 24px;
+      color: black;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .print-header h2 {
+      margin: 0 0 5px 0;
+      font-size: 18px;
+      color: #333;
+    }
+    
+    .print-header .cui {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .print-header .trip-number {
+      margin: 10px 0;
+      font-size: 16px;
+      font-weight: bold;
+      color: #000;
+      border: 2px solid black;
+      display: inline-block;
+      padding: 5px 15px;
+      margin-top: 10px;
+    }
+    
+    .print-header .date {
+      margin: 10px 0 0 0;
+      font-size: 14px;
+    }
+    
+    .print-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    
+    .print-table th,
+    .print-table td {
+      border: 1px solid black;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    
+    .print-table th { 
+      background: #f0f0f0; 
+      width: 120px;
+      font-weight: bold;
+    }
+    
+    .location-list {
+      line-height: 1.8;
+    }
+    
+    .location-item {
+      padding: 2px 0;
+      border-bottom: 1px dotted #ccc;
+    }
+    
+    .location-item:last-child {
+      border-bottom: none;
+    }
+    
+    .signature-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 60px;
+    }
+    
+    .signature-box {
+      width: 200px;
+      text-align: center;
+    }
+    
+    .signature-line {
+      border-top: 1px solid black;
+      margin-top: 40px;
+      padding-top: 10px;
+    }
+
+    .error-msg {
+      color: var(--danger-500);
+      font-size: 0.875rem;
+      margin-top: var(--space-1);
+    }
+    
+    .trip-number-display {
+      font-family: monospace;
+      background: var(--primary-500-alpha);
+      padding: 2px 8px;
+      border-radius: var(--radius-md);
+      font-weight: bold;
+      color: var(--primary-400);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar no-print">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="navbar-brand-icon">⚕️</div>
+        <span>Fast Medical Distribution</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-ghost" onclick="location.href='index.html'">← Înapoi</button>
+        <button class="btn btn-ghost btn-icon" id="btnToggleTheme" title="Schimbă tema">🌙</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container trip-container">
+    <div class="user-bar no-print" id="userBar"></div>
+
+    <h1 style="margin-bottom: var(--space-6);" class="no-print">🚛 Foi de Parcurs</h1>
+
+    <!-- Formular nou -->
+    <div class="trip-card no-print">
+      <div class="trip-header">
+        <h2>Foaie de Parcurs Nouă</h2>
+        <span class="badge badge-warning" id="kmTotalBadge" style="display:none;">KM Total: 0</span>
+      </div>
+
+      <div class="trip-grid">
+        <div class="form-group">
+          <label>📅 Data Emiterii</label>
+          <input type="date" id="tripDate" required />
+        </div>
+
+        <div class="form-group">
+          <label>👤 Șofer</label>
+          <select id="tripDriver" required>
+            <option value="">Selectează șofer...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>🚗 Număr Înmatriculare</label>
+          <select id="tripVehicle" required>
+            <option value="">Selectează mașina...</option>
+          </select>
+          <div id="kmInfo" class="km-info">
+            Ultimul KM înregistrat pentru această mașină: <strong id="lastKmDisplay">0</strong>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>🕘 Ora Plecare (default 09:00)</label>
+          <input type="time" id="departureTime" value="09:00" required />
+        </div>
+
+        <div class="form-group">
+          <label>🕘 Ora Sosire (default 17:00)</label>
+          <input type="time" id="arrivalTime" value="17:00" />
+        </div>
+
+        <div class="form-group">
+          <label>📋 Scopul Deplasării</label>
+          <select id="tripPurpose" required>
+            <option value="Livrare Marfa">Livrare Marfă</option>
+            <option value="Vizita Clienti">Vizită Clienți</option>
+            <option value="Transport Personal">Transport Personal</option>
+            <option value="Service">Service</option>
+            <option value="Altul">Altul</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+<label>🔢 KM Plecare <span style="color: var(--success-500); font-size: 0.75rem;">(auto-completat, editabil)</span></label><input type="number" id="kmStart" placeholder="Ex: 125000" required />
+          <div id="kmStartWarning" class="km-info km-warning" style="display:none;">
+            ⚠️ KM Plecare nu poate fi mai mic decât ultimul KM înregistrat!
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>🔢 KM Sosire</label>
+          <input type="number" id="kmEnd" placeholder="Ex: 125150" />
+        </div>
+
+        <div class="form-group">
+          <div class="km-display" id="kmTotalDisplay">0 KM</div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: var(--space-4);">
+        <label>📍 Localități vizitate (scrie câte unul pe rând, cât apesi Enter)</label>
+        <textarea id="tripLocations" rows="4" placeholder="Craiova&#10;Constanța&#10;Pitești&#10;București" style="font-family: monospace;"></textarea>
+      </div>
+
+      <div class="trip-grid" style="margin-top: var(--space-4);">
+        <div class="checkbox-group">
+          <input type="checkbox" id="techCheckDeparture" />
+          <label for="techCheckDeparture">✅ Verificare Tehnică la Plecare</label>
+        </div>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="techCheckArrival" />
+          <label for="techCheckArrival">✅ Verificare Tehnică la Sosire</label>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-6);">
+        <button class="btn btn-primary" id="btnSaveTrip">💾 Salvează Foaia</button>
+        <button class="btn btn-secondary" onclick="resetTripForm()">🔄 Resetare</button>
+      </div>
+    </div>
+
+    <!-- Lista Foi de Parcurs -->
+    <div class="trip-card history-section no-print">
+      <h2 style="margin-bottom: var(--space-4);">📋 Istoric Foi de Parcurs (Cele mai noi primele)</h2>
+      <div id="tripSheetsList" class="trip-sheet-list">
+        <p class="hint">Se încarcă...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Bon Alimentar -->
+  <div class="modal-overlay no-print" id="fuelModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>⛽ Adaugă Bon Alimentare</h3>
+        <button class="btn btn-ghost btn-sm" onclick="closeFuelModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom: var(--space-4);">
+          <label>Tip Combustibil</label>
+          <select id="fuelType">
+            <option value="diesel">🛢️ Diesel</option>
+            <option value="adblue">💧 Ad-Blue</option>
+          </select>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: var(--space-4);">
+          <label>Număr Bon</label>
+          <input type="text" id="fuelReceiptNum" placeholder="Ex: 001245" />
+        </div>
+        
+        <div class="form-group" style="margin-bottom: var(--space-4);">
+          <label>Litri</label>
+          <input type="number" step="0.01" id="fuelLiters" placeholder="Ex: 45.50" />
+        </div>
+        
+        <div class="form-group">
+          <label>KM la Alimentare</label>
+          <input type="number" id="fuelKm" placeholder="Ex: 125075" />
+          <div id="kmError" class="error-msg" style="display:none;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeFuelModal()">Anulează</button>
+        <button class="btn btn-primary" id="btnSaveFuel">Salvează Bonul</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="print-sheet" id="printContainer"></div>
+
+  <script src="script.js"></script>
+  <script>
+    let currentTripId = null;
+    let currentTripData = null;
+    let lastKmForVehicle = 0;
+    let kmStartLocked = true;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await renderUserBar();
+      document.getElementById('tripDate').valueAsDate = new Date();
+      await loadDrivers();
+      await loadVehicles();
+      await loadTripSheets();
+      setupEventListeners();
+    });
+
+    function generateTripNumber() {
+      const date = new Date();
+      const dateStr = date.getFullYear().toString() + 
+                      String(date.getMonth() + 1).padStart(2, '0') + 
+                      String(date.getDate()).padStart(2, '0');
+      const random = Math.floor(100 + Math.random() * 900);
+      return `FP-${dateStr}-${random}`;
+    }
+
+    async function loadDrivers() {
+      try {
+        const res = await fetch('/api/drivers');
+        const drivers = await res.json();
+        const select = document.getElementById('tripDriver');
+        select.innerHTML = '<option value="">Selectează șofer...</option>';
+        drivers.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = d.name;
+          select.appendChild(opt);
+        });
+      } catch (e) {
+        console.error('Eroare încărcare șoferi:', e);
+      }
+    }
+
+    async function loadVehicles() {
+      try {
+        const res = await fetch('/api/vehicles');
+        const vehicles = await res.json();
+        const select = document.getElementById('tripVehicle');
+        select.innerHTML = '<option value="">Selectează mașina...</option>';
+        vehicles.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.id;
+          opt.textContent = v.plate_number;
+          select.appendChild(opt);
+        });
+      } catch (e) {
+        console.error('Eroare încărcare mașini:', e);
+      }
+    }
+
+   async function loadLastKmForVehicle(vehicleId) {
+  try {
+    const res = await fetch(`/api/vehicles/${vehicleId}/last-km`);
+    if (res.ok) {
+      const data = await res.json();
+      lastKmForVehicle = data.lastKm || 0;
+      
+      // Afișăm info
+      document.getElementById('lastKmDisplay').textContent = lastKmForVehicle;
+      document.getElementById('kmInfo').classList.add('show');
+      
+      // Completăm automat KM Plecare (editabil, nu readonly)
+      const kmStartInput = document.getElementById('kmStart');
+      kmStartInput.value = lastKmForVehicle;
+      
+      // Validare inițială
+      validateKmStart();
+    }
+  } catch (e) {
+    console.error('Eroare încărcare ultimul KM:', e);
+  }
+}
+
+    function validateKmStart() {
+  const kmStart = parseInt(document.getElementById('kmStart').value) || 0;
+  const warningDiv = document.getElementById('kmStartWarning');
+  
+  if (kmStart < lastKmForVehicle && lastKmForVehicle > 0) {
+    warningDiv.style.display = 'block';
+    warningDiv.textContent = `⚠️ ATENȚIE: KM Plecare (${kmStart}) este mai mic decât ultimul KM înregistrat (${lastKmForVehicle}). Continuați doar dacă este intenționat!`;
+    // Nu mai blocăm butonul, doar avertizăm
+  } else {
+    warningDiv.style.display = 'none';
+  }
+}
+
+  
+
+    function setupEventListeners() {
+      // La schimbarea mașinii, încărcăm ultimul KM
+      document.getElementById('tripVehicle').addEventListener('change', (e) => {
+        if (e.target.value) {
+          loadLastKmForVehicle(e.target.value);
+        } else {
+          document.getElementById('kmInfo').classList.remove('show');
+          document.getElementById('kmStart').value = '';
+        }
+      });
+
+      const kmStart = document.getElementById('kmStart');
+      const kmEnd = document.getElementById('kmEnd');
+      
+      function calcKm() {
+        const start = parseInt(kmStart.value) || 0;
+        const end = parseInt(kmEnd.value) || 0;
+        const total = end > start ? end - start : 0;
+        document.getElementById('kmTotalDisplay').textContent = total + ' KM';
+        if (end > start) {
+          document.getElementById('kmTotalBadge').style.display = 'inline-block';
+          document.getElementById('kmTotalBadge').textContent = 'KM Total: ' + total;
+        } else {
+          document.getElementById('kmTotalBadge').style.display = 'none';
+        }
+      }
+      
+  kmStart.addEventListener('input', () => {
+  calcKm();
+  validateKmStart();
+});
+      
+      kmEnd.addEventListener('input', calcKm);
+      document.getElementById('btnSaveTrip').addEventListener('click', saveTripSheet);
+      document.getElementById('btnSaveFuel').addEventListener('click', saveFuelReceipt);
+    }
+
+    function resetTripForm() {
+      document.getElementById('tripDate').valueAsDate = new Date();
+      document.getElementById('tripDriver').value = '';
+      document.getElementById('tripVehicle').value = '';
+      document.getElementById('kmStart').value = '';
+      document.getElementById('kmEnd').value = '';
+      document.getElementById('tripLocations').value = '';
+      document.getElementById('departureTime').value = '09:00';
+      document.getElementById('arrivalTime').value = '17:00';
+      document.getElementById('tripPurpose').value = 'Livrare Marfa';
+      document.getElementById('techCheckDeparture').checked = false;
+      document.getElementById('techCheckArrival').checked = false;
+      document.getElementById('kmInfo').classList.remove('show');
+      document.getElementById('kmStartWarning').style.display = 'none';
+      document.getElementById('btnSaveTrip').disabled = false;
+      document.getElementById('btnSaveTrip').style.opacity = '1';
+     
+      currentTripId = null;
+      currentTripData = null;
+      lastKmForVehicle = 0;
+    }
+
+    async function saveTripSheet() {
+      const date = document.getElementById('tripDate').value;
+      const driver_id = document.getElementById('tripDriver').value;
+      const vehicle_id = document.getElementById('tripVehicle').value;
+      const km_start = parseInt(document.getElementById('kmStart').value);
+      const km_end = document.getElementById('kmEnd').value;
+      const locations = document.getElementById('tripLocations').value;
+      const departure_time = document.getElementById('departureTime').value;
+      const arrival_time = document.getElementById('arrivalTime').value;
+      const purpose = document.getElementById('tripPurpose').value;
+      const tech_check_departure = document.getElementById('techCheckDeparture').checked;
+      const tech_check_arrival = document.getElementById('techCheckArrival').checked;
+      
+      const trip_number = generateTripNumber();
+
+      if (!date || !driver_id || !vehicle_id || !km_start) {
+        alert('Completează toate câmpurile obligatorii!');
+        return;
+      }
+
+      // Validare suplimentară KM
+      if (km_start < lastKmForVehicle) {
+        alert(`Eroare: KM Plecare (${km_start}) nu poate fi mai mic decât ultimul KM înregistrat (${lastKmForVehicle})!`);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/trip-sheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            date, 
+            driver_id, 
+            vehicle_id, 
+            km_start, 
+            locations,
+            trip_number,
+            departure_time,
+            arrival_time,
+            purpose,
+            tech_check_departure,
+            tech_check_arrival
+          })
+        });
+        
+        const data = await res.json();
+        if (data.ok) {
+          if (km_end) {
+            await fetch(`/api/trip-sheets/${data.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                km_end: parseInt(km_end), 
+                locations,
+                arrival_time,
+                tech_check_arrival
+              })
+            });
+          }
+          
+          alert(`Foaie de parcurs salvată cu succes!\nNumăr: ${trip_number}`);
+          await loadTripSheets();
+          resetTripForm();
+        } else {
+          alert('Eroare la salvare: ' + (data.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('Eroare la salvare: ' + e.message);
+      }
+    }
+
+    function closeFuelModal() {
+      document.getElementById('fuelModal').classList.remove('active');
+      document.getElementById('fuelReceiptNum').value = '';
+      document.getElementById('fuelLiters').value = '';
+      document.getElementById('fuelKm').value = '';
+      document.getElementById('kmError').style.display = 'none';
+      currentTripData = null;
+    }
+
+    async function saveFuelReceipt() {
+      if (!currentTripId) {
+        alert('Eroare: Nu este selectată nicio foaie de parcurs!');
+        return;
+      }
+
+      const type = document.getElementById('fuelType').value;
+      const receipt_number = document.getElementById('fuelReceiptNum').value;
+      const liters = document.getElementById('fuelLiters').value;
+      const km_at_refuel = parseInt(document.getElementById('fuelKm').value);
+
+      if (!receipt_number || !liters || !km_at_refuel) {
+        alert('Completează toate câmpurile!');
+        return;
+      }
+
+      if (currentTripData) {
+        const kmStart = parseInt(currentTripData.km_start);
+        const kmEnd = currentTripData.km_end ? parseInt(currentTripData.km_end) : null;
+        
+        const errorDiv = document.getElementById('kmError');
+        
+        if (km_at_refuel < kmStart) {
+          errorDiv.textContent = `Eroare: KM la alimentare (${km_at_refuel}) nu poate fi mai mic decât KM Plecare (${kmStart})!`;
+          errorDiv.style.display = 'block';
+          return;
+        }
+        
+        if (kmEnd && km_at_refuel > kmEnd) {
+          errorDiv.textContent = `Eroare: KM la alimentare (${km_at_refuel}) nu poate fi mai mare decât KM Sosire (${kmEnd})!`;
+          errorDiv.style.display = 'block';
+          return;
+        }
+        
+        errorDiv.style.display = 'none';
+      }
+
+      try {
+        const res = await fetch(`/api/trip-sheets/${currentTripId}/fuel-receipts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, receipt_number, liters, km_at_refuel })
+        });
+        
+        if (res.ok) {
+          closeFuelModal();
+          await loadTripSheets();
+        } else {
+          const err = await res.json();
+          alert('Eroare la salvare bon: ' + (err.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('Eroare la salvare bon: ' + e.message);
+      }
+    }
+
+    async function loadTripSheets() {
+      try {
+        const res = await fetch('/api/trip-sheets');
+        const sheets = await res.json();
+        const container = document.getElementById('tripSheetsList');
+        
+        sheets.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        if (sheets.length === 0) {
+          container.innerHTML = '<p class="hint">Nu există foi de parcurs încă.</p>';
+          return;
+        }
+        
+        container.innerHTML = '';
+        sheets.forEach(sheet => {
+          const kmTotal = sheet.km_end ? (sheet.km_end - sheet.km_start) : '-';
+          const isComplete = sheet.km_end ? true : false;
+          
+          const div = document.createElement('div');
+          div.className = 'trip-sheet-item';
+          
+          let fuelHtml = '';
+          if (sheet.fuel_receipts && sheet.fuel_receipts.length > 0) {
+            fuelHtml = '<div style="margin-top: var(--space-2); font-size: 0.9rem; color: var(--text-muted);">';
+            fuelHtml += '<strong>Bonuri:</strong> ';
+            fuelHtml += sheet.fuel_receipts.map(f => 
+              `${f.type === 'diesel' ? '🛢️' : '💧'} ${f.receipt_number} (${f.liters}L)`
+            ).join(', ');
+            fuelHtml += '</div>';
+          }
+          
+          const timeInfo = sheet.departure_time ? `🕘 ${sheet.departure_time}${sheet.arrival_time ? ' - ' + sheet.arrival_time : ''}` : '';
+          const purposeInfo = sheet.purpose ? `📋 ${sheet.purpose}` : '';
+          const techInfo = [];
+          if (sheet.tech_check_departure) techInfo.push('✅ Verif. Plecare');
+          if (sheet.tech_check_arrival) techInfo.push('✅ Verif. Sosire');
+          
+          const numberDisplay = sheet.trip_number ? 
+            `<span class="trip-number-display">#${sheet.trip_number}</span>` : '';
+          
+          div.innerHTML = `
+            <div class="trip-sheet-header">
+              <div>
+                <strong style="font-size: 1.25rem;">${formatDate(sheet.date)}</strong>
+                ${numberDisplay}
+                <span class="badge ${isComplete ? 'badge-success' : 'badge-warning'}" style="margin-left: var(--space-2);">
+                  ${isComplete ? '✓ Completă' : '⏳ În desfășurare'}
+                </span>
+              </div>
+              <div style="display: flex; gap: var(--space-2);">
+                <button class="btn btn-warning btn-sm" onclick="openFuelModalForTrip('${sheet.id}')">⛽ Bon</button>
+                <button class="btn btn-secondary btn-sm" onclick="printTripSheet('${sheet.id}')">🖨️ Print</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteTripSheet('${sheet.id}')">🗑️</button>
+              </div>
+            </div>
+            <div class="trip-sheet-meta">
+              <span>👤 ${sheet.driver_name}</span>
+              <span>🚗 ${sheet.plate_number}</span>
+              <span>🔢 ${sheet.km_start} → ${sheet.km_end || '?'} KM</span>
+              <span>📏 Total: ${kmTotal} KM</span>
+              ${timeInfo ? `<span>${timeInfo}</span>` : ''}
+              ${purposeInfo ? `<span>${purposeInfo}</span>` : ''}
+              ${techInfo.length ? `<span>${techInfo.join(' | ')}</span>` : ''}
+            </div>
+            <div style="margin-top: var(--space-2); color: var(--text-muted); white-space: pre-line;">
+              📍 ${sheet.locations || 'Nicio rută specificată'}
+            </div>
+            ${fuelHtml}
+          `;
+          container.appendChild(div);
+        });
+      } catch (e) {
+        document.getElementById('tripSheetsList').innerHTML = '<p class="hint">Eroare la încărcare</p>';
+      }
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('ro-RO');
+    }
+
+    async function deleteTripSheet(id) {
+      if (!confirm('Ștergi această foaie de parcurs?')) return;
+      try {
+        await fetch(`/api/trip-sheets/${id}`, { method: 'DELETE' });
+        await loadTripSheets();
+      } catch (e) {
+        alert('Eroare la ștergere');
+      }
+    }
+
+    function formatLocationsVertical(locations) {
+      if (!locations || locations === '-') return '-';
+      const lines = locations.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      if (lines.length === 0) return locations;
+      if (lines.length === 1) return lines[0];
+      const items = lines.map(line => `<div class="location-item">${line}</div>`).join('');
+      return `<div class="location-list">${items}</div>`;
+    }
+
+    async function openFuelModalForTrip(tripId) {
+      currentTripId = tripId;
+      try {
+        const res = await fetch('/api/trip-sheets');
+        const sheets = await res.json();
+        currentTripData = sheets.find(s => s.id === tripId);
+      } catch (e) {
+        console.error('Eroare la încărcare date foaie:', e);
+      }
+      document.getElementById('fuelModal').classList.add('active');
+    }
+
+    async function printTripSheet(id) {
+      try {
+        const res = await fetch('/api/trip-sheets');
+        const sheets = await res.json();
+        const sheet = sheets.find(s => s.id === id);
+        if (!sheet) return;
+        
+        const fuelRes = await fetch(`/api/trip-sheets/${id}/fuel-receipts`);
+        const fuels = await fuelRes.json();
+        
+        const printContainer = document.getElementById('printContainer');
+        const kmTotal = sheet.km_end ? (sheet.km_end - sheet.km_start) : 0;
+        
+        const locationsHtml = formatLocationsVertical(sheet.locations);
+        const tripNumber = sheet.trip_number || 'N/A';
+        const techDepChecked = sheet.tech_check_departure ? '[X]' : 'Da';
+        const techArrChecked = sheet.tech_check_arrival ? '[X]' : 'Da';
+        
+        printContainer.innerHTML = `
+          <div class="print-header">
+            <h1>FOAIE DE PARCURS</h1>
+            <h2>Fast Medical Distribution SRL</h2>
+            <div class="cui">CUI: RO47095864</div>
+            <div class="trip-number">Nr. ${tripNumber}</div>
+            <div class="date">Data: ${formatDate(sheet.date)}</div>
+          </div>
+          
+          <table class="print-table">
+            <tr>
+              <th>Șofer</th>
+              <td>${sheet.driver_name}</td>
+              <th>Număr Înmatriculare</th>
+              <td>${sheet.plate_number}</td>
+            </tr>
+            <tr>
+              <th>Ora Plecare</th>
+              <td>${sheet.departure_time || '09:00'}</td>
+              <th>Ora Sosire</th>
+              <td>${sheet.arrival_time || '-'}</td>
+            </tr>
+            <tr>
+              <th>KM Plecare</th>
+              <td>${sheet.km_start}</td>
+              <th>KM Sosire</th>
+              <td>${sheet.km_end || '-'}</td>
+            </tr>
+            <tr>
+              <th>KM Parcurși</th>
+              <td colspan="3"><strong>${kmTotal}</strong></td>
+            </tr>
+            <tr>
+              <th>Scopul Deplasării</th>
+              <td colspan="3">${sheet.purpose || 'Livrare Marfă'}</td>
+            </tr>
+            <tr>
+              <th>Ruta / Localități</th>
+              <td colspan="3">${locationsHtml}</td>
+            </tr>
+            <tr>
+              <th>Verificări Tehnice</th>
+              <td colspan="3">
+                <span style="margin-right: 30px; font-size: 16px; font-family: monospace;">${techDepChecked} La Plecare</span>
+                <span style="font-size: 16px; font-family: monospace;">${techArrChecked} La Sosire</span>
+              </td>
+            </tr>
+          </table>
+          
+          <h3 style="margin-top: 30px; margin-bottom: 10px;">Bonuri Alimentare:</h3>
+          <table class="print-table">
+            <thead>
+              <tr>
+                <th>Tip</th>
+                <th>Număr Bon</th>
+                <th>Litri</th>
+                <th>KM</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${fuels.length ? fuels.map(f => `
+                <tr>
+                  <td>${f.type === 'diesel' ? 'Diesel' : 'Ad-Blue'}</td>
+                  <td>${f.receipt_number}</td>
+                  <td>${f.liters}</td>
+                  <td>${f.km_at_refuel}</td>
+                </tr>
+              `).join('') : '<tr><td colspan="4" style="text-align:center;">Nicio alimentare</td></tr>'}
+            </tbody>
+          </table>
+          
+          <div class="signature-row">
+            <div class="signature-box">
+              <div class="signature-line">Șofer</div>
+            </div>
+            <div class="signature-box">
+              <div class="signature-line">Dispecer</div>
+            </div>
+          </div>
+        `;
+        
+        printContainer.classList.add('active');
+        window.print();
+        printContainer.classList.remove('active');
+      } catch (e) {
+        alert('Eroare la generare print');
+      }
+    }
+  </script>
+</body>
+</html>

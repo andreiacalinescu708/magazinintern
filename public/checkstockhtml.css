@@ -1,0 +1,419 @@
+:root{
+  --border: var(--line);
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.csApp{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* TOP */
+.csTop{
+  position:sticky;
+  top:0;
+  z-index:10;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 12px;
+  background: var(--card);
+  border-bottom:1px solid var(--line);
+}
+
+.csBrand{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:700;
+}
+
+.csBack{
+  border:1px solid var(--line);
+  background:#f7f9fc;
+  padding:8px 10px;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+/* TITLE */
+.csHeader{
+  padding:10px 12px 6px;
+}
+.csHeader h1{
+  margin:6px 0 0;
+  font-size:22px;
+  font-weight:900;
+}
+
+/* TOOLS */
+.csTools{
+  padding:10px 12px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.csSearch{
+  flex:1;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background: var(--card);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px 12px;
+  box-shadow: 0 1px 0 rgba(0,0,0,.03);
+}
+
+.csSearchIcon{
+  opacity:.65;
+}
+
+#stockSearch{
+  border:none;
+  outline:none;
+  width:100%;
+  font-size:15px;
+  background:transparent;
+}
+
+.csRefresh{
+  border:1px solid var(--line);
+  background: var(--card);
+  padding:10px 12px;
+  border-radius:12px;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow: 0 1px 0 rgba(0,0,0,.03);
+}
+
+/* LIST */
+.csList{
+  padding:2px 12px 120px; /* lasă loc pentru footer */
+}
+
+/* CARD (compatibil cu structura pe care o generezi deja în JS) */
+.stockCard, .inv-card, .csCard{
+  background: var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  margin:10px 0;
+  box-shadow: 0 2px 10px rgba(17,24,39,.06);
+}
+
+/* dacă JS-ul tău creează .stockCard + .stockTitle etc (cum ai în initCheckStockPage) */
+.stockTitle{
+  font-weight:900;
+  font-size:15px;
+  margin-bottom:10px;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+}
+.stockTitle::before{
+  content:"🗂️";
+  font-size:18px;
+  margin-top:1px;
+  opacity:.9;
+}
+
+.stockGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+  margin-top:6px;
+}
+
+.field{
+  background:#f7f9fc;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:8px 10px;
+}
+
+.lbl{
+  font-size:11px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+  color: var(--muted);
+  margin-bottom:6px;
+  font-weight:800;
+}
+
+.inp{
+  width:100%;
+  border:none;
+  background:transparent;
+  outline:none;
+  font-weight:800;
+  color: var(--text);
+}
+
+.qtyRow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.unit{
+  color: var(--muted);
+  font-weight:700;
+}
+
+/* actions row */
+.actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+}
+.actions button{
+  border:1px solid var(--line);
+  background: var(--card);
+  padding:9px 12px;
+  border-radius:12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.actions .status{
+  margin-left:auto;
+  font-weight:800;
+  color: var(--muted);
+}
+
+/* BOTTOM */
+.csBottom{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  padding:10px 12px 12px;
+  background: rgba(15,23,42,.9);
+  border-top:1px solid var(--line);
+}
+
+.csTotalPill{
+  background:#e7f0ff;
+  border:1px solid #cfe0ff;
+  border-radius:999px;
+  padding:10px 14px;
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  font-weight:900;
+  box-shadow: 0 2px 10px rgba(17,24,39,.08);
+}
+
+.csTotalLabel{ opacity:.85; }
+
+
+/* bottom nav (optional) */
+.csNav{
+  margin-top:10px;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  background:#ffffff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:10px 8px;
+  box-shadow: 0 2px 10px rgba(17,24,39,.08);
+}
+
+.csNav button{
+  border:none;
+  background:transparent;
+  font-size:20px;
+  cursor:pointer;
+  padding:8px 10px;
+  border-radius:12px;
+}
+.csNav button:active{
+  background:#f0f4fa;
+}
+
+/* CARD produs (TOTAL) */
+.csProdCard{
+  background: var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  margin:10px 0;
+  box-shadow: 0 2px 10px rgba(17,24,39,.06);
+}
+
+.csProdTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.csProdLeft{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+
+.csIcon{ font-size:18px; opacity:.9; }
+.csName{
+  font-weight:900;
+  font-size:15px;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.csQtyBadge{
+  padding:8px 10px;
+  border-radius:12px;
+  font-weight:900;
+  min-width:86px;
+  text-align:center;
+  border:1px solid var(--line);
+}
+
+.qty-green{ background: rgba(34,197,94,.25); }
+.qty-yellow{ background: rgba(234,179,8,.25); }
+.qty-amber{ background: rgba(249,115,22,.25); }
+.qty-red{ background: rgba(239,68,68,.25); }
+
+.csLots{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px dashed #d9e1ee;
+}
+
+.csLotRow{
+  background:#f7f9fc;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+  margin:10px 0;
+}
+
+.csLotGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+}
+
+.csField{
+  background: var(--card);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:8px 10px;
+}
+
+.csLbl{
+  font-size:11px;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+  color:#6b7787;
+  margin-bottom:6px;
+  font-weight:800;
+}
+
+.csInp{
+  width:100%;
+  border:none;
+  background:transparent;
+  outline:none;
+  font-weight:800;
+}
+
+.csRowActions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+}
+.csRowActions button{
+  border:1px solid var(--line);
+  background: var(--card);
+  padding:9px 12px;
+  border-radius:12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.csRowActions .status{
+  margin-left:auto;
+  font-weight:800;
+  color:#6b7787;
+}
+
+/* HARD FIX pentru lizibilitate pe tema dark */
+.csTop,
+.csSearch,
+.csRefresh,
+.stockCard,
+.inv-card,
+.csCard,
+.csProdCard,
+.csField,
+.csRowActions button,
+.actions button{
+  background: rgba(255,255,255,.08);
+}
+
+.csBack{
+  background: rgba(255,255,255,.08);
+}
+
+.csTotalPill{
+  background: rgba(59,130,246,.18);
+  color: white;
+  border: 1px solid rgba(59,130,246,.35);
+}
+
+.csNav{
+  background: rgba(255,255,255,.08);
+}
+
+/* =========================
+   FIX vizibilitate pe carduri albe (checkstock)
+   ========================= */
+
+/* 1) compat cu global.css: noi folosim --border în fișierul ăsta */
+:root{
+  --border: var(--line);
+}
+
+/* 2) Orice zonă “light” să aibă text închis */
+.field,
+.csLotRow{
+  color: #0f172a;
+}
+
+/* label-urile rămân gri, dar vizibile */
+.field .lbl,
+.csLotRow .csLbl{
+  color: rgba(15,23,42,.65) !important;
+}
+
+/* INPUT-urile/valorile să fie negru (aici era problema) */
+.field .inp,
+.csLotRow .csInp,
+.stockCard .inp,
+.csCard .inp,
+.csProdCard .csInp{
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+/* dacă ai și valori direct în <div>/<span> în interiorul field-urilor */
+.field *{
+  color: inherit;
+}

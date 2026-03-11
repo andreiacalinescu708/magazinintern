@@ -1,0 +1,197 @@
+[
+  {
+    "id": "17663362497388awidpbcplg",
+    "productId": "36",
+    "productName": "SUPER",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 22,
+    "createdAt": "2025-12-21T16:57:29.738Z",
+    "location": "A"
+  },
+  {
+    "id": "17664383560758t4nvkin9qd",
+    "productId": "4",
+    "productName": "ACTIVE/CHILOT - XL",
+    "lot": "140242634888",
+    "expiresAt": "2030-12-31",
+    "qty": 22,
+    "createdAt": "2025-12-22T21:19:16.075Z"
+  },
+  {
+    "id": "1766592627990zg6x7yq8p1a",
+    "productId": "4",
+    "productName": "ACTIVE/CHILOT - XL",
+    "lot": "1402455555",
+    "expiresAt": "2030-12-31",
+    "qty": 154,
+    "createdAt": "2025-12-24T16:10:27.990Z"
+  },
+  {
+    "id": "1766593382829hhh3sc8yea",
+    "productId": "36",
+    "productName": "Lady SUPER",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 72,
+    "createdAt": "2025-12-24T16:23:02.829Z"
+  },
+  {
+    "id": "17692094626196eio0qwcz42",
+    "productId": "247",
+    "productName": "Seni Soft Super– aleze igienice 90x60 a'30",
+    "lot": "1402436091",
+    "expiresAt": "2031-01-31",
+    "qty": 144,
+    "createdAt": "2026-01-23T23:04:22.619Z"
+  },
+  {
+    "id": "1769461209542svzb2wbinx",
+    "productId": "172",
+    "productName": "Seni Active Classic Medium 30",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 0,
+    "createdAt": "2026-01-26T21:00:09.542Z",
+    "location": "A"
+  },
+  {
+    "id": "1769539709181lnt5uod4nz",
+    "productId": "248",
+    "productName": "Seni Care Lavete \"air-laid\" 36 x 32 см",
+    "lot": "1402436091",
+    "expiresAt": "2031-01-31",
+    "qty": 12,
+    "createdAt": "2026-01-27T18:48:29.181Z"
+  },
+  {
+    "id": "1769541138712jaqovlm0m8q",
+    "productId": "172",
+    "productName": "Seni Active Classic Medium 30",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 120,
+    "createdAt": "2026-01-27T19:12:18.712Z",
+    "location": "B"
+  },
+  {
+    "id": "1769549456581isnx9uc9h8i",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 236,
+    "location": "A",
+    "createdAt": "2026-01-27T21:30:56.581Z"
+  },
+  {
+    "id": "1769549458993fc39nxckd2s",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 238,
+    "location": "B",
+    "createdAt": "2026-01-27T21:30:58.993Z"
+  },
+  {
+    "id": "1769549459473o4ty8yki5m",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 243,
+    "location": "C",
+    "createdAt": "2026-01-27T21:30:59.473Z"
+  },
+  {
+    "id": "17695494596905btkkgt8fk",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 243,
+    "location": "A",
+    "createdAt": "2026-01-27T21:30:59.690Z"
+  },
+  {
+    "id": "1769549459909j4jgnx4w22d",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 243,
+    "location": "A",
+    "createdAt": "2026-01-27T21:30:59.909Z"
+  },
+  {
+    "id": "1769549460158r52w401m4g",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 243,
+    "location": "A",
+    "createdAt": "2026-01-27T21:31:00.158Z"
+  },
+  {
+    "id": "1769549463571a794fc0zrci",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 243,
+    "location": "A",
+    "createdAt": "2026-01-27T21:31:03.571Z"
+  },
+  {
+    "id": "17695494684048e6dfu8o9sc",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 243,
+    "location": "A",
+    "createdAt": "2026-01-27T21:31:08.404Z"
+  },
+  {
+    "id": "1769549472880d9bpr7b0tzr",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 243,
+    "location": "B",
+    "createdAt": "2026-01-27T21:31:12.880Z"
+  },
+  {
+    "id": "1769549476434cgndngflmy7",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 243,
+    "location": "R3",
+    "createdAt": "2026-01-27T21:31:16.434Z"
+  },
+  {
+    "id": "1769549476834on9bnwr11m8",
+    "productId": "274",
+    "productName": "Matopat Universal plasturi a'20",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 243,
+    "location": "R3",
+    "createdAt": "2026-01-27T21:31:16.834Z"
+  },
+  {
+    "id": "1769790325626g5s64lpi48m",
+    "gtin": "5900516800062",
+    "productName": "Seni Classic Air Large 30",
+    "lot": "1402345285",
+    "expiresAt": "2030-04-30",
+    "qty": 195,
+    "location": "A",
+    "createdAt": "2026-01-30T16:25:25.626Z"
+  }
+]

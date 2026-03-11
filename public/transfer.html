@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transfer Stoc - FMD</title>
+  <link rel="stylesheet" href="global.css">
+  <style>
+    .transfer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    
+    .arrow-divider {
+      text-align: center;
+      font-size: 2rem;
+      margin: var(--space-4) 0;
+      color: var(--primary-400);
+    }
+    
+    .stock-info-box {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: var(--space-4);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-4);
+    }
+    
+    .stock-info-box h3 {
+      margin: 0 0 var(--space-2) 0;
+      color: var(--primary-400);
+    }
+    
+    .stock-row {
+      display: flex;
+      justify-content: space-between;
+      padding: var(--space-2) 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .btn-transfer {
+      background: linear-gradient(135deg, var(--success-600), var(--success-700));
+      color: white;
+      width: 100%;
+      padding: var(--space-4);
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+    
+    .result-message {
+      padding: var(--space-4);
+      border-radius: var(--radius-lg);
+      margin-top: var(--space-4);
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    .result-success {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success-400);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    
+    .result-error {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger-400);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .product-search-results {
+      max-height: 200px;
+      overflow-y: auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      margin-top: 4px;
+    }
+    
+    .search-item {
+      padding: var(--space-3);
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .search-item:hover {
+      background: rgba(59, 130, 246, 0.15);
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">⚕️ FMD</a>
+      <div id="userBar"></div>
+      <a href="checkstock.html" class="btn btn-ghost btn-sm">← Inventar</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h1>🔄 Transfer între Gestiuni</h1>
+    
+    <div class="card">
+      <div class="transfer-grid">
+        <div>
+          <label class="form-label">Din Gestiune</label>
+          <select id="fromWarehouse" class="form-select" onchange="onFromChange()">
+            <option value="depozit">🏭 Depozit</option>
+            <option value="magazin">🏪 Magazin</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="form-label">În Gestiune</label>
+          <select id="toWarehouse" class="form-select">
+            <option value="magazin">🏪 Magazin</option>
+            <option value="depozit">🏭 Depozit</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="locationSection">
+        <div class="transfer-grid">
+          <div>
+            <label class="form-label">Locație Sursă (Depozit)</label>
+            <select id="fromLocation" class="form-select">
+              <option value="A">📍 A</option>
+              <option value="B">📍 B</option>
+              <option value="C">📍 C</option>
+              <option value="R1">📦 R1</option>
+              <option value="R2">📦 R2</option>
+              <option value="R3">📦 R3</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="form-label">Locație Destinație (Depozit)</label>
+            <select id="toLocation" class="form-select">
+              <option value="A">📍 A</option>
+              <option value="B">📍 B</option>
+              <option value="C">📍 C</option>
+              <option value="R1">📦 R1</option>
+              <option value="R2">📦 R2</option>
+              <option value="R3">📦 R3</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: var(--space-4);">
+        <label class="form-label">Scanare Cod / Caută Produs</label>
+        <input type="text" id="searchInput" class="form-input" placeholder="Scanare QR sau tastează nume..." oninput="searchProduct(this.value)">
+        <div id="searchResults" class="product-search-results" style="display: none;"></div>
+      </div>
+
+      <div id="selectedProductBox" class="stock-info-box" style="display: none;">
+        <h3 id="selProdName">Produs</h3>
+        <div id="selProdStock"></div>
+      </div>
+
+      <div class="transfer-grid" style="margin-top: var(--space-4);">
+        <div>
+          <label class="form-label">LOT</label>
+          <select id="lotSelect" class="form-select" onchange="updateMaxQty()">
+            <option value="">Selectează LOT</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="form-label">Cantitate (max: <span id="maxQty">0</span>)</label>
+          <input type="number" id="qtyInput" class="form-input" min="1" value="1">
+        </div>
+      </div>
+
+      <button class="btn btn-transfer" onclick="executeTransfer()" style="margin-top: var(--space-4);">
+        🔄 Execută Transfer
+      </button>
+      
+      <div id="resultBox"></div>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    let products = [];
+    let currentStock = [];
+    let selectedProduct = null;
+    let availableLots = [];
+
+    async function init() {
+      // Încarcă produse
+      const res = await fetch('/api/products-flat');
+      products = await res.json();
+      
+      // Setează destinația implicită opusă sursei
+      document.getElementById('toWarehouse').value = 'magazin';
+    }
+
+    function onFromChange() {
+      const from = document.getElementById('fromWarehouse').value;
+      const toSelect = document.getElementById('toWarehouse');
+      const locSection = document.getElementById('locationSection');
+      
+      // Setează destinația opusă
+      toSelect.value = from === 'depozit' ? 'magazin' : 'depozit';
+      
+      // Arată/ascunde locațiile
+      locSection.style.display = from === 'magazin' ? 'none' : 'block';
+      
+      // Resetează
+      selectedProduct = null;
+      document.getElementById('selectedProductBox').style.display = 'none';
+      document.getElementById('searchInput').value = '';
+    }
+
+    async function searchProduct(query) {
+      const resultsDiv = document.getElementById('searchResults');
+      
+      if (!query) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+      
+      // Caută în produse
+      const matches = products.filter(p => 
+        p.name.toLowerCase().includes(query.toLowerCase()) ||
+        (p.gtin && p.gtin.includes(query))
+      ).slice(0, 5);
+      
+      if (matches.length === 0) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+      
+      resultsDiv.innerHTML = matches.map(p => `
+        <div class="search-item" onclick="selectProductForTransfer('${p.id}', '${p.name.replace(/'/g, "\\'")}', '${p.gtin || ''}')">
+          <strong>${p.name}</strong><br>
+          <small>GTIN: ${p.gtin || 'N/A'}</small>
+        </div>
+      `).join('');
+      
+      resultsDiv.style.display = 'block';
+    }
+
+    async function selectProductForTransfer(id, name, gtin) {
+      selectedProduct = { id, name, gtin };
+      document.getElementById('searchInput').value = name;
+      document.getElementById('searchResults').style.display = 'none';
+      
+      // Încarcă stoc disponibil pentru acest produs în gestiunea sursă
+      const fromWh = document.getElementById('fromWarehouse').value;
+      const fromLoc = document.getElementById('fromLocation')?.value;
+      
+      try {
+        const stockRes = await fetch(`/api/stock?warehouse=${fromWh}`);
+        const allStock = await stockRes.json();
+        
+        // Filtrează după GTIN și locație (dacă e depozit)
+        availableLots = allStock.filter(s => {
+          const matchGtin = normalizeGTIN(s.gtin) === normalizeGTIN(gtin);
+          if (fromWh === 'magazin') return matchGtin;
+          return matchGtin && s.location === fromLoc;
+        });
+        
+        // Afișează info
+        document.getElementById('selProdName').textContent = name;
+        const totalAvailable = availableLots.reduce((a, s) => a + Number(s.qty), 0);
+        document.getElementById('selProdStock').innerHTML = `
+          <div class="stock-row"><span>Disponibil ${fromWh}:</span><strong>${totalAvailable} buc</strong></div>
+        `;
+        document.getElementById('selectedProductBox').style.display = 'block';
+        
+        // Populează dropdown LOT
+        const lotSelect = document.getElementById('lotSelect');
+        lotSelect.innerHTML = '<option value="">Selectează LOT</option>' + 
+          availableLots.map(l => `<option value="${l.lot}" data-qty="${l.qty}" data-exp="${l.expiresAt}">${l.lot} (${l.qty} buc)</option>`).join('');
+        
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function updateMaxQty() {
+      const lotSelect = document.getElementById('lotSelect');
+      const option = lotSelect.selectedOptions[0];
+      const qty = option?.dataset?.qty || 0;
+      document.getElementById('maxQty').textContent = qty;
+      document.getElementById('qtyInput').max = qty;
+    }
+
+    async function executeTransfer() {
+      const fromWh = document.getElementById('fromWarehouse').value;
+      const toWh = document.getElementById('toWarehouse').value;
+      const fromLoc = fromWh === 'depozit' ? document.getElementById('fromLocation').value : 'MAGAZIN';
+      const toLoc = toWh === 'depozit' ? document.getElementById('toLocation').value : 'MAGAZIN';
+      const lot = document.getElementById('lotSelect').value;
+      const qty = Number(document.getElementById('qtyInput').value);
+      
+      if (!selectedProduct) {
+        showResult('Selectează un produs!', 'error');
+        return;
+      }
+      if (!lot) {
+        showResult('Selectează un LOT!', 'error');
+        return;
+      }
+      if (!qty || qty <= 0) {
+        showResult('Cantitate invalidă!', 'error');
+        return;
+      }
+      
+      const lotData = availableLots.find(l => l.lot === lot);
+      if (!lotData || lotData.qty < qty) {
+        showResult('Stoc insuficient!', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/stock/transfer', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            gtin: selectedProduct.gtin,
+            productName: selectedProduct.name,
+            lot: lot,
+            expiresAt: lotData.expiresAt,
+            qty: qty,
+            fromWarehouse: fromWh,
+            toWarehouse: toWh,
+            fromLocation: fromLoc,
+            toLocation: toLoc
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+          showResult(`✅ Transfer realizat! ${qty} buc din ${fromWh} în ${toWh}`, 'success');
+          // Reset
+          selectedProduct = null;
+          document.getElementById('selectedProductBox').style.display = 'none';
+          document.getElementById('searchInput').value = '';
+          document.getElementById('lotSelect').innerHTML = '<option value="">Selectează LOT</option>';
+          document.getElementById('qtyInput').value = '1';
+        } else {
+          showResult('❌ ' + (data.error || 'Eroare la transfer'), 'error');
+        }
+      } catch (e) {
+        showResult('❌ Eroare de rețea', 'error');
+      }
+    }
+
+    function showResult(msg, type) {
+      const box = document.getElementById('resultBox');
+      box.className = 'result-message result-' + type;
+      box.textContent = msg;
+      setTimeout(() => box.className = '', 5000);
+    }
+
+    function normalizeGTIN(gtin) {
+      let g = String(gtin || '').replace(/\D/g, '');
+      if (g.length === 14 && g.startsWith('0')) g = g.slice(1);
+      return g;
+    }
+
+    // Inițializare
+    init();
+    onFromChange(); // Setează starea inițială
+  </script>
+</body>
+</html>

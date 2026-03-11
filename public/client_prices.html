@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Prețuri speciale</title>
+  
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="global.css">
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="brand">⚕️ Fast Medical Distribution</span>
+    </div>
+
+    <div class="topbar-right">
+      <div id="userBar"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <a class="linkbtn" href="client.html">⬅️ Înapoi</a>
+
+    <h2 id="pricesClientName" style="margin-top:12px;">Prețuri speciale</h2>
+    <div id="pricesClientMeta" class="hint"></div>
+
+    <hr style="margin:14px 0;">
+
+    <h3>Adaugă preț special</h3>
+
+    <input id="priceProductSearch" placeholder="Caută produs (nume / path / gtin)..." />
+    <div id="priceProductResults" class="list" style="margin-top:10px;"></div>
+
+    <div class="panel" style="margin-top:12px;">
+      <div class="hint">Produs selectat:</div>
+      <div id="selectedProductBox" style="margin-top:6px;"><i>(nimic)</i></div>
+
+      <div style="display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap;">
+        <input id="newSpecialPrice" type="number" step="0.01" placeholder="Preț special (RON)" style="width:220px;">
+        <button id="btnAddSpecialPriceNow" class="btn primary">➕ Adaugă</button>
+        <button id="btnReloadPrices" class="btn">🔄 Reîncarcă</button>
+      </div>
+    </div>
+
+    <hr style="margin:14px 0;">
+
+    <h3>Prețuri existente</h3>
+    <div id="clientPricesList"></div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,308 @@
+/* =========================
+   INDEX DASHBOARD (Design 1)
+   ========================= */
+
+:root{
+  --blue1: #0b5bff;
+  --blue2: #0a86ff;
+  --blue3: #0748d8;
+
+  --btnText: #0f172a;
+  --btnBg: #ffffff;
+  --btnBorder: rgba(15, 23, 42, .14);
+  --btnShadow: 0 8px 18px rgba(15, 23, 42, .08);
+}
+
+body.dark{
+  --bg: #0b1220;
+  --card: #0f1b33;
+  --text: #e6edf7;
+  --muted: #9aa8c0;
+  --line: rgba(255,255,255,.10);
+  --shadow: 0 16px 40px rgba(0,0,0,.45);
+
+  --btnBg: rgba(255,255,255,.06);
+  --btnBorder: rgba(255,255,255,.14);
+  --btnShadow: 0 10px 22px rgba(0,0,0,.35);
+}
+
+html, body { height: 100%; }
+body{
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding-bottom: 84px; /* spațiu pt bottom nav */
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* ===== TOPBAR (gradient ca în poză) ===== */
+.topbar{
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: linear-gradient(135deg, var(--blue1), var(--blue2));
+  color: #fff;
+  padding: 16px 14px 14px;
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
+  box-shadow: 0 10px 24px rgba(2, 14, 40, .22);
+}
+
+.topbar .brand-dot{
+  width: 10px;
+  height: 10px;
+  background: #2dd4bf;
+  border-radius: 999px;
+  display: inline-block;
+  margin-right: 10px;
+  box-shadow: 0 0 0 5px rgba(45, 212, 191, .25);
+}
+
+.topbar .left-actions{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar .brand-title{
+  font-weight: 800;
+  letter-spacing: .2px;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.topbar .brand-sub{
+  font-size: 13px;
+  opacity: .92;
+  margin-top: 2px;
+}
+
+.topbar .actions{
+  margin-left: auto;
+}
+
+.topbar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.iconbtn{
+  border: 0;
+  background: rgba(255,255,255,.16);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 18px rgba(0,0,0,.12);
+  cursor: pointer;
+}
+
+/* ===== USER BAR (pill + logout) ===== */
+.user-bar{
+  margin: -14px auto 10px;
+  padding: 0 14px;
+  max-width: 520px;
+}
+
+.userbar-inner{
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: 18px;
+  padding: 10px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.user-pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(11,91,255,.08);
+  border: 1px solid rgba(11,91,255,.12);
+  min-width: 0;
+}
+
+body.dark .user-pill{
+  background: rgba(11,91,255,.18);
+  border-color: rgba(255,255,255,.10);
+}
+
+.user-txt{
+  font-weight: 650;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.logout-btn{
+  border: 0;
+  background: #ef4444;
+  color: #fff;
+  font-weight: 800;
+  border-radius: 14px;
+  padding: 10px 14px;
+  cursor: pointer;
+  box-shadow: 0 12px 20px rgba(239, 68, 68, .25);
+}
+
+/* ===== MAIN CONTAINER ===== */
+.container{
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 10px 14px 22px;
+}
+
+/* ===== HUB CARDS ===== */
+.hub{
+  display: grid;
+  gap: 14px;
+}
+
+.hub-card{
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: 22px;
+  padding: 14px;
+}
+
+.hub-head{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.hub-icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(11,91,255,.10);
+  color: var(--blue1);
+  flex: 0 0 auto;
+}
+
+body.dark .hub-icon{
+  background: rgba(11,91,255,.18);
+  color: #8db7ff;
+}
+
+.hub-icon svg{
+  width: 26px;
+  height: 26px;
+}
+
+.hub-head h2{
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+.hub-head p{
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.hub-actions{
+  display: grid;
+  gap: 10px;
+}
+
+/* ===== BUTTONS (exact style din poză) ===== */
+.hub-btn{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  min-height: 52px;
+  border-radius: 16px;
+  padding: 0 14px;
+  font-weight: 900;
+  font-size: 18px;
+
+  background: var(--btnBg);
+  color: var(--btnText);
+  border: 1px solid var(--btnBorder);
+  box-shadow: var(--btnShadow);
+}
+
+.hub-btn.primary{
+  background: linear-gradient(180deg, #0b5bff, #0748d8);
+  color: #fff;
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 16px 26px rgba(11, 91, 255, .28);
+}
+
+.hub-btn.disabled{
+  opacity: .55;
+  pointer-events: none;
+  filter: grayscale(20%);
+}
+
+/* dacă mai rămâne vreun <button> din alte pagini */
+.hub-card button{
+  width: 100%;
+  min-height: 52px;
+  border-radius: 16px;
+  border: 1px solid var(--btnBorder);
+  background: var(--btnBg);
+  box-shadow: var(--btnShadow);
+  font-weight: 900;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -16px 40px rgba(15,23,42,.12);
+  padding: 10px 10px 12px;
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.bn-item{
+  text-decoration: none;
+  color: var(--muted);
+  border-radius: 16px;
+  padding: 8px 8px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.bn-ico{ font-size: 18px; line-height: 1; }
+.bn-txt{ font-size: 12px; font-weight: 800; }
+
+.bn-item.active{
+  color: var(--blue1);
+  background: rgba(11,91,255,.10);
+  border: 1px solid rgba(11,91,255,.14);
+}
+body.dark .bn-item.active{
+  background: rgba(11,91,255,.18);
+  border-color: rgba(255,255,255,.10);
+}

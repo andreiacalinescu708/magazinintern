@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Comenzi - Fast Medical Distribution</title>
+  <link rel="stylesheet" href="global.css" />
+  <style>
+
+    @keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-left: 8px;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  transition: all 0.2s;
+}
+
+.btn-danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+    .filters-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: var(--space-5);
+      margin-bottom: var(--space-6);
+    }
+
+    .status-tabs {
+      display: flex;
+      gap: var(--space-3);
+      overflow-x: auto;
+      padding-bottom: var(--space-3);
+      margin-bottom: var(--space-4);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .status-tabs::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .mTab {
+      flex-shrink: 0;
+      padding: var(--space-3) var(--space-5);
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-color);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .mTab:hover {
+      border-color: var(--primary-500);
+      color: var(--text-primary);
+    }
+
+    .mTab.active {
+      background: var(--primary-600);
+      color: white;
+      border-color: var(--primary-600);
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
+
+    .filters-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    @media (min-width: 640px) {
+      .filters-row {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    #filterStatus {
+      display: none;
+    }
+
+    .mSearchRow {
+      position: relative;
+    }
+
+    .mSearchRow input {
+      padding-left: var(--space-10);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: var(--space-4);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 1.25rem;
+    }
+
+    .mSuggest {
+      position: absolute;
+      top: calc(100% + var(--space-2));
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 50;
+      box-shadow: var(--shadow-xl);
+      display: none;
+    }
+
+    .mSuggest.show {
+      display: block;
+    }
+
+    .mSuggest button {
+      width: 100%;
+      padding: var(--space-4);
+      text-align: left;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 0.9375rem;
+    }
+
+    .mSuggest button:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .mSuggest button:last-child {
+      border-bottom: none;
+    }
+
+    .mOrders {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .orderCard {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      transition: all var(--transition-base);
+    }
+
+    .orderCard:hover {
+      border-color: rgba(148, 163, 184, 0.3);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .orderHeader {
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      cursor: pointer;
+      background: rgba(148, 163, 184, 0.03);
+    }
+
+    @media (min-width: 640px) {
+      .orderHeader {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .orderHeader span {
+      font-weight: 700;
+      font-size: 1.0625rem;
+      color: var(--text-primary);
+    }
+
+    .order-status {
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      border: none;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .order-status.in_procesare {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning-500);
+    }
+
+    .order-status.facturata {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--primary-400);
+    }
+
+    .order-status.gata_de_livrare {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success-400);
+    }
+
+    .order-status.livrata {
+      background: rgba(100, 116, 139, 0.15);
+      color: var(--text-muted);
+    }
+
+    .btnEdit, .btnPick {
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      margin-left: var(--space-2);
+    }
+
+    .btnEdit:hover {
+      background: var(--primary-600);
+      color: white;
+      border-color: var(--primary-600);
+    }
+
+    .btnPick {
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--success-400);
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .btnPick:hover {
+      background: var(--success-600);
+      color: white;
+    }
+
+    .orderBody {
+      padding: var(--space-5);
+      border-top: 1px solid var(--border-color);
+      display: none;
+    }
+
+    .orderCard.expanded .orderBody {
+      display: block;
+    }
+
+    .orderItem {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: var(--space-4);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-3);
+    }
+
+    .orderItem:last-child {
+      margin-bottom: 0;
+    }
+
+    .orderItem strong {
+      display: block;
+      font-weight: 600;
+      margin-bottom: var(--space-2);
+      color: var(--text-primary);
+    }
+
+    .muted {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .small {
+      font-size: 0.8125rem;
+    }
+
+    .lots {
+      margin-top: var(--space-3);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .lot {
+      padding: var(--space-2) 0;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .mResetBtn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      margin: var(--space-6) auto;
+      padding: var(--space-4) var(--space-8);
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .mResetBtn:hover {
+      border-color: var(--primary-500);
+      color: var(--text-primary);
+    }
+
+    .hint {
+      text-align: center;
+      padding: var(--space-10);
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="navbar-brand-icon">⚕️</div>
+        <span>FMD</span>
+      </a>
+      <div class="navbar-actions"><div id="userBar"></div>
+        <a href="index.html" class="btn btn-ghost btn-sm">← Înapoi</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h1 style="margin-bottom: var(--space-6);">Comenzi</h1>
+
+    <!-- Filtre -->
+    <div class="filters-container">
+      <!-- Status Tabs -->
+   <div class="status-tabs" id="statusTabs">
+  <button class="mTab active" data-sent="">
+    Toate <span class="badge" id="countAll">0</span>
+  </button>
+  <button class="mTab" data-sent="false">
+    Netrimise <span class="badge" id="countNetrimise">0</span>
+  </button>
+  <button class="mTab" data-sent="true">
+    Trimise <span class="badge" id="countTrimise">0</span>
+  </button>
+</div>
+
+      <!-- Selects -->
+      <div class="filters-row">
+        <select id="filterGroup" class="form-select">
+          <option value="">Toate grupurile</option>
+        </select>
+        <select id="filterCategory" class="form-select">
+          <option value="">Toate categoriile</option>
+        </select>
+        <select id="filterStatus">
+          <option value="">Toate</option>
+          <option value="gata_de_livrare">Gata de livrare</option>
+          <option value="in_procesare">În procesare</option>
+          <option value="facturata">Facturată</option>
+          <option value="livrata">Livrată</option>
+        </select>
+      </div>
+
+      <!-- Search -->
+      <div class="mSearchRow" style="position: relative;">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="orderSearch" class="form-input" placeholder="Caută client..." />
+        <div class="mSuggest" id="orderSearchResults"></div>
+      </div>
+    </div>
+
+    <!-- Lista Comenzi -->
+    <div class="mOrders" id="ordersList">
+      <!-- Populat din JS -->
+    </div>
+
+    <button class="mResetBtn" id="btnResetFilters">
+      ↺ Resetează filtrele
+    </button>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

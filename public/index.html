@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fast Medical Distribution - Dashboard</title>
+  <link rel="stylesheet" href="global.css" />
+  <style>
+    /* Stiluri specifice doar pentru dashboard */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: var(--space-6);
+      margin-top: var(--space-8);
+    }
+
+    .dashboard-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      transition: all var(--transition-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dashboard-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-500), var(--success-500));
+      opacity: 0;
+      transition: opacity var(--transition-base);
+    }
+
+    .dashboard-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(148, 163, 184, 0.3);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .dashboard-card:hover::before {
+      opacity: 1;
+    }
+
+    .dashboard-card-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      margin-bottom: var(--space-4);
+      box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+    }
+
+    .dashboard-card.success .dashboard-card-icon {
+      background: linear-gradient(135deg, var(--success-600), var(--success-700));
+      box-shadow: 0 8px 16px rgba(22, 163, 74, 0.3);
+    }
+
+    .dashboard-card.warning .dashboard-card-icon {
+      background: linear-gradient(135deg, var(--warning-500), var(--warning-600));
+      box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
+    }
+
+    .dashboard-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: var(--space-2);
+    }
+
+    .dashboard-card p {
+      color: var(--text-muted);
+      font-size: 0.9375rem;
+      margin-bottom: var(--space-5);
+    }
+
+    .dashboard-actions {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .dashboard-actions .btn {
+      justify-content: flex-start;
+      padding: var(--space-4);
+    }
+
+    .user-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3) var(--space-4);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-6);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="navbar-brand-icon">⚕️</div>
+        <span>Fast Medical Distribution</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-ghost btn-icon" id="btnToggleTheme" title="Schimbă tema">🌙</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- User Bar -->
+    <div class="user-bar" id="userBar">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div>
+          <div style="font-weight: 600;" id="userName">Utilizator</div>
+          <div style="font-size: 0.875rem; color: var(--text-muted);" id="userRole">Rol</div>
+        </div>
+      </div>
+      <button class="btn btn-danger btn-sm" id="btnLogout">Logout</button>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+      <!-- Teren (ACUM PRIMUL) -->
+      <div class="dashboard-card success">
+        <div class="dashboard-card-icon">🚚</div>
+        <h3>Teren</h3>
+        <p>Clienți, comenzi mobile și verificare prețuri</p>
+        <div class="dashboard-actions">
+          <a href="adauga_comanda.html" class="btn btn-success">👥 Lista Clienți</a>
+          <a href="checkprice.html" class="btn btn-secondary">💰 Produse și Prețuri</a>
+          <!-- În dashboard-grid, cardul Teren, în dashboard-actions: -->
+<a href="foi_parcurs.html" class="btn btn-success">📋 Foi de Parcurs</a>
+        </div>
+      </div>
+
+      <!-- Depozit (ACUM AL DOILEA) -->
+      <div class="dashboard-card">
+        <div class="dashboard-card-icon">📦</div>
+        <h3>Depozit</h3>
+        <p>Recepție marfă, gestiune stoc și procesare comenzi</p>
+        <div class="dashboard-actions">
+          <a href="stock.html" class="btn btn-primary">➕ Recepție marfă</a>
+          <a href="checkstock.html" class="btn btn-secondary">📋 Inventar stoc</a>
+          <a href="orders.html" class="btn btn-secondary">🧾 Comenzi</a>
+        </div>
+      </div>
+
+            <!-- Birou -->
+      <div class="dashboard-card warning">
+        <div class="dashboard-card-icon">📊</div>
+        <h3>Birou</h3>
+        <p>Administrare, rapoarte și setări sistem</p>
+        <div class="dashboard-actions">
+          <a href="clienti.html" class="btn" style="background: #f59e0b; color: #000; border: 1px solid #f59e0b;">⚙️ Administrare clienți</a>
+          <button class="btn btn-ghost" disabled style="opacity: 0.5;">📈 Rapoarte (în curând)</button>
+          
+          <!-- Secțiune Solduri Clienți -->
+          
+            
+            
+            
+            <input type="file" id="raportSold" accept=".xlsx" style="display: none;">
+<button class="btn" onclick="document.getElementById('raportSold').click()" 
+        style="width: 100%; background: #f59e0b; color: #000; border: 1px solid #f59e0b; margin-bottom: 8px;">
+  📁 Încarcă Raport Excel
+</button>
+            
+            <div id="statusRaport" style="font-size: 0.875rem; margin-bottom: 4px;"></div>
+            <div id="lastUploadInfo" style="font-size: 0.75rem; color: var(--text-muted);"></div>
+          </div>
+        </div>
+      </div>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script src="script.js"></script>
+  <script>
+(function() {
+  const input = document.getElementById('raportSold');
+  if (!input) return;
+  
+  input.onchange = async function() {
+    const file = this.files[0];
+    if (!file) return;
+    
+    const statusEl = document.getElementById('statusRaport');
+    const infoEl = document.getElementById('lastUploadInfo');
+    
+    statusEl.textContent = "⏳ Se procesează...";
+    
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+        
+        // Detectare header (rândul cu "Client")
+        let headerIndex = -1;
+        for (let i = 0; i < Math.min(rows.length, 20); i++) {
+          if (String(rows[i][0] || '').toLowerCase().trim() === 'client') {
+            headerIndex = i;
+            break;
+          }
+        }
+        if (headerIndex === -1) throw new Error("Nu am găsit coloana 'Client' în Excel");
+        
+        const invoices = [];
+        const seen = new Set(); // Previne duplicate în același fișier
+        
+        for (let i = headerIndex + 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || row.length < 7) continue;
+          
+          const clientName = String(row[0] || '').trim();
+          if (!clientName || clientName.toLowerCase().includes('total')) continue;
+          
+          // Cheie unică pentru detectare duplicat
+          const key = `${clientName}|${row[3]}|${row[6]}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          
+          const parseSum = (val) => {
+            if (!val) return 0;
+            if (typeof val === 'number') return val;
+            return parseFloat(String(val).replace(/,/g, '')) || 0;
+          };
+          
+          const parseDate = (val) => {
+            if (!val || val === '' || val === '-') return null;
+            if (val instanceof Date) return isNaN(val.getTime()) ? null : val.toISOString().split('T')[0];
+            const str = String(val).trim();
+            const parts = str.split(/[\/\-\.]/);
+            if (parts.length === 3) {
+              const day = parts[0].padStart(2, '0');
+              const month = parts[1].padStart(2, '0');
+              const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+              return `${year}-${month}-${day}`;
+            }
+            return null;
+          };
+          
+          invoices.push({
+            client_name: clientName,
+            cui: String(row[1] || ''),
+            invoice_date: parseDate(row[2]),
+            invoice_number: String(row[3] || ''),
+            currency: String(row[4] || 'RON'),
+            total_value: parseSum(row[5]),
+            balance_due: parseSum(row[6]),
+            due_date: parseDate(row[7]),
+            days_overdue: parseInt(row[8]) || 0,
+            status: String(row[9] || '')
+          });
+        }
+        
+        const res = await fetch('/api/balances/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invoices })
+        });
+        
+        const result = await res.json();
+        
+        if (result.success) {
+          statusEl.innerHTML = `✅ ${result.inserted} facturi încărcate`;
+          infoEl.textContent = `Ultima încărcare: ${new Date().toLocaleString('ro-RO')}`;
+        } else {
+          statusEl.innerHTML = `❌ Eroare: ${result.error || 'Necunoscută'}`;
+        }
+        
+      } catch (err) {
+        console.error(err);
+        statusEl.innerHTML = `❌ ${err.message}`;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+})();
+</script>
+</body>
+</html>

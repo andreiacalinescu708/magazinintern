@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Inventar Stoc - Fast Medical Distribution</title>
+  <link rel="stylesheet" href="global.css" />
+  <link rel="stylesheet" href="checkstockhtml.css" />
+  <style>
+    .warehouse-tabs {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+      padding: var(--space-2);
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 120px;
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+      color: white;
+      border-color: var(--primary-500);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .tab-btn .badge {
+      background: rgba(255,255,255,0.2);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .total-pill {
+      background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+      color: white;
+      padding: var(--space-4) var(--space-5);
+      border-radius: var(--radius-xl);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-5);
+    }
+
+    .alert-box {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--warning-400);
+      padding: var(--space-3);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-3);
+    }
+
+    /* Accordion Cards */
+    .stock-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      margin-bottom: var(--space-3);
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+
+    .stock-card:hover {
+      border-color: var(--primary-500);
+    }
+
+    .stock-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4) var(--space-5);
+      cursor: pointer;
+      user-select: none;
+      background: rgba(15, 23, 42, 0.4);
+      transition: background 0.2s;
+    }
+
+    .stock-header:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .stock-header.expanded {
+      background: rgba(59, 130, 246, 0.15);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .stock-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-weight: 700;
+      font-size: 1.0625rem;
+    }
+
+    .stock-icon {
+      font-size: 1.5rem;
+    }
+
+    .stock-total {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success-400);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      font-weight: 700;
+      font-size: 0.9375rem;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .stock-total.low {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger-400);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .stock-body {
+      display: none;
+      padding: var(--space-4);
+    }
+
+    .stock-body.show {
+      display: block;
+    }
+
+    .lot-row {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-bottom: var(--space-3);
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr auto;
+      gap: var(--space-4);
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .lot-row {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-3);
+      }
+    }
+
+    .lot-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .lot-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .lot-value {
+      font-weight: 700;
+      color: var(--text-primary);
+      font-size: 1rem;
+    }
+
+    .lot-actions {
+      display: flex;
+      gap: var(--space-2);
+      justify-content: flex-end;
+    }
+
+    @media (max-width: 768px) {
+      .lot-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        margin-top: var(--space-2);
+      }
+    }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      background: rgba(255,255,255,0.05);
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--primary-500);
+      transform: translateY(-2px);
+    }
+
+    .btn-icon.delete:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--danger-500);
+      color: var(--danger-400);
+    }
+
+    /* Modal Edit */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-full);
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger-400);
+    }
+
+    .modal-body {
+      padding: var(--space-5);
+    }
+
+    .form-readonly {
+      background: rgba(255,255,255,0.05);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      margin-bottom: var(--space-4);
+    }
+
+    .form-readonly label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .form-readonly value {
+      font-weight: 700;
+      color: var(--text-primary);
+      font-size: 1.0625rem;
+    }
+
+    .modal-footer {
+      padding: var(--space-4) var(--space-5);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: var(--space-3);
+      justify-content: flex-end;
+    }
+
+    .transfer-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, var(--success-600), var(--success-700));
+      color: white;
+      padding: 16px 24px;
+      border-radius: 50px;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4);
+      z-index: 100;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="navbar-brand-icon">⚕️</div>
+        <span>FMD</span>
+      </a>
+      <div class="navbar-actions">
+        <div id="userBar"></div>
+        <a href="index.html" class="btn btn-ghost btn-sm">← Înapoi</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h1>Inventar Stoc</h1>
+    
+    <!-- Tab-uri -->
+    <div class="warehouse-tabs">
+      <button class="tab-btn active" onclick="switchTab('depozit')">
+        🏭 Depozit <span class="badge" id="badge-depozit">0</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('magazin')">
+        🏪 Magazin <span class="badge" id="badge-magazin">0</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('total')">
+        📊 Total
+      </button>
+    </div>
+
+    <div id="alertsContainer"></div>
+    
+    <div class="total-pill">
+      <span>Total bucăți în stoc</span>
+      <span class="value" id="totalCount">0</span>
+    </div>
+
+    <div class="csTools">
+      <div class="csSearch">
+        <span>🔍</span>
+        <input type="text" id="stockSearch" placeholder="Caută produs..." oninput="filterStock()" />
+      </div>
+      <button class="csRefresh" onclick="loadStock()">🔄</button>
+    </div>
+
+    <div id="inventoryList">
+      <p class="hint">Se încarcă...</p>
+    </div>
+  </main>
+
+  <!-- Buton Transfer -->
+  <a href="transfer.html" class="transfer-btn">🔄 Transfer</a>
+
+  <!-- Modal Edit -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>✏️ Editare Stoc</h3>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+        
+        <div class="form-readonly">
+          <label>Produs</label>
+          <value id="editProdName">-</value>
+        </div>
+        
+        <div class="form-readonly">
+          <label>LOT</label>
+          <value id="editLot">-</value>
+        </div>
+        
+        <div class="form-readonly" id="editWarehouseBox">
+          <label>Gestiune</label>
+          <value id="editWarehouse">-</value>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Cantitate</label>
+          <input type="number" id="editQty" class="form-input" min="0">
+        </div>
+
+        <div class="form-group" id="editLocationBox">
+          <label class="form-label">Locație</label>
+          <select id="editLocation" class="form-select">
+            <option value="A">📍 A</option>
+            <option value="B">📍 B</option>
+            <option value="C">📍 C</option>
+            <option value="R1">📦 R1</option>
+            <option value="R2">📦 R2</option>
+            <option value="R3">📦 R3</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Anulează</button>
+        <button class="btn btn-primary" onclick="saveEdit()">💾 Salvează</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allStock = [];
+    let currentTab = 'depozit';
+
+    function groupByProduct(stock) {
+      const map = {};
+      stock.forEach(s => {
+        const key = s.productName + '|' + s.gtin;
+        if (!map[key]) map[key] = { productName: s.productName, gtin: s.gtin, totalQty: 0, lots: [] };
+        map[key].totalQty += Number(s.qty || 0);
+        map[key].lots.push(s);
+      });
+      return Object.values(map);
+    }
+
+    function renderStock(stockToRender) {
+      const list = document.getElementById('inventoryList');
+      list.innerHTML = '';
+      
+      if (!stockToRender.length) {
+        list.innerHTML = '<p class="hint">Nu există stoc.</p>';
+        return;
+      }
+
+      const groups = groupByProduct(stockToRender);
+      
+      groups.forEach((group, idx) => {
+        const isLow = group.totalQty < 30;
+        
+        const card = document.createElement('div');
+        card.className = 'stock-card';
+        
+        const header = document.createElement('div');
+        header.className = 'stock-header';
+        header.innerHTML = `
+          <div class="stock-title">
+            <span class="stock-icon">🗂️</span>
+            <span>${group.productName}</span>
+          </div>
+          <span class="stock-total ${isLow ? 'low' : ''}">${group.totalQty} buc</span>
+        `;
+        
+        const body = document.createElement('div');
+        body.className = 'stock-body';
+        body.id = `body-${idx}`;
+        
+        // Generează rândurile LOT
+        group.lots.forEach(lot => {
+          const isMagazin = lot.warehouse === 'magazin';
+          const lotRow = document.createElement('div');
+          lotRow.className = 'lot-row';
+          lotRow.innerHTML = `
+            <div class="lot-field">
+              <span class="lot-label">LOT</span>
+              <span class="lot-value">${lot.lot}</span>
+            </div>
+            <div class="lot-field">
+              <span class="lot-label">Expiră</span>
+              <span class="lot-value">${(lot.expiresAt || '-').slice(0,10)}</span>
+            </div>
+            <div class="lot-field">
+              <span class="lot-label">Cantitate</span>
+              <span class="lot-value">${lot.qty} buc</span>
+            </div>
+            <div class="lot-field">
+              <span class="lot-label">Locație</span>
+              <span class="lot-value">${isMagazin ? '🏪 Magazin' : `📍 ${lot.location || 'A'}`}</span>
+            </div>
+            <div class="lot-actions">
+              <button class="btn-icon" onclick="openEdit('${lot.id}', event)" title="Edit">✏️</button>
+              <button class="btn-icon delete" onclick="deleteLot('${lot.id}', '${group.productName.replace(/'/g, "\\'")}', event)" title="Șterge">🗑️</button>
+            </div>
+          `;
+          body.appendChild(lotRow);
+        });
+        
+        header.onclick = () => {
+          const isExpanded = body.classList.toggle('show');
+          header.classList.toggle('expanded', isExpanded);
+        };
+        
+        card.appendChild(header);
+        card.appendChild(body);
+        list.appendChild(card);
+      });
+    }
+
+   async function loadStock() {
+  try {
+    const [dep, mag] = await Promise.all([
+      fetch('/api/stock?warehouse=depozit').then(r => r.json()),
+      fetch('/api/stock?warehouse=magazin').then(r => r.json())
+    ]);
+    
+    allStock = [
+      ...dep.map(s => ({...s, warehouse: s.warehouse || 'depozit'})),
+      ...mag.map(s => ({...s, warehouse: 'magazin'}))
+    ];
+    
+    document.getElementById('badge-depozit').textContent = dep.reduce((a,s) => a + Number(s.qty), 0);
+    document.getElementById('badge-magazin').textContent = mag.reduce((a,s) => a + Number(s.qty), 0);
+    
+    // ✅ CORECȚIE: Numără PRODUSELE UNICE cu stoc mic, nu loturile
+    function countLowProducts(stockArray) {
+      const productTotals = {};
+      
+      // Grupează după nume produs și calculează total
+      stockArray.forEach(item => {
+        const key = item.productName;
+        if (!productTotals[key]) productTotals[key] = 0;
+        productTotals[key] += Number(item.qty || 0);
+      });
+      
+      // Numără câte produse au total < 30
+      return Object.values(productTotals).filter(total => total < 30).length;
+    }
+    
+    const lowDep = countLowProducts(dep);
+    const lowMag = countLowProducts(mag);
+    
+    const alerts = document.getElementById('alertsContainer');
+    alerts.innerHTML = '';
+    if (lowDep) alerts.innerHTML += `<div class="alert-box">⚠️ Depozit: ${lowDep} ${lowDep === 1 ? 'produs' : 'produse'} sub 30 buc</div>`;
+    if (lowMag) alerts.innerHTML += `<div class="alert-box">⚠️ Magazin: ${lowMag} ${lowMag === 1 ? 'produs' : 'produse'} sub 30 buc</div>`;
+    
+    switchTab(currentTab);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('inventoryList').innerHTML = '<p class="hint">Eroare la încărcare</p>';
+  }
+}
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const btn = document.querySelector(`[onclick="switchTab('${tab}')"]`);
+      if (btn) btn.classList.add('active');
+      
+      let filtered = allStock;
+      if (tab !== 'total') {
+        filtered = allStock.filter(s => s.warehouse === tab || (tab === 'depozit' && !s.warehouse));
+      }
+      
+      renderStock(filtered);
+      
+      const total = filtered.reduce((a,s) => a + Number(s.qty), 0);
+      document.getElementById('totalCount').textContent = total;
+    }
+
+    function filterStock() {
+      const q = document.getElementById('stockSearch').value.toLowerCase();
+      let base = allStock;
+      if (currentTab !== 'total') {
+        base = allStock.filter(s => s.warehouse === currentTab || (currentTab === 'depozit' && !s.warehouse));
+      }
+      const filtered = base.filter(s => 
+        (s.productName || '').toLowerCase().includes(q) ||
+        (s.lot || '').toLowerCase().includes(q)
+      );
+      renderStock(filtered);
+      document.getElementById('totalCount').textContent = filtered.reduce((a,s) => a + Number(s.qty), 0);
+    }
+
+    // Edit Modal Functions
+    function openEdit(lotId, event) {
+      event.stopPropagation();
+      
+      const lot = allStock.find(s => s.id === lotId);
+      if (!lot) return;
+      
+      document.getElementById('editId').value = lotId;
+      document.getElementById('editProdName').textContent = lot.productName;
+      document.getElementById('editLot').textContent = lot.lot;
+      document.getElementById('editWarehouse').textContent = lot.warehouse === 'magazin' ? '🏪 Magazin' : '🏭 Depozit';
+      document.getElementById('editQty').value = lot.qty;
+      
+      // Gestionează locația (ascuns pentru magazin)
+      const locBox = document.getElementById('editLocationBox');
+      if (lot.warehouse === 'magazin') {
+        locBox.style.display = 'none';
+      } else {
+        locBox.style.display = 'block';
+        document.getElementById('editLocation').value = lot.location || 'A';
+      }
+      
+      document.getElementById('editModal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('editModal').classList.remove('show');
+    }
+
+    async function saveEdit() {
+      const id = document.getElementById('editId').value;
+      const qty = document.getElementById('editQty').value;
+      const location = document.getElementById('editLocation').value;
+      
+      try {
+        const res = await fetch(`/api/stock/${id}`, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ qty: Number(qty), location })
+        });
+        
+        if (res.ok) {
+          closeModal();
+          loadStock(); // Reîncarcă
+        } else {
+          alert('Eroare la salvare');
+        }
+      } catch (e) {
+        alert('Eroare de rețea');
+      }
+    }
+
+    async function deleteLot(lotId, productName, event) {
+      event.stopPropagation();
+      
+      if (!confirm(`Ștergi LOT-ul pentru ${productName}?\nAcțiunea este ireversibilă!`)) return;
+      
+      try {
+        const res = await fetch(`/api/stock/${lotId}`, { method: 'DELETE' });
+        if (res.ok) loadStock();
+        else alert('Eroare la ștergere');
+      } catch (e) {
+        alert('Eroare de rețea');
+      }
+    }
+
+    // Închide modal la click pe overlay
+    document.getElementById('editModal').onclick = (e) => {
+      if (e.target.id === 'editModal') closeModal();
+    };
+
+    // Load inițial
+    loadStock();
+  </script>
+</body>
+</html>

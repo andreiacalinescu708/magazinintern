@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Produse & Prețuri</title>
+
+  
+  <link rel="stylesheet" href="checkpricehtml.css" />
+  <link rel="stylesheet" href="global.css">
+  <!-- dacă ai un css global, păstrează-l și pe acela -->
+  <!-- <link rel="stylesheet" href="style.css" /> -->
+</head>
+<body>
+    <a href="index.html" class="btnHome">Pagina Principală</a>
+
+
+  <!-- user bar (tu îl randezi din script.js) -->
+  <div id="userBar" class="cp-userbar"></div>
+
+  <main class="cp-wrap">
+    <header class="cp-head">
+      <div class="cp-titlebox">
+        <h1 class="cp-title">Produse &amp; Prețuri</h1>
+        <div class="cp-sub">Editează produse, arhivează produse vechi (rămân în comenzi), caută rapid.</div>
+      </div>
+
+      <div class="cp-actions">
+        <!-- Butonul tău existent pentru “Adaugă produs” -->
+        <button id="btnShowAddProduct" class="cp-btn cp-btn-primary" type="button">
+          + Adaugă produs
+        </button>
+      </div>
+    </header>
+
+    <section class="cp-toolbar">
+      <div class="cp-search">
+        <span class="cp-ico">🔎</span>
+        <input id="productsSearch" type="text" placeholder="Caută produs (nume / categorie / GTIN)..." autocomplete="off" />
+        <button id="btnClearSearch" class="cp-btn cp-btn-ghost" type="button">Șterge</button>
+      </div>
+
+      <!-- (pregătire pt categorii) – momentan ascuns; îl activăm când vrei -->
+      <div class="cp-filters" style="display:none;">
+        <select id="filterCategory" class="cp-select">
+          <option value="">Toate categoriile</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="cp-card">
+      <div class="cp-cardhead">
+        <div class="cp-cardtitle">Lista produse</div>
+        <div class="cp-cardmeta">
+          <span id="cpCount">0</span> produse
+        </div>
+      </div>
+
+      <div id="productsList" class="cp-tablewrap">
+        <!-- tabelul îl umple initCheckPricePage() din script.js -->
+      </div>
+    </section>
+
+    <p class="cp-note">
+      * “Șterge” = <b>Arhivează</b>. Produsul dispare din lista curentă, dar rămâne în comenzile vechi.
+    </p>
+  </main>
+
+  <!-- =========================
+       MODAL EDIT PRODUCT
+       ========================= -->
+  <div id="editProductModal" class="cp-modal hidden" aria-hidden="true">
+    <div class="cp-modal__overlay" data-close="1"></div>
+
+    <div class="cp-modal__panel" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+      <div class="cp-modal__head">
+        <div>
+          <div class="cp-modal__title" id="editModalTitle">Editează produs</div>
+          <div class="cp-modal__subtitle" id="editModalSubtitle">Actualizează nume / categorie / preț / GTIN-uri</div>
+        </div>
+        <button id="btnCloseEditModal" class="cp-x" type="button" aria-label="Închide">✕</button>
+      </div>
+
+      <div class="cp-modal__body">
+        <input id="editProdId" type="hidden" />
+
+        <div class="cp-grid">
+          <div class="cp-field">
+            <label for="editProdName">Nume produs</label>
+            <input id="editProdName" type="text" placeholder="Ex: Seni Active Classic M x30" />
+          </div>
+
+          <div class="cp-field">
+            <label for="editProdCategory">Categorie</label>
+            <input id="editProdCategory" type="text" placeholder="Ex: Seni Active Classic x30" />
+          </div>
+
+          <div class="cp-field">
+            <label for="editProdPrice">Preț listă (RON)</label>
+            <input id="editProdPrice" type="number" step="0.01" min="0" placeholder="0.00" />
+          </div>
+
+          <div class="cp-field">
+            <label for="editProdGtin">GTIN principal (opțional)</label>
+            <input id="editProdGtin" type="text" placeholder="Ex: 594xxxx..." />
+          </div>
+
+          <div class="cp-field cp-field--full">
+            <label for="editProdGtins">GTIN-uri (listă) – unul pe linie</label>
+            <textarea id="editProdGtins" rows="5" placeholder="594...\n594...\n..."></textarea>
+            <div class="cp-hint">În DB se salvează ca listă (jsonb). În front noi îl folosim la scan/stock/picking.</div>
+          </div>
+        </div>
+
+        <div id="editModalMsg" class="cp-msg" style="display:none;"></div>
+      </div>
+
+      <div class="cp-modal__foot">
+        <button id="btnArchiveProduct" class="cp-btn cp-btn-danger" type="button">Arhivează</button>
+        <div class="cp-spacer"></div>
+        <button id="btnCancelEdit" class="cp-btn cp-btn-ghost" type="button">Renunță</button>
+        <button id="btnSaveEdit" class="cp-btn cp-btn-primary" type="button">Salvează</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       MODAL ADD PRODUCT (al tău existent)
+       IMPORTANT: păstrează exact id-urile astea
+       ========================= -->
+  <div id="addProductModal" class="cp-modal hidden" aria-hidden="true">
+    <div class="cp-modal__overlay"></div>
+
+    <div class="cp-modal__panel" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+      <div class="cp-modal__head">
+        <div>
+          <div class="cp-modal__title" id="addModalTitle">Adaugă produs</div>
+          <div class="cp-modal__subtitle">Creează un produs nou în catalog</div>
+        </div>
+        <button id="btnCancelProduct" class="cp-x" type="button" aria-label="Închide">✕</button>
+      </div>
+
+      <div class="cp-modal__body">
+        <div class="cp-grid">
+          <div class="cp-field">
+            <label for="newProdName">Nume produs</label>
+            <input id="newProdName" type="text" placeholder="Nume..." />
+          </div>
+          <div class="cp-field">
+            <label for="newProdCategory">Categorie</label>
+            <input id="newProdCategory" type="text" placeholder="Categorie..." />
+          </div>
+          <div class="cp-field">
+            <label for="newProdPrice">Preț (RON)</label>
+            <input id="newProdPrice" type="number" step="0.01" min="0" placeholder="0.00" />
+          </div>
+          <div class="cp-field">
+            <label for="newProdGtin">GTIN (opțional)</label>
+            <input id="newProdGtin" type="text" placeholder="GTIN..." />
+            <label>GTIN-uri extra (câte unul pe linie)</label>
+<textarea id="newProdGtins" rows="4" placeholder="ex:\n5900516695897\n5900516695898"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="cp-modal__foot">
+        <button id="btnSaveProduct" class="cp-btn cp-btn-primary" type="button">Salvează</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

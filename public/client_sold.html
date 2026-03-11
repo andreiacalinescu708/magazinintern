@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Sold client</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="global.css">
+  <style>
+    .sold-box { background: var(--surface); border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid var(--border); }
+    .sold-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .sold-value { font-size: 1.4rem; font-weight: bold; color: #ef4444; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 10px; }
+    th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: rgba(0,0,0,0.2); }
+    .expired { color: #f59e0b; text-align: center; padding: 20px; }
+  </style>
+</head>
+<body>
+   <header class="topbar">
+    <div class="topbar-left">
+      <a href="index.html" style="text-decoration: none; color: inherit;">
+        <span class="brand">⚕️ Fast Medical Distribution</span>
+      </a>
+    </div>
+    <div class="topbar-right"><div id="userBar"></div></div>
+  </header>
+  <main class="container">
+    <div class="panel">
+      <h2>Sold client - Facturi Scadente</h2>
+      
+      <div id="loading">⏳ Se încarcă...</div>
+      
+      <div id="content" style="display: none;">
+        <div class="sold-box">
+          <div class="sold-row" style="border-bottom: none;">
+            <span>Total de plată:</span>
+            <span id="totalAmount" class="sold-value">0.00 RON</span>
+          </div>
+        </div>
+        
+        <details open>
+          <summary>Detalii facturi</summary>
+          <div id="detaliiFacturi"></div>
+        </details>
+        
+        <p class="hint" style="text-align: center; margin-top: 16px;">
+          <small>Actualizat: <span id="dataUpdate">-</span></small>
+        </p>
+      </div>
+      
+      <div id="expiredMsg" class="expired" style="display: none;"></div>
+
+      <a href="client.html" style="
+  margin-top: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #000;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  transition: all 0.2s ease;
+" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(245, 158, 11, 0.4)'" 
+   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(245, 158, 11, 0.3)'">
+  <span style="font-size: 1.1rem;">👤</span>
+  <span>Înapoi la client</span>
+</a>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+ <script>
+window.addEventListener('load', async function() {
+  const client = JSON.parse(localStorage.getItem('clientSelectat') || '{}');
+  console.log('Client selectat:', client);
+  
+  if (!client.id) {
+    alert('Nu este selectat niciun client!');
+    return;
+  }
+  
+  // Timeout wrapper pentru fetch
+  const fetchWithTimeout = (url, options = {}, timeout = 10000) => {
+    return Promise.race([
+      fetch(url, options),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout - serverul nu răspunde în 10 secunde')), timeout)
+      )
+    ]);
+  };
+
+  try {
+    console.log('Fetching:', `/api/clients/${client.id}/balances`);
+    const res = await fetchWithTimeout(`/api/clients/${client.id}/balances`);
+    
+    console.log('Response status:', res.status);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Server error ${res.status}: ${errorText}`);
+    }
+    
+    const data = await res.json();
+    console.log('Data received:', data);
+    
+    document.getElementById('loading').style.display = 'none';
+    
+    if (data.expired) {
+      document.getElementById('expiredMsg').style.display = 'block';
+      document.getElementById('expiredMsg').innerHTML = `
+        <div style="font-size: 3rem;">⏰</div>
+        <p>${data.message}</p>
+        <p class="hint">Încarcă raportul nou din secțiunea Birou.</p>
+      `;
+      return;
+    }
+    
+    document.getElementById('content').style.display = 'block';
+    document.getElementById('totalAmount').textContent = data.totalBalance.toFixed(2) + ' RON';
+    document.getElementById('dataUpdate').textContent = new Date(data.lastUpload).toLocaleString('ro-RO');
+    
+    let html = '';
+    if (data.invoices.length === 0) {
+      html = '<p class="hint">Nu sunt facturi scadente pentru acest client. ✅</p>';
+    } else {
+      html = `<p class="hint">Total facturi: ${data.invoices.length}</p>`;
+      html += '<table><thead><tr><th>Factura</th><th>Data Scadență</th><th>Zile întârziere</th><th style="text-align:right;">Sumă</th></tr></thead><tbody>';
+      
+      data.invoices.forEach(inv => {
+        html += `<tr>
+          <td>${inv.invoice_number}</td>
+          <td>${new Date(inv.due_date).toLocaleDateString('ro-RO')}</td>
+          <td style="color: #ef4444; font-weight: 600;">${inv.days_overdue} zile</td>
+          <td style="text-align:right; font-weight: 600;">${parseFloat(inv.balance_due).toFixed(2)} RON</td>
+        </tr>`;
+      });
+      
+      html += '</tbody></table>';
+    }
+    document.getElementById('detaliiFacturi').innerHTML = html;
+    
+  } catch (e) {
+    console.error('Eroare completă:', e);
+    document.getElementById('loading').innerHTML = `
+      ❌ Eroare: ${e.message}<br>
+      <small>Verifică consola (F12) și terminalul serverului</small><br>
+      <button onclick="location.reload()" style="margin-top:10px;">Reîncearcă</button>
+    `;
+  }
+});
+</script>
+</body>
+</html>

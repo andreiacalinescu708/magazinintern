@@ -1,0 +1,320 @@
+/* public/orders-mobile.css */
+/* Stil “app-like” DOAR pt Orders */
+
+:root{
+  --bg: #0b1220;
+  --card: rgba(255,255,255,.06);
+  --card2: rgba(255,255,255,.08);
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.68);
+  --line: rgba(255,255,255,.14);
+  --shadow: 0 18px 48px rgba(0,0,0,.45);
+  --r: 16px;
+  --tap: 46px;
+  --pad: 14px;
+}
+
+body{
+  background: radial-gradient(1200px 700px at 15% 10%, rgba(59,130,246,.16), transparent),
+              radial-gradient(900px 600px at 85% 30%, rgba(99,102,241,.12), transparent),
+              #0b1220 !important;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.mApp{
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 10px 10px 22px;
+}
+
+/* Topbar */
+.mTopbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin: 6px 2px 10px;
+}
+
+.mBack{
+  min-height: var(--tap);
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  font-weight: 800;
+}
+.mBack:hover{ background: rgba(255,255,255,.12); }
+
+.mUserBar{
+  display:flex;
+  justify-content:flex-end;
+}
+
+/* Header card */
+.mCard{
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+}
+
+.mHeader{
+  padding: 14px;
+}
+
+.mTitle{
+  margin: 4px 0 12px;
+  font-size: 24px;
+  letter-spacing: -0.2px;
+}
+
+/* Filters like the screenshot */
+.mFilters{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.mFilterRow{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap:10px;
+}
+
+.mSearchRow input{
+  width:100%;
+}
+
+.mFilters select,
+.mFilters input{
+  min-height: var(--tap);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  font-size: 16px;
+  outline: none;
+}
+.mFilters select option{ color:#0f172a; } /* dropdown-ul nativ e alb la browser */
+.mFilters input::placeholder{ color: rgba(255,255,255,.55); }
+.mResetBtn{
+  min-height: var(--tap);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  font-weight: 900;
+  width: 140px;
+}
+.mResetBtn:hover{ background: rgba(255,255,255,.12); }
+
+/* Sugestii */
+.mSuggest{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.mSuggest button{
+  min-height: var(--tap);
+  border-radius: 12px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  text-align:left;
+  padding: 10px 12px;
+}
+.mSuggest button:hover{ background: rgba(255,255,255,.12); }
+
+/* Orders list */
+.mOrders{
+  margin-top: 12px;
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
+
+/* Mapăm clasele existente din JS (orderCard/orderHeader/orderBody) */
+.orderCard{
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+  color: var(--text);
+}
+
+.orderHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255,255,255,.04);
+}
+
+.orderHeader span{
+  font-weight: 900;
+  font-size: 20px;
+  line-height: 1.15;
+}
+/* status badge dreapta (pill) */
+.order-status{
+  border-radius: 999px !important;
+  min-height: 40px;
+  padding: 8px 12px !important;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,.14);
+  color: rgba(15,23,42,.95); /* text dark pe badge-uri deschise */
+}
+
+/* Culoare status (poți ajusta) */
+.order-status.in_procesare{ background:#fde68a; }        /* galben */
+.order-status.facturata{ background:#bbf7d0; }           /* verde */
+.order-status.gata_de_livrare{ background:#bfdbfe; }     /* albastru */
+.order-status.livrata{ background:#e2e8f0; }             /* gri */
+
+/* Buton “Modifică” și “Pregătește comanda” ca în poză */
+.btnEdit, .btnPick{
+  border-radius: 14px;
+  min-height: 44px;
+  padding: 10px 14px;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+}
+.btnEdit:hover, .btnPick:hover{ background: rgba(255,255,255,.12); }
+
+.btnPick{
+  background: #fde68a;
+  border-color: rgba(2,8,23,.10);
+  color: rgba(15,23,42,.95);
+}
+/* Pe mobil: butoanele în coloană, late */
+@media (max-width: 520px){
+  .mFilterRow{ grid-template-columns: 1fr 1fr 1fr; }
+  .orderHeader{
+    flex-wrap: wrap;
+  }
+  .orderHeader span{ width:100%; }
+  .orderHeader .order-status,
+  .orderHeader .btnEdit,
+  .orderHeader .btnPick{
+    width:100%;
+    justify-content:center;
+  }
+}
+
+/* Body “collapsed” arată clean */
+.orderBody{
+  padding: 14px;
+  background: rgba(255,255,255,.02);}
+
+.orderItem{
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  margin-bottom: 10px;
+}
+
+.orderItem strong{
+  font-size: 16px;
+}
+
+.orderItem .lots{
+  margin-top: 8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.orderItem .lots .lot{
+  padding: 10px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ===== STATUS TABS ===== */
+.mTabs{
+  display:flex;
+  gap:10px;
+  overflow:auto;
+  padding:10px 0;
+}
+
+.mTab{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid #ddd;
+  background:#f7f7f7;
+  border-radius:999px;
+  padding:10px 14px;
+  font-size:16px;
+  white-space:nowrap;
+}
+
+.mTab .badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:22px;
+  height:22px;
+  padding:0 8px;
+  border-radius:999px;
+  background:#e6e6e6;
+  font-weight:700;
+  font-size:14px;
+}
+
+.mTab.active{
+  background:#2f80ed;
+  color:#fff;
+  border-color:#2f80ed;
+}
+
+.mTab.active .badge{
+  background:rgba(255,255,255,.25);
+  color:#fff;
+}
+
+/* culori ca în poză */
+.mTab[data-status="gata_de_livrare"]{ background:#e6f0ff; border-color:#b9d4ff; }
+.mTab[data-status="gata_de_livrare"] .badge{ background:#1d4ed8; color:#fff; border-color:transparent; }
+
+.mTab[data-status="in_procesare"]{ background:#fff7e6; border-color:#ffe2a8; }
+.mTab[data-status="in_procesare"] .badge{ background:#f59e0b; color:#111; border-color:transparent; }
+
+.mTab[data-status="facturata"]{ background:#ecfccb; border-color:#c7f9a1; }
+.mTab[data-status="facturata"] .badge{ background:#22c55e; color:#fff; border-color:transparent; }
+
+.mTab[data-status="livrata"]{ background:#eef2f7; border-color:#d7dde8; }
+.mTab[data-status="livrata"] .badge{ background:#64748b; color:#fff; border-color:transparent; }
+
+.mTab[data-status=""]{ background:#fff; }
+
+.mTab.active{
+  outline: 3px solid rgba(2,8,23,.10);
+  
+}
+.mTab{ color: rgba(15,23,42,.92); }              /* pe tab-urile colorate */
+.mTab[data-status=""]{ color: var(--text); }     /* tab-ul “Toate” */
+
+/* ascundem dropdown-ul de status, pentru că status vine din tabs */
+#filterStatus { display: none; }
+
+/* dacă badge-ul e gol, nu-l mai arăta (altfel rămâne “cercul” ăla) */
+.mTab .badge:empty { display: none; }
+
+/* doar ca siguranță: textul să fie mereu vizibil */
+.mTab { color: var(--text); }
+
+

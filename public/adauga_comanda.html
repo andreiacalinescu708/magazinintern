@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Clienți - Fast Medical Distribution</title>
+  <link rel="stylesheet" href="global.css" />
+  <style>
+    .page-header {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+
+    @media (min-width: 640px) {
+      .page-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .search-box {
+      position: relative;
+      margin-bottom: var(--space-6);
+    }
+
+    .search-box input {
+      padding-left: var(--space-10);
+      font-size: 1.1rem;
+      height: 3.5rem;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: var(--space-4);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 1.5rem;
+    }
+
+    #clientSearchResults {
+      position: absolute;
+      top: calc(100% + var(--space-2));
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 50;
+      box-shadow: var(--shadow-xl);
+      display: none;
+    }
+
+    #clientSearchResults.show {
+      display: block;
+    }
+
+    #clientSearchResults .itembtn {
+      width: 100%;
+      text-align: left;
+      padding: var(--space-4);
+      border: none;
+      border-bottom: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      font-size: 1rem;
+    }
+
+    #clientSearchResults .itembtn:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    #clientSearchResults .itembtn:last-child {
+      border-bottom: none;
+    }
+
+    /* ===== TABS ===== */
+    .tabs-nav {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-6);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: var(--space-2);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .tabs-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 120px;
+      padding: var(--space-4) var(--space-6);
+      background: transparent;
+      border: 2px solid transparent;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      color: var(--text-muted);
+      font-size: 1.125rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .tab-btn.active {
+      color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.15);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent-blue);
+    }
+
+    .tab-badge {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+
+    .tab-btn.active .tab-badge {
+      background: var(--accent-blue);
+      color: white;
+    }
+
+    /* ===== TAB CONTENT ===== */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .clients-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: var(--space-5);
+      min-height: 400px;
+    }
+
+    /* ===== COUNTY ACCORDION ===== */
+    .county-accordion {
+      margin-bottom: var(--space-3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    .county-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-4);
+      background: rgba(59, 130, 246, 0.1);
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .county-header:hover {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--text-primary);
+    }
+
+    .county-header::after {
+      content: "▼";
+      font-size: 0.875rem;
+      transition: transform 0.3s ease;
+      color: var(--accent-blue);
+    }
+
+    .county-header.active::after {
+      transform: rotate(180deg);
+    }
+
+    .county-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .county-body.open {
+      max-height: 2000px;
+      transition: max-height 0.4s ease-in;
+    }
+
+    .county-content {
+      padding: var(--space-4);
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-3);
+    }
+
+    @media (min-width: 640px) {
+      .county-content {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .county-content {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    /* ===== CLIENT CARDS ===== */
+    .clients-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-3);
+    }
+
+    @media (min-width: 640px) {
+      .clients-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .clients-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .client-card {
+      position: relative;
+      padding: var(--space-5);
+      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-xl);
+      color: var(--text-primary);
+      font-size: 1.125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: left;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      min-height: 4rem;
+      width: 100%;
+    }
+
+    .client-card::before {
+      content: "👤";
+      font-size: 1.5rem;
+      opacity: 0.7;
+    }
+
+    .client-card:hover {
+      transform: translateY(-3px) scale(1.02);
+      border-color: var(--accent-blue);
+      box-shadow: 0 12px 24px -4px rgba(2, 132, 199, 0.4);
+      background: linear-gradient(145deg, #1e293b 0%, #1e3a5f 100%);
+    }
+
+    .client-card:active {
+      transform: translateY(-1px) scale(0.98);
+    }
+
+    .client-card .client-name {
+      flex: 1;
+      font-size: 1.125rem;
+      line-height: 1.4;
+    }
+
+    .client-card .arrow {
+      opacity: 0;
+      transform: translateX(-10px);
+      transition: all 0.3s ease;
+      color: var(--accent-blue);
+      font-size: 1.25rem;
+    }
+
+    .client-card:hover .arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .county-count {
+      background: rgba(59, 130, 246, 0.3);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: var(--space-10);
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand">
+        <div class="navbar-brand-icon">⚕️</div>
+        <span>FMD</span>
+      </a>
+      <div class="navbar-actions">
+        <div id="userBar"></div>
+        <a href="index.html" class="btn btn-ghost btn-sm">← Înapoi</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1 style="margin-bottom: var(--space-2); font-size: 2rem;">Selectează Client</h1>
+        <p style="color: var(--text-muted); margin: 0; font-size: 1.125rem;">Alege un client pentru a începe o comandă nouă</p>
+      </div>
+       <button class="btn btn-primary btn-lg" id="btnViewCurrentOrder" style="display: none; align-items: center; gap: 10px;">
+    <span>🛒</span>
+    <span>Vizualizează comanda actuală</span>
+    <span id="cartBadge" style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; margin-left: 8px; display: none;">0</span>
+  </button>
+</div>
+    </div>
+
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        id="searchClient" 
+        class="form-input" 
+        placeholder="Caută client după nume..." 
+        autocomplete="off" 
+      />
+      <div id="clientSearchResults"></div>
+    </div>
+
+    <!-- TAB NAVIGATION -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" data-tab="craiova">
+        <span>📍</span>
+        <span>Craiova</span>
+        <span class="tab-badge" id="count-craiova">0</span>
+      </button>
+      <button class="tab-btn" data-tab="exterior">
+        <span>🌍</span>
+        <span>Exterior</span>
+        <span class="tab-badge" id="count-exterior">0</span>
+      </button>
+    </div>
+
+    <!-- TAB CONTENT -->
+    <div class="clients-container">
+      <!-- CRAIOVA TAB -->
+      <div id="tab-craiova" class="tab-content active">
+        <div id="craiovaContent">
+          <div class="empty-state">
+            <div style="font-size: 3rem; margin-bottom: var(--space-4); opacity: 0.3;">📍</div>
+            <p>Se încarcă clienții din Craiova...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXTERIOR TAB -->
+      <div id="tab-exterior" class="tab-content">
+        <div id="exteriorContent">
+          <div class="empty-state">
+            <div style="font-size: 3rem; margin-bottom: var(--space-4); opacity: 0.3;">🌍</div>
+            <p>Se încarcă clienții din Exterior...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+  
+  <script>
+    // AȘTEPTĂM ca script.js să se încarce complet
+    document.addEventListener("DOMContentLoaded", async function() {
+      // Verificăm dacă suntem pe pagina corectă
+      if (!document.getElementById('craiovaContent')) return;
+      
+      try {
+        // Încărcăm datele
+        const [treeRes, flatRes] = await Promise.all([
+          fetch("/api/clients-tree"),
+          fetch("/api/clients-flat")
+        ]);
+        
+        const tree = await treeRes.json();
+        const flat = await flatRes.json();
+        
+        // Salvăm flat în localStorage pentru a-l folosi în selectClient
+        localStorage.setItem('clientsFlat', JSON.stringify(flat));
+        
+        // Găsim cheile (uneori vin cu literă mică, uneori mare)
+        const craiovaKey = Object.keys(tree).find(k => k.toLowerCase() === 'craiova') || 'Craiova';
+        const exteriorKey = Object.keys(tree).find(k => k.toLowerCase() === 'exterior') || 'Exterior';
+        
+        // Randăm conținutul
+        renderCraiovaTab(tree[craiovaKey], flat);
+        renderExteriorTab(tree[exteriorKey], flat);
+        
+        // Actualizăm numerele în tab-uri
+const craiovaCount = Object.values(tree[craiovaKey] || {}).flat().length;
+        const exteriorCount = Object.values(tree[exteriorKey] || {}).reduce((sum, county) => {
+          return sum + Object.keys(county || {}).length;
+        }, 0);
+        
+        document.getElementById('count-craiova').textContent = craiovaCount;
+        document.getElementById('count-exterior').textContent = exteriorCount;
+        
+        // Inițializăm tab-urile
+        initTabs();
+        
+        // Inițializăm căutarea
+        initSearch(flat);
+        
+      } catch (err) {
+        console.error("Eroare:", err);
+        document.getElementById('craiovaContent').innerHTML = `
+          <div class="empty-state">
+            <p>Eroare la încărcarea datelor. Reîncearcă.</p>
+          </div>
+        `;
+      }
+    });
+
+    function renderCraiovaTab(data, flat) {
+  const container = document.getElementById('craiovaContent');
+  
+  // ✅ FIX: Adăugat .flat() pentru a aplatiza array-ul
+  const clients = Object.values(data || {}).flat();
+  
+  if (clients.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>Nu există clienți în Craiova.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Sortare alfabetică
+  clients.sort((a, b) => String(a).localeCompare(String(b), 'ro'));
+  
+  // Generăm HTML
+  const grid = document.createElement('div');
+  grid.className = 'clients-grid';
+  
+  clients.forEach(name => {
+    const card = document.createElement('button');
+    card.className = 'client-card';
+    card.innerHTML = `
+      <span class="client-name">${name}</span>
+      <span class="arrow">→</span>
+    `;
+    card.onclick = () => selectClient(name);
+    grid.appendChild(card);
+  });
+  
+  container.innerHTML = '';
+  container.appendChild(grid);
+}
+
+
+       function renderExteriorTab(data, flat) {
+      const container = document.getElementById('exteriorContent');
+      
+      // Dacă nu există date
+      if (!data || Object.keys(data).length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Nu există clienți în Exterior.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Sortăm județele alfabetic
+      const counties = Object.entries(data).sort((a, b) => 
+        a[0].localeCompare(b[0], 'ro')
+      );
+      
+      container.innerHTML = '';
+      
+      counties.forEach(([countyName, clientsObj], index) => {
+        // Convertim clienții la array
+        const clients = Object.values(clientsObj || {});
+        
+        const accordion = document.createElement('div');
+        accordion.className = 'county-accordion';
+        
+        const header = document.createElement('button');
+        header.className = 'county-header';
+        header.type = 'button';
+        header.innerHTML = `
+          <span style="display: flex; align-items: center; gap: 8px;">
+            🏘️ ${countyName}
+          </span>
+          <span class="county-count">${clients.length} clienți</span>
+        `;
+        
+        const body = document.createElement('div');
+        body.className = 'county-body';
+        
+        const content = document.createElement('div');
+        content.className = 'county-content';
+        
+        // Sortăm clienții și creăm cardurile
+        clients.sort((a, b) => String(a).localeCompare(String(b), 'ro'));
+        
+        clients.forEach(name => {
+          const card = document.createElement('button');
+          card.className = 'client-card';
+          card.innerHTML = `
+            <span class="client-name">${name}</span>
+            <span class="arrow">→</span>
+          `;
+          card.onclick = () => selectClient(name);
+          content.appendChild(card);
+        });
+        
+        body.appendChild(content);
+        accordion.appendChild(header);
+        accordion.appendChild(body);
+        container.appendChild(accordion);
+        
+        // Toggle funcționalitate
+        header.onclick = () => {
+          const isOpen = body.classList.contains('open');
+          body.classList.toggle('open', !isOpen);
+          header.classList.toggle('active', !isOpen);
+        };
+        
+        // Deschidem primul județ implicit
+        if (index === 0) {
+          setTimeout(() => {
+            body.classList.add('open');
+            header.classList.add('active');
+          }, 100);
+        }
+      });
+    }
+
+    function selectClient(name) {
+      const flat = JSON.parse(localStorage.getItem('clientsFlat') || '[]');
+      const client = flat.find(c => c.name === name);
+      
+      if (!client) {
+        alert("Clientul nu a fost găsit");
+        return;
+      }
+      
+      // Verificăm coșul
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      if (cart.length > 0) {
+        alert("Nu poți schimba clientul cât timp există produse în coș.");
+        return;
+      }
+      
+      localStorage.setItem("clientSelectat", JSON.stringify(client));
+      location.href = "client.html";
+    }
+
+    function initTabs() {
+      const tabs = document.querySelectorAll('.tab-btn');
+      const contents = document.querySelectorAll('.tab-content');
+      
+      tabs.forEach(tab => {
+        tab.onclick = () => {
+          const target = tab.dataset.tab;
+          
+          // Dezactivăm toate tab-urile
+          tabs.forEach(t => t.classList.remove('active'));
+          contents.forEach(c => c.classList.remove('active'));
+          
+          // Activăm tab-ul curent
+          tab.classList.add('active');
+          document.getElementById('tab-' + target).classList.add('active');
+        };
+      });
+    }
+
+    function initSearch(flatClients) {
+      const input = document.getElementById("searchClient");
+      const results = document.getElementById("clientSearchResults");
+      
+      if (!input || !results) return;
+      
+      let timeout;
+      
+      input.oninput = () => {
+        const query = input.value.toLowerCase().trim();
+        
+        clearTimeout(timeout);
+        results.innerHTML = '';
+        
+        if (!query) {
+          results.classList.remove("show");
+          return;
+        }
+        
+        timeout = setTimeout(() => {
+          const matches = flatClients.filter(c => 
+            c.name.toLowerCase().includes(query)
+          ).slice(0, 20);
+          
+          if (matches.length === 0) {
+            results.innerHTML = '<div style="padding: 12px; color: var(--text-muted); text-align: center;">Niciun client găsit</div>';
+            results.classList.add("show");
+            return;
+          }
+          
+          matches.forEach(client => {
+            const btn = document.createElement("button");
+            btn.className = "itembtn";
+            btn.textContent = client.name;
+            btn.onclick = () => {
+              selectClient(client.name);
+            };
+            results.appendChild(btn);
+          });
+          
+          results.classList.add("show");
+        }, 300);
+      };
+      
+      // Închidem când dăm click în afară
+      document.onclick = (e) => {
+        if (!input.contains(e.target) && !results.contains(e.target)) {
+          results.classList.remove("show");
+        }
+      };
+    }
+  </script>
+  <script>
+document.addEventListener("DOMContentLoaded", function() {
+  const btn = document.getElementById("btnViewCurrentOrder");
+  const badge = document.getElementById("cartBadge");
+  
+  if (!btn) return; // Dacă nu există butonul, ieșim
+  
+  try {
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    if (cart.length > 0) {
+      btn.style.display = "inline-flex"; // sau "flex"
+      badge.style.display = "inline";
+      badge.textContent = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+      
+      // Click handler
+      btn.onclick = function() {
+        location.href = "comanda.html";
+      };
+    }
+  } catch (e) {
+    console.log("Eroare la citirea coșului");
+  }
+});
+</script>
+</body>
+</html>
