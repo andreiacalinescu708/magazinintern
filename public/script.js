@@ -194,6 +194,11 @@ async function initLoginPage() {
             </a>
           ` : ''}
           
+          <a href="profil.html" class="dropdown-item">
+            <span class="dropdown-icon">👤</span>
+            <span>Profil</span>
+          </a>
+          
           <a href="schimba_parola.html" class="dropdown-item">
             <span class="dropdown-icon">🔑</span>
             <span>Schimbă parola</span>

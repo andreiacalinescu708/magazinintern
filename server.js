@@ -2556,6 +2556,53 @@ app.get("/api/users", isAdmin, async (req, res) => {
   }
 });
 
+// ========== PROFIL UTILIZATOR ==========
+
+// GET /api/me - Obține profilul utilizatorului curent
+app.get("/api/me", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const r = await db.q(
+      `SELECT id, username, role, first_name, last_name, phone, email, position, created_at 
+       FROM users 
+       WHERE id = $1`,
+      [userId]
+    );
+    
+    if (r.rows.length === 0) {
+      return res.status(404).json({ error: "Utilizator negăsit" });
+    }
+    
+    res.json(r.rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT /api/me - Actualizează profilul utilizatorului curent
+app.put("/api/me", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const { first_name, last_name, phone, email, position } = req.body;
+    
+    const r = await db.q(
+      `UPDATE users 
+       SET first_name = $1, last_name = $2, phone = $3, email = $4, position = $5
+       WHERE id = $6
+       RETURNING id, username, role, first_name, last_name, phone, email, position, created_at`,
+      [first_name || null, last_name || null, phone || null, email || null, position || null, userId]
+    );
+    
+    if (r.rows.length === 0) {
+      return res.status(404).json({ error: "Utilizator negăsit" });
+    }
+    
+    res.json({ ok: true, user: r.rows[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Endpoint pentru schimbarea parolei
 // Endpoint pentru schimbarea parolei
 app.post('/api/schimba-parola', async (req, res) => {

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profil - oBill</title>
+  <link rel="stylesheet" href="css/sistem.css" />
+  <style>
+    .profile-container {
+      max-width: 600px;
+      margin: 2rem auto;
+    }
+    
+    .profile-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: var(--primary-600);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: white;
+      margin: 0 auto 1rem;
+      border: 4px solid var(--primary-500);
+    }
+    
+    .profile-avatar.large {
+      width: 120px;
+      height: 120px;
+      font-size: 3rem;
+    }
+    
+    .profile-name {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+    
+    .profile-role {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+    
+    .profile-form {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    
+    @media (max-width: 640px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .readonly-field {
+      background: var(--bg-elevated);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+    
+    .readonly-field label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    
+    .readonly-field .value {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem;">
+        <img src="logo.svg" alt="oBill" style="height: 36px; width: auto;">
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-ghost btn-icon" id="btnToggleTheme" title="Schimbă tema">🌙</button>
+        <div class="user-menu" id="userMenuContainer">
+          <button class="btn btn-primary btn-sm" id="btnUserDropdown">
+            <span id="navUsername">User</span> ▼
+          </button>
+          <div class="dropdown-menu" id="userDropdown">
+            <a href="profil.html" class="dropdown-item">👤 Profil</a>
+            <a href="schimba_parola.html" class="dropdown-item">🔒 Schimbă parola</a>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item text-danger" id="btnLogout">🚪 Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="profile-container">
+      <div class="profile-header">
+        <div class="profile-avatar large" id="profileAvatar">U</div>
+        <div class="profile-name" id="profileFullName">Utilizator</div>
+        <div class="profile-role" id="profileRole">Rol</div>
+      </div>
+
+      <form class="profile-form" id="profileForm">
+        <div class="card-header" style="margin-bottom: 1.5rem;">
+          <h3>📝 Informații Profil</h3>
+        </div>
+
+        <div class="form-row" style="margin-bottom: 1rem;">
+          <div class="readonly-field">
+            <label>Username</label>
+            <div class="value" id="displayUsername">-</div>
+          </div>
+          <div class="readonly-field">
+            <label>Funcție</label>
+            <div class="value" id="displayRole">-</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="firstName">Nume</label>
+            <input type="text" id="firstName" class="form-input" placeholder="Ex: Popescu" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="lastName">Prenume</label>
+            <input type="text" id="lastName" class="form-input" placeholder="Ex: Ion" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input type="email" id="email" class="form-input" placeholder="Ex: ion.popescu@firma.ro" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="phone">Telefon</label>
+          <input type="tel" id="phone" class="form-input" placeholder="Ex: 0722 123 456" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="position">Funcția / Departament</label>
+          <input type="text" id="position" class="form-input" placeholder="Ex: Manager Vânzări, Depozit, etc." />
+        </div>
+
+        <div id="formMessage" style="margin-bottom: 1rem;"></div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            💾 Salvează modificările
+          </button>
+          <a href="index.html" class="btn btn-ghost">← Înapoi la Dashboard</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="js/theme.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Dropdown functionality
+    const btnUserDropdown = document.getElementById('btnUserDropdown');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    btnUserDropdown?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userDropdown.classList.toggle('show');
+    });
+    
+    document.addEventListener('click', () => {
+      userDropdown?.classList.remove('show');
+    });
+
+    // Load profile data
+    async function loadProfile() {
+      try {
+        const res = await fetch('/api/me');
+        if (!res.ok) throw new Error('Eroare la încărcarea profilului');
+        
+        const user = await res.json();
+        
+        // Update display
+        document.getElementById('navUsername').textContent = user.username;
+        document.getElementById('displayUsername').textContent = user.username;
+        document.getElementById('displayRole').textContent = user.role === 'admin' ? 'Administrator' : 'Utilizator';
+        
+        // Avatar
+        const initials = user.first_name && user.last_name 
+          ? (user.first_name[0] + user.last_name[0]).toUpperCase()
+          : user.username[0].toUpperCase();
+        document.getElementById('profileAvatar').textContent = initials;
+        
+        // Full name display
+        const fullName = user.first_name && user.last_name 
+          ? `${user.first_name} ${user.last_name}`
+          : user.username;
+        document.getElementById('profileFullName').textContent = fullName;
+        document.getElementById('profileRole').textContent = user.position || (user.role === 'admin' ? 'Administrator' : 'Utilizator');
+        
+        // Fill form
+        document.getElementById('firstName').value = user.first_name || '';
+        document.getElementById('lastName').value = user.last_name || '';
+        document.getElementById('email').value = user.email || '';
+        document.getElementById('phone').value = user.phone || '';
+        document.getElementById('position').value = user.position || '';
+        
+      } catch (err) {
+        showMessage('Eroare la încărcarea profilului: ' + err.message, 'error');
+      }
+    }
+
+    // Save profile
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const data = {
+        first_name: document.getElementById('firstName').value.trim(),
+        last_name: document.getElementById('lastName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        position: document.getElementById('position').value.trim()
+      };
+      
+      try {
+        const res = await fetch('/api/me', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Eroare la salvare');
+        }
+        
+        const result = await res.json();
+        showMessage('Profil actualizat cu succes!', 'success');
+        
+        // Update display with new values
+        const user = result.user;
+        const fullName = user.first_name && user.last_name 
+          ? `${user.first_name} ${user.last_name}`
+          : user.username;
+        document.getElementById('profileFullName').textContent = fullName;
+        document.getElementById('profileRole').textContent = user.position || (user.role === 'admin' ? 'Administrator' : 'Utilizator');
+        
+        const initials = user.first_name && user.last_name 
+          ? (user.first_name[0] + user.last_name[0]).toUpperCase()
+          : user.username[0].toUpperCase();
+        document.getElementById('profileAvatar').textContent = initials;
+        
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    });
+
+    function showMessage(text, type) {
+      const msg = document.getElementById('formMessage');
+      msg.textContent = text;
+      msg.className = type === 'success' ? 'text-success' : 'text-danger';
+      setTimeout(() => msg.textContent = '', 5000);
+    }
+
+    // Logout
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      await fetch('/logout', { method: 'POST' });
+      window.location.href = 'login.html';
+    });
+
+    // Load on page load
+    loadProfile();
+  </script>
+</body>
+</html>

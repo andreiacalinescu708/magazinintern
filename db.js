@@ -133,6 +133,13 @@ await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_failed_at TIMESTAMPTZ`)
 await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
   await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INT NOT NULL DEFAULT 0`);
 
+  // Coloane pentru profil utilizator
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name TEXT`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position TEXT`);
+
 // Asigură-te că adminul existent rămâne aprobat (pentru compatibilitate)
 await q(`UPDATE users SET is_approved = true WHERE role = 'admin'`);
 await q(`UPDATE users SET is_approved = false WHERE is_approved IS NULL`);
