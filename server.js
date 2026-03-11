@@ -191,17 +191,11 @@ app.use(session({
   }
 }));
 
-
-// Cine sunt eu (pentru frontend)
-app.get("/api/me", (req, res) => {
+// Endpoint pentru verificarea autentificării (pentru frontend)
+app.get("/api/auth/check", (req, res) => {
   if (!req.session.user) return res.json({ loggedIn: false });
   res.json({ loggedIn: true, user: req.session.user });
 });
-
-
-
-
-
 
 const DATA_DIR = path.join(__dirname, "data");
 const CLIENTS_FILE = path.join(DATA_DIR, "clients.json");

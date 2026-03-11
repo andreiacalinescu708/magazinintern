@@ -150,7 +150,7 @@ async function initLoginPage() {
 
     let me;
     try {
-      const res = await apiFetch("/api/me");
+      const res = await apiFetch("/api/auth/check");
       me = await res.json();
     } catch {
       return; // apiFetch deja redirecționează
@@ -165,7 +165,7 @@ async function initLoginPage() {
   const bar = document.getElementById("userBar");
   if (!bar) return;
 
-  const res = await apiFetch("/api/me");
+  const res = await apiFetch("/api/auth/check");
   const me = await res.json();
 
   if (!me.loggedIn) {
