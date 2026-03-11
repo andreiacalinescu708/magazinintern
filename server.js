@@ -3009,10 +3009,11 @@ app.get("/api/products/search", async (req, res) => {
   try {
     await db.ensureTables();
     console.log("✅ DB ready");
-    await seedClientsFromFileIfEmpty();
-    await seedProductsFromFileIfEmpty();
-    await ensureDefaultAdmin();
-    await seedInitialData();
+    // Seed dezactivat - baza de date porneste goala
+    // await seedClientsFromFileIfEmpty();
+    // await seedProductsFromFileIfEmpty();
+    // await ensureDefaultAdmin();
+    // await seedInitialData();
   } catch (e) {
     console.error("❌ DB init error (pornesc fără DB):", e?.message || e);
   }
