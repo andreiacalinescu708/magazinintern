@@ -13,7 +13,7 @@ const crypto = require("crypto");
 
 // ===== EMAIL CONFIG (Nodemailer) =====
 const nodemailer = require("nodemailer");
-const emailTransporter = process.env.EMAIL_HOST ? nodemailer.createTransporter({
+const emailTransporter = process.env.EMAIL_HOST ? nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: parseInt(process.env.EMAIL_PORT) || 587,
   secure: false, // true pentru port 465
