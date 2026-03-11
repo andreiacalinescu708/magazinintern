@@ -185,8 +185,12 @@
     <div id="tab-invites" class="card" style="display: none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
         <h3>📧 Invitații trimise</h3>
-        <button class="btn-approve" onclick="openInviteModal()">+ Invită Utilizator</button>
+        <div>
+          <button onclick="testEmailConfig()" title="Testează configurația email" style="background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; margin-right: 0.5rem;">📧 Test Email</button>
+          <button class="btn-approve" onclick="openInviteModal()">+ Invită Utilizator</button>
+        </div>
       </div>
+      <div id="emailTestResult" style="display: none; margin-bottom: 1rem; padding: 1rem; border-radius: 0.5rem;"></div>
       <div id="errorInvites" class="error-box"></div>
       <div id="invitesList">
         <p class="empty-state">Se încarcă...</p>
@@ -651,6 +655,34 @@
         
       } catch (err) {
         alert('Eroare la ștergere: ' + err.message);
+      }
+    }
+
+    // Testează configurația email
+    async function testEmailConfig() {
+      const resultDiv = document.getElementById('emailTestResult');
+      resultDiv.style.display = 'block';
+      resultDiv.style.background = 'rgba(59, 130, 246, 0.1)';
+      resultDiv.style.border = '1px solid rgba(59, 130, 246, 0.3)';
+      resultDiv.innerHTML = '⏳ Se testează configurația...';
+      
+      try {
+        const res = await fetch('/api/test-email');
+        const data = await res.json();
+        
+        if (data.ok) {
+          resultDiv.style.background = 'rgba(16, 185, 129, 0.1)';
+          resultDiv.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+          resultDiv.innerHTML = `✅ <strong>Email trimis cu succes!</strong><br>Verifică inboxul tău (${data.config.user})`;
+        } else {
+          resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+          resultDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+          resultDiv.innerHTML = `❌ <strong>Eroare la trimitere</strong><br>${data.error || 'Verifică logurile'}<br><br>Config: ${data.config.host} / ${data.config.user}`;
+        }
+      } catch (err) {
+        resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+        resultDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        resultDiv.innerHTML = `❌ <strong>Eroare:</strong> ${err.message}`;
       }
     }
 

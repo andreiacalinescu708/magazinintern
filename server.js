@@ -19,23 +19,34 @@ let emailTransporter = null;
 if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
   const isGmail = process.env.EMAIL_HOST.includes('gmail') || process.env.EMAIL_HOST.includes('google');
   
-  emailTransporter = nodemailer.createTransport({
+  // Configurare specifică pentru Gmail
+  const transportConfig = isGmail ? {
+    service: 'gmail',  // Folosește configurația predefinită pentru Gmail
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    },
+    debug: true,
+    logger: true
+  } : {
     host: process.env.EMAIL_HOST,
     port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: false, // Gmail folosește STARTTLS pe port 587
+    secure: false,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
     },
     tls: {
-      rejectUnauthorized: false,
-      ciphers: 'SSLv3'
+      rejectUnauthorized: false
     },
-    debug: true, // Logare detaliată
+    debug: true,
     logger: true
-  });
+  };
+  
+  emailTransporter = nodemailer.createTransport(transportConfig);
   
   console.log("📧 Email transporter configurat pentru:", process.env.EMAIL_USER);
+  console.log("📧 Folosind serviciu:", isGmail ? 'gmail' : 'custom');
   
   // Verifică conexiunea la pornire
   emailTransporter.verify((error, success) => {
@@ -47,6 +58,9 @@ if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) 
   });
 } else {
   console.log("📧 Email transporter not configured - missing env vars");
+  console.log("📧 EMAIL_HOST:", process.env.EMAIL_HOST ? 'setat' : 'lipsă');
+  console.log("📧 EMAIL_USER:", process.env.EMAIL_USER ? 'setat' : 'lipsă');
+  console.log("📧 EMAIL_PASS:", process.env.EMAIL_PASS ? 'setat' : 'lipsă');
 }
 
 async function sendEmail(to, subject, html, text) {
@@ -2886,6 +2900,31 @@ app.delete("/api/invites/:id", isAdmin, async (req, res) => {
       [req.params.id]
     );
     res.json({ ok: true, message: "Invitație ștearsă" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/test-email - Testează configurația email (doar admin)
+app.get("/api/test-email", isAdmin, async (req, res) => {
+  try {
+    const testResult = await sendEmail(
+      req.session.user.username,
+      "Test openBill Email",
+      "<h1>Test Email</h1><p>Acesta este un email de test.</p>",
+      "Test Email - Acesta este un email de test."
+    );
+    
+    res.json({
+      ok: testResult.success,
+      message: testResult.success ? "Email de test trimis" : "Eroare la trimitere",
+      error: testResult.error || null,
+      config: {
+        host: process.env.EMAIL_HOST,
+        user: process.env.EMAIL_USER,
+        passConfigured: !!process.env.EMAIL_PASS
+      }
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
