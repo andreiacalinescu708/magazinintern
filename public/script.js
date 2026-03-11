@@ -1588,9 +1588,23 @@ function getFullProduct(item) {
         .replaceAll("'", "&#039;");
     }
 
+    // Încarcă categoriile pentru dropdown
+    let clientCategories = [];
+    async function loadClientCategories() {
+      try {
+        const res = await apiFetch("/api/client-categories");
+        clientCategories = await res.json();
+      } catch (e) {
+        console.error('Eroare la încărcarea categoriilor:', e);
+        clientCategories = [];
+      }
+    }
+    loadClientCategories();
+
     function renderClientDetails(c) {
       const prices = c.prices || {};
       const lines = Object.entries(prices);
+      const currentCategory = c.category || '';
 
       lines.sort(([a], [b]) => {
         const na = (productNameById.get(String(a)) || `Produs ID ${a}`).toLowerCase();
@@ -1613,13 +1627,86 @@ function getFullProduct(item) {
         `
         : `<div><i>(Nu are prețuri speciale)</i></div>`;
 
+      // Generează options pentru dropdown
+      let categoryOptions = clientCategories.map(cat => 
+        `<option value="${escapeHtml(cat)}" ${cat === currentCategory ? 'selected' : ''}>${escapeHtml(cat)}</option>`
+      ).join('');
+      
+      // Adaugă opțiunea pentru categorie nouă
+      if (!clientCategories.includes(currentCategory) && currentCategory) {
+        categoryOptions += `<option value="${escapeHtml(currentCategory)}" selected>${escapeHtml(currentCategory)}</option>`;
+      }
+      categoryOptions += `<option value="__new__">+ Adaugă categorie nouă...</option>`;
+
       details.innerHTML = `
         <h3>${escapeHtml(c.name)}</h3>
         <div><b>Grup:</b> ${escapeHtml(c.group || "-")}</div>
-        <div><b>Categorie:</b> ${escapeHtml(c.category || "-")}</div>
+        <div style="margin: 0.5rem 0;">
+          <b>Categorie:</b>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
+            <select id="editCatSelect" class="input" style="flex: 1;" onchange="handleCategoryChange(this)">
+              <option value="">-- Selectează --</option>
+              ${categoryOptions}
+            </select>
+            <input type="text" id="newCatInput" class="input" placeholder="Categorie nouă..." 
+                   style="flex: 1; display: none;">
+            <button onclick="saveCategory('${c.id}')" class="btnPrimary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+              💾 Salvează
+            </button>
+          </div>
+          <div id="catMsg" style="margin-top: 0.5rem; font-size: 0.85rem;"></div>
+        </div>
         <hr/>
         ${listHtml}
       `;
+      
+      // Expune funcțiile global pentru onclick
+      window.handleCategoryChange = function(select) {
+        const newInput = document.getElementById('newCatInput');
+        if (select.value === '__new__') {
+          newInput.style.display = 'block';
+          newInput.focus();
+        } else {
+          newInput.style.display = 'none';
+        }
+      };
+      
+      window.saveCategory = async function(clientId) {
+        const select = document.getElementById('editCatSelect');
+        const newInput = document.getElementById('newCatInput');
+        const msg = document.getElementById('catMsg');
+        
+        let category = select.value === '__new__' ? newInput.value.trim() : select.value;
+        
+        if (!category) {
+          msg.innerHTML = '<span style="color: #ef4444;">❌ Selectează sau introdu o categorie!</span>';
+          return;
+        }
+        
+        try {
+          const res = await fetch(`/api/clients/${clientId}/category`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category })
+          });
+          
+          if (res.ok) {
+            msg.innerHTML = '<span style="color: #10b981;">✅ Categorie salvată!</span>';
+            // Actualizează categoria local
+            c.category = category;
+            // Reîncarcă lista
+            setTimeout(() => {
+              loadClientsAdmin();
+              loadClientCategories();
+            }, 500);
+          } else {
+            const data = await res.json();
+            msg.innerHTML = `<span style="color: #ef4444;">❌ Eroare: ${data.error || 'Necunoscută'}</span>`;
+          }
+        } catch (err) {
+          msg.innerHTML = '<span style="color: #ef4444;">❌ Eroare de rețea!</span>';
+        }
+      };
     }
 
     function renderTreeAdmin() {

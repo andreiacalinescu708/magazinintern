@@ -158,6 +158,67 @@
       color: var(--text-secondary);
       font-weight: 500;
       margin-bottom: 0.5rem;
+    }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 1rem;
+      border: 1px solid var(--border-color);
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      border: none;
+      padding: 0;
+    }
+
+    .modal form {
+      padding: 1.5rem;
+    }
+
+    .btnClose {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .btnClose:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+      margin-bottom: 0.5rem;
       font-size: 0.95rem;
     }
 
@@ -404,7 +465,12 @@
   <div class="page">
     <!-- Secțiunea de căutare și listă -->
     <div class="card">
-      <h3>📋 Lista clienți</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3>📋 Lista clienți</h3>
+        <button onclick="openAddClientModal()" class="btnPrimary">
+          ➕ Adaugă client nou
+        </button>
+      </div>
       
       <div class="formRow">
         <input id="clientsSearch" class="input" placeholder="Caută client după nume..." autocomplete="off" />
@@ -413,68 +479,78 @@
       <div id="clientsList" class="list"></div>
     </div>
 
-    <!-- Formular adăugare client -->
-    <div class="card">
-      <h3>➕ Adaugă client nou</h3>
-
-      <form id="addClientForm">
-        <div class="formRow">
-          <label>Nume firmă / farmacie</label>
-          <input id="newClientName" class="input" placeholder="ex: Farmacia Tei" required />
+    <!-- MODAL Adăugare client -->
+    <div id="addClientModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>➕ Adaugă client nou</h3>
+          <button onclick="closeAddClientModal()" class="btnClose">&times;</button>
         </div>
 
-        <!-- Rând cu CUI și Grup -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <form id="addClientForm">
           <div class="formRow">
-            <label>CUI Firmă</label>
-            <input id="newClientCui" class="input" placeholder="ex: RO12345678" style="text-transform: uppercase;" />
+            <label>Nume firmă / farmacie</label>
+            <input id="newClientName" class="input" placeholder="ex: Farmacia Tei" required />
           </div>
 
-          <div class="formRow">
-            <label>Grup</label>
-            <select id="newClientGroup" class="input" required>
-              <option value="">-- Selectează grup --</option>
-              <option value="Craiova">📍 Craiova</option>
-              <option value="Exterior">🌍 Exterior</option>
+          <!-- Rând cu CUI și Grup -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="formRow">
+              <label>CUI Firmă</label>
+              <input id="newClientCui" class="input" placeholder="ex: RO12345678" style="text-transform: uppercase;" />
+            </div>
+
+            <div class="formRow">
+              <label>Grup</label>
+              <select id="newClientGroup" class="input" required>
+                <option value="">-- Selectează grup --</option>
+                <option value="Craiova">📍 Craiova</option>
+                <option value="Exterior">🌍 Exterior</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Zonă pentru Exterior (ascuns implicit) -->
+          <div id="zoneContainer" class="formRow hidden">
+            <label>Județ / Zonă</label>
+            <select id="newClientZone" class="input">
+              <option value="">-- Selectează zona --</option>
+              <option value="Vâlcea - Râmnicu Vâlcea">Vâlcea - Râmnicu Vâlcea</option>
+              <option value="Vâlcea - Drăgășani">Vâlcea - Drăgășani</option>
+              <option value="Gorj - Târgu Jiu">Gorj - Târgu Jiu</option>
+              <option value="Gorj - Motru">Gorj - Motru</option>
+              <option value="Mehedinți - Drobeta">Mehedinți - Drobeta</option>
+              <option value="Olt - Slatina">Olt - Slatina</option>
+              <option value="Olt - Caracal">Olt - Caracal</option>
+              <option value="Teleorman - Alexandria">Teleorman - Alexandria</option>
+              <option value="Argeș - Pitești">Argeș - Pitești</option>
+              <option value="Argeș - Câmpulung">Argeș - Câmpulung</option>
             </select>
           </div>
-        </div>
 
-        <!-- Zonă pentru Exterior (ascuns implicit) -->
-        <div id="zoneContainer" class="formRow hidden">
-          <label>Județ / Zonă</label>
-          <select id="newClientZone" class="input">
-            <option value="">-- Selectează zona --</option>
-            <option value="Vâlcea - Râmnicu Vâlcea">Vâlcea - Râmnicu Vâlcea</option>
-            <option value="Vâlcea - Drăgășani">Vâlcea - Drăgășani</option>
-            <option value="Gorj - Târgu Jiu">Gorj - Târgu Jiu</option>
-            <option value="Gorj - Motru">Gorj - Motru</option>
-            <option value="Mehedinți - Drobeta">Mehedinți - Drobeta</option>
-            <option value="Olt - Slatina">Olt - Slatina</option>
-            <option value="Olt - Caracal">Olt - Caracal</option>
-            <option value="Teleorman - Alexandria">Teleorman - Alexandria</option>
-            <option value="Argeș - Pitești">Argeș - Pitești</option>
-            <option value="Argeș - Câmpulung">Argeș - Câmpulung</option>
-          </select>
-        </div>
+          <hr />
 
-        <hr />
+          <h4>💰 Prețuri speciale (opțional)</h4>
+          <div id="specialPricesBox"></div>
 
-        <h4>💰 Prețuri speciale (opțional)</h4>
-        <div id="specialPricesBox"></div>
+          <button type="button" id="btnAddSpecialPrice" class="btnSecondary">
+            ➕ Adaugă preț special
+          </button>
 
-        <button type="button" id="btnAddSpecialPrice" class="btnSecondary">
-          ➕ Adaugă preț special
-        </button>
+          <br /><br />
 
-        <br /><br />
+          <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btnPrimary" style="flex: 1;">
+              💾 Salvează client
+            </button>
+            <button type="button" onclick="closeAddClientModal()" class="btnSecondary">
+              Anulează
+            </button>
+          </div>
 
-        <button type="submit" class="btnPrimary">
-          💾 Salvează client
-        </button>
-
-        <div id="clientMsg" class="hint" style="display: none;"></div>
-      </form>
+          <div id="clientMsg" class="hint" style="display: none;"></div>
+        </form>
+      </div>
     </div>
 
     <!-- Detalii client -->
@@ -582,6 +658,35 @@
         clientCategories = [];
       }
     }
+
+    // Funcții pentru Modal Adăugare Client
+    window.openAddClientModal = function() {
+      const modal = document.getElementById('addClientModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        document.getElementById('newClientName').focus();
+      }
+    };
+
+    window.closeAddClientModal = function() {
+      const modal = document.getElementById('addClientModal');
+      if (modal) {
+        modal.style.display = 'none';
+        // Reset form
+        document.getElementById('addClientForm').reset();
+        document.getElementById('specialPricesBox').innerHTML = '';
+        document.getElementById('zoneContainer').classList.add('hidden');
+      }
+    };
+
+    // Închide modalul când apeși în afara lui
+    document.addEventListener('click', function(e) {
+      const modal = document.getElementById('addClientModal');
+      if (e.target === modal) {
+        closeAddClientModal();
+      }
+    });
+
     loadClientCategories();
 
     // Afișare detalii client cu editare categorie
