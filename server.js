@@ -14,6 +14,32 @@ const crypto = require("crypto");
 // ===== EMAIL CONFIG (Nodemailer) =====
 const nodemailer = require("nodemailer");
 
+// Funcție pentru testare API SendGrid direct
+async function testSendGridAPI() {
+  try {
+    console.log("📧 Testing SendGrid API directly...");
+    const response = await fetch('https://api.sendgrid.com/v3/user/profile', {
+      headers: {
+        'Authorization': `Bearer ${process.env.EMAIL_PASS}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log("📧 SendGrid API test SUCCESS:", data);
+      return { success: true, data };
+    } else {
+      const error = await response.text();
+      console.log("📧 SendGrid API test FAILED:", error);
+      return { success: false, error };
+    }
+  } catch (err) {
+    console.log("📧 SendGrid API test ERROR:", err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // Configurare Email (Gmail sau SendGrid)
 let emailTransporter = null;
 if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
@@ -2964,6 +2990,25 @@ app.get("/api/test-email", isAdmin, async (req, res) => {
           passLength: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0
         }
       });
+    }
+    
+    // Testează API SendGrid direct
+    const isSendGrid = process.env.EMAIL_HOST && process.env.EMAIL_HOST.includes('sendgrid');
+    if (isSendGrid) {
+      console.log("📧 Testing SendGrid API...");
+      const apiTest = await testSendGridAPI();
+      if (!apiTest.success) {
+        return res.json({
+          ok: false,
+          error: "SendGrid API test failed: " + apiTest.error,
+          config: {
+            host: process.env.EMAIL_HOST,
+            user: process.env.EMAIL_USER,
+            apiTest
+          }
+        });
+      }
+      console.log("📧 SendGrid API test passed!");
     }
     
     const testResult = await sendEmailWithTimeout(
