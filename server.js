@@ -670,6 +670,58 @@ app.put("/api/clients/:id/prices", async (req, res) => {
   }
 });
 
+// ===== API: Categorii unice de clienți =====
+app.get("/api/client-categories", async (req, res) => {
+  try {
+    if (db.hasDb()) {
+      const r = await db.q(
+        `SELECT DISTINCT category FROM clients WHERE category IS NOT NULL AND category != '' ORDER BY category ASC`
+      );
+      return res.json(r.rows.map(row => row.category));
+    }
+    // fallback local
+    const clients = readJson(CLIENTS_FILE, []);
+    const categories = [...new Set(clients.map(c => c.category).filter(Boolean))].sort();
+    return res.json(categories);
+  } catch (e) {
+    console.error("GET /api/client-categories error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// ===== API: Update categorie client =====
+app.put("/api/clients/:id/category", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { category } = req.body;
+    
+    if (!category || typeof category !== 'string') {
+      return res.status(400).json({ error: "Categoria este obligatorie" });
+    }
+    
+    if (db.hasDb()) {
+      await db.q(
+        `UPDATE clients SET category = $1 WHERE id = $2`,
+        [category.trim(), id]
+      );
+      return res.json({ success: true, message: "Categorie actualizată" });
+    }
+    
+    // fallback local
+    const clients = readJson(CLIENTS_FILE, []);
+    const idx = clients.findIndex(c => String(c.id) === String(id));
+    if (idx >= 0) {
+      clients[idx].category = category.trim();
+      writeJson(CLIENTS_FILE, clients);
+      return res.json({ success: true, message: "Categorie actualizată" });
+    }
+    return res.status(404).json({ error: "Client negăsit" });
+  } catch (e) {
+    console.error("PUT /api/clients/:id/category error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
 // ===== CLIENTS ADAPTERS (for new flat clients.json) =====
 function buildClientsTreeFromFlat(flat) {
   const tree = {};

@@ -571,10 +571,33 @@
       }
     });
 
-    // Afișare detalii client
+    // Încarcă categoriile pentru dropdown
+    let clientCategories = [];
+    async function loadClientCategories() {
+      try {
+        const res = await fetch('/api/client-categories');
+        clientCategories = await res.json();
+      } catch (e) {
+        console.error('Eroare la încărcarea categoriilor:', e);
+        clientCategories = [];
+      }
+    }
+    loadClientCategories();
+
+    // Afișare detalii client cu editare categorie
     window.renderClientDetails = function(client) {
       const details = document.getElementById('clientDetails');
       if (!details) return;
+      
+      const currentCategory = client.category || '';
+      
+      // Generează options pentru dropdown
+      let categoryOptions = clientCategories.map(cat => 
+        `<option value="${cat}" ${cat === currentCategory ? 'selected' : ''}>${cat}</option>`
+      ).join('');
+      
+      // Adaugă opțiunea pentru categorie nouă
+      categoryOptions += `<option value="__new__" ${!clientCategories.includes(currentCategory) && currentCategory ? 'selected' : ''}>+ Adaugă categorie nouă...</option>`;
       
       let html = `<h3 style="margin-bottom: 1rem;">${client.name}</h3>`;
       
@@ -586,8 +609,22 @@
         <div style="margin-bottom: 0.5rem; color: var(--text-secondary);">
           <strong>Grup:</strong> ${client.group || '-'}
         </div>
-        <div style="margin-bottom: 1rem; color: var(--text-secondary);">
-          <strong>Zonă:</strong> ${client.category || '-'}
+        <div style="margin-bottom: 1rem;">
+          <label style="color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">
+            <strong>Zonă / Categorie:</strong>
+          </label>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <select id="editCategorySelect" class="input" style="flex: 1;" onchange="handleCategoryChange(this)">
+              <option value="">-- Selectează --</option>
+              ${categoryOptions}
+            </select>
+            <input type="text" id="newCategoryInput" class="input" placeholder="Categorie nouă..." 
+                   style="flex: 1; display: none;" value="${!clientCategories.includes(currentCategory) ? currentCategory : ''}">
+            <button onclick="saveClientCategory('${client.id}')" class="btnPrimary" style="padding: 0.5rem 1rem;">
+              💾 Salvează
+            </button>
+          </div>
+          <div id="categoryMsg" style="margin-top: 0.5rem; font-size: 0.9rem;"></div>
         </div>
       `;
       
@@ -603,6 +640,56 @@
       }
       
       details.innerHTML = html;
+    };
+    
+    // Handler pentru schimbarea categoriei
+    window.handleCategoryChange = function(select) {
+      const newInput = document.getElementById('newCategoryInput');
+      if (select.value === '__new__') {
+        newInput.style.display = 'block';
+        newInput.focus();
+      } else {
+        newInput.style.display = 'none';
+      }
+    };
+    
+    // Salvare categorie
+    window.saveClientCategory = async function(clientId) {
+      const select = document.getElementById('editCategorySelect');
+      const newInput = document.getElementById('newCategoryInput');
+      const msg = document.getElementById('categoryMsg');
+      
+      let category = select.value === '__new__' ? newInput.value.trim() : select.value;
+      
+      if (!category) {
+        msg.textContent = '❌ Selectează sau introdu o categorie!';
+        msg.style.color = '#ef4444';
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/clients/${clientId}/category`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category })
+        });
+        
+        if (res.ok) {
+          msg.textContent = '✅ Categorie salvată cu succes!';
+          msg.style.color = '#10b981';
+          // Reîncarcă lista de clienți
+          if (typeof loadClientsAdmin === 'function') loadClientsAdmin();
+          // Reîncarcă categoriile
+          loadClientCategories();
+        } else {
+          const data = await res.json();
+          msg.textContent = '❌ Eroare: ' + (data.error || 'Necunoscută');
+          msg.style.color = '#ef4444';
+        }
+      } catch (err) {
+        msg.textContent = '❌ Eroare de rețea!';
+        msg.style.color = '#ef4444';
+      }
     };
   </script>
 </body>

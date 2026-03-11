@@ -374,41 +374,14 @@
       <div id="clientSearchResults"></div>
     </div>
 
-    <!-- TAB NAVIGATION -->
-    <div class="tabs-nav">
-      <button class="tab-btn active" data-tab="craiova">
-        <span>📍</span>
-        <span>Craiova</span>
-        <span class="tab-badge" id="count-craiova">0</span>
-      </button>
-      <button class="tab-btn" data-tab="exterior">
-        <span>🌍</span>
-        <span>Exterior</span>
-        <span class="tab-badge" id="count-exterior">0</span>
-      </button>
+    <!-- TAB NAVIGATION (Dinamic) -->
+    <div class="tabs-nav" id="dynamicTabs">
+      <!-- Tab-urile se generează dinamic din DB -->
     </div>
 
-    <!-- TAB CONTENT -->
-    <div class="clients-container">
-      <!-- CRAIOVA TAB -->
-      <div id="tab-craiova" class="tab-content active">
-        <div id="craiovaContent">
-          <div class="empty-state">
-            <div style="font-size: 3rem; margin-bottom: var(--space-4); opacity: 0.3;">📍</div>
-            <p>Se încarcă clienții din Craiova...</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- EXTERIOR TAB -->
-      <div id="tab-exterior" class="tab-content">
-        <div id="exteriorContent">
-          <div class="empty-state">
-            <div style="font-size: 3rem; margin-bottom: var(--space-4); opacity: 0.3;">🌍</div>
-            <p>Se încarcă clienții din Exterior...</p>
-          </div>
-        </div>
-      </div>
+    <!-- TAB CONTENT (Dinamic) -->
+    <div class="clients-container" id="dynamicTabContent">
+      <!-- Conținutul tab-urilor se generează dinamic -->
     </div>
   </main>
 
@@ -418,37 +391,33 @@
     // AȘTEPTĂM ca script.js să se încarce complet
     document.addEventListener("DOMContentLoaded", async function() {
       // Verificăm dacă suntem pe pagina corectă
-      if (!document.getElementById('craiovaContent')) return;
+      if (!document.getElementById('dynamicTabs')) return;
       
       try {
         // Încărcăm datele
-        const [treeRes, flatRes] = await Promise.all([
-          fetch("/api/clients-tree"),
+        const [categoriesRes, flatRes] = await Promise.all([
+          fetch("/api/client-categories"),
           fetch("/api/clients-flat")
         ]);
         
-        const tree = await treeRes.json();
+        const categories = await categoriesRes.json();
         const flat = await flatRes.json();
         
         // Salvăm flat în localStorage pentru a-l folosi în selectClient
         localStorage.setItem('clientsFlat', JSON.stringify(flat));
         
-        // Găsim cheile (uneori vin cu literă mică, uneori mare)
-        const craiovaKey = Object.keys(tree).find(k => k.toLowerCase() === 'craiova') || 'Craiova';
-        const exteriorKey = Object.keys(tree).find(k => k.toLowerCase() === 'exterior') || 'Exterior';
+        // Grupăm clienții după categorie
+        const clientsByCategory = {};
+        categories.forEach(cat => clientsByCategory[cat] = []);
         
-        // Randăm conținutul
-        renderCraiovaTab(tree[craiovaKey], flat);
-        renderExteriorTab(tree[exteriorKey], flat);
+        flat.forEach(client => {
+          const cat = client.category || 'Fără categorie';
+          if (!clientsByCategory[cat]) clientsByCategory[cat] = [];
+          clientsByCategory[cat].push(client);
+        });
         
-        // Actualizăm numerele în tab-uri
-const craiovaCount = Object.values(tree[craiovaKey] || {}).flat().length;
-        const exteriorCount = Object.values(tree[exteriorKey] || {}).reduce((sum, county) => {
-          return sum + Object.keys(county || {}).length;
-        }, 0);
-        
-        document.getElementById('count-craiova').textContent = craiovaCount;
-        document.getElementById('count-exterior').textContent = exteriorCount;
+        // Generăm tab-urile dinamic
+        renderDynamicTabs(categories, clientsByCategory);
         
         // Inițializăm tab-urile
         initTabs();
@@ -458,129 +427,97 @@ const craiovaCount = Object.values(tree[craiovaKey] || {}).flat().length;
         
       } catch (err) {
         console.error("Eroare:", err);
-        document.getElementById('craiovaContent').innerHTML = `
+        document.getElementById('dynamicTabContent').innerHTML = `
           <div class="empty-state">
             <p>Eroare la încărcarea datelor. Reîncearcă.</p>
           </div>
         `;
       }
     });
-
-    function renderCraiovaTab(data, flat) {
-  const container = document.getElementById('craiovaContent');
-  
-  // ✅ FIX: Adăugat .flat() pentru a aplatiza array-ul
-  const clients = Object.values(data || {}).flat();
-  
-  if (clients.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <p>Nu există clienți în Craiova.</p>
-      </div>
-    `;
-    return;
-  }
-  
-  // Sortare alfabetică
-  clients.sort((a, b) => String(a).localeCompare(String(b), 'ro'));
-  
-  // Generăm HTML
-  const grid = document.createElement('div');
-  grid.className = 'clients-grid';
-  
-  clients.forEach(name => {
-    const card = document.createElement('button');
-    card.className = 'client-card';
-    card.innerHTML = `
-      <span class="client-name">${name}</span>
-      <span class="arrow">→</span>
-    `;
-    card.onclick = () => selectClient(name);
-    grid.appendChild(card);
-  });
-  
-  container.innerHTML = '';
-  container.appendChild(grid);
-}
-
-
-       function renderExteriorTab(data, flat) {
-      const container = document.getElementById('exteriorContent');
+    
+    // Generează tab-urile dinamic după categoriile din DB
+    function renderDynamicTabs(categories, clientsByCategory) {
+      const tabsContainer = document.getElementById('dynamicTabs');
+      const contentContainer = document.getElementById('dynamicTabContent');
       
-      // Dacă nu există date
-      if (!data || Object.keys(data).length === 0) {
-        container.innerHTML = `
+      if (!tabsContainer || !contentContainer) return;
+      
+      // Dacă nu există categorii, afișăm un mesaj
+      if (categories.length === 0) {
+        contentContainer.innerHTML = `
           <div class="empty-state">
-            <p>Nu există clienți în Exterior.</p>
+            <div style="font-size: 3rem; margin-bottom: var(--space-4); opacity: 0.3;">📂</div>
+            <p>Nu există categorii de clienți definite.</p>
+            <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 1rem;">
+              Mergi la <b>Administrare Clienți</b> pentru a adăuga categorii.
+            </p>
           </div>
         `;
         return;
       }
       
-      // Sortăm județele alfabetic
-      const counties = Object.entries(data).sort((a, b) => 
-        a[0].localeCompare(b[0], 'ro')
-      );
+      // Iconițe pentru categorii (fallback)
+      const icons = ['📍', '🌍', '🏢', '🏪', '🏥', '🏭', '🏬', '🏦'];
       
-      container.innerHTML = '';
+      // Generăm HTML pentru tab-uri
+      let tabsHtml = '';
+      let contentHtml = '';
       
-      counties.forEach(([countyName, clientsObj], index) => {
-        // Convertim clienții la array
-        const clients = Object.values(clientsObj || {});
+      categories.forEach((category, index) => {
+        const clients = clientsByCategory[category] || [];
+        const icon = icons[index % icons.length];
+        const isActive = index === 0 ? 'active' : '';
+        const tabId = `tab-${category.toLowerCase().replace(/\s+/g, '-')}`;
         
-        const accordion = document.createElement('div');
-        accordion.className = 'county-accordion';
-        
-        const header = document.createElement('button');
-        header.className = 'county-header';
-        header.type = 'button';
-        header.innerHTML = `
-          <span style="display: flex; align-items: center; gap: 8px;">
-            🏘️ ${countyName}
-          </span>
-          <span class="county-count">${clients.length} clienți</span>
+        // Tab button
+        tabsHtml += `
+          <button class="tab-btn ${isActive}" data-tab="${tabId}">
+            <span>${icon}</span>
+            <span>${category}</span>
+            <span class="tab-badge" id="count-${tabId}">${clients.length}</span>
+          </button>
         `;
         
-        const body = document.createElement('div');
-        body.className = 'county-body';
-        
-        const content = document.createElement('div');
-        content.className = 'county-content';
-        
-        // Sortăm clienții și creăm cardurile
-        clients.sort((a, b) => String(a).localeCompare(String(b), 'ro'));
-        
-        clients.forEach(name => {
-          const card = document.createElement('button');
-          card.className = 'client-card';
-          card.innerHTML = `
-            <span class="client-name">${name}</span>
-            <span class="arrow">→</span>
-          `;
-          card.onclick = () => selectClient(name);
-          content.appendChild(card);
-        });
-        
-        body.appendChild(content);
-        accordion.appendChild(header);
-        accordion.appendChild(body);
-        container.appendChild(accordion);
-        
-        // Toggle funcționalitate
-        header.onclick = () => {
-          const isOpen = body.classList.contains('open');
-          body.classList.toggle('open', !isOpen);
-          header.classList.toggle('active', !isOpen);
-        };
-        
-        // Deschidem primul județ implicit
-        if (index === 0) {
-          setTimeout(() => {
-            body.classList.add('open');
-            header.classList.add('active');
-          }, 100);
-        }
+        // Tab content
+        contentHtml += `
+          <div id="${tabId}" class="tab-content ${isActive}">
+            <div id="content-${tabId}">
+              ${renderCategoryContent(category, clients)}
+            </div>
+          </div>
+        `;
       });
+      
+      tabsContainer.innerHTML = tabsHtml;
+      contentContainer.innerHTML = contentHtml;
+    }
+    
+    // Randează conținutul pentru o categorie
+    function renderCategoryContent(category, clients) {
+      if (clients.length === 0) {
+        return `
+          <div class="empty-state">
+            <div style="font-size: 3rem; margin-bottom: var(--space-4); opacity: 0.3;">📂</div>
+            <p>Nu există clienți în ${category}.</p>
+          </div>
+        `;
+      }
+      
+      // Sortare alfabetică
+      clients.sort((a, b) => String(a.name).localeCompare(String(b.name), 'ro'));
+      
+      let html = '<div class="clients-grid">';
+      clients.forEach(client => {
+        html += `
+          <button class="client-card" onclick="selectClient('${client.name}')">
+            <span class="client-name">${client.name}</span>
+            <span class="arrow">→</span>
+          </button>
+        `;
+      });
+      html += '</div>';
+      
+      return html;
     }
 
     function selectClient(name) {
