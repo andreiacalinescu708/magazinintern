@@ -165,16 +165,30 @@ async function initLoginPage() {
   const bar = document.getElementById("userBar");
   if (!bar) return;
 
-  const res = await apiFetch("/api/auth/check");
-  const me = await res.json();
-
-  if (!me.loggedIn) {
-    bar.innerHTML = "";
-    return;
+  // Obține datele complete din profil (inclusiv first_name, last_name)
+  let userData;
+  try {
+    const res = await apiFetch("/api/me");
+    userData = await res.json();
+  } catch {
+    // Fallback la /api/auth/check dacă /api/me eșuează
+    const res = await apiFetch("/api/auth/check");
+    const me = await res.json();
+    if (!me.loggedIn) {
+      bar.innerHTML = "";
+      return;
+    }
+    userData = me.user;
   }
-  localStorage.setItem('username', me.user.username);
+  
+  localStorage.setItem('username', userData.username);
 
-  const isAdmin = me.user.role === 'admin';
+  const isAdmin = userData.role === 'admin';
+  
+  // Format: "Prenume N." (ex: Andrei C.) sau username
+  const displayName = userData.first_name && userData.last_name 
+    ? `${escapeHtml(userData.first_name)} ${escapeHtml(userData.last_name[0])}.`
+    : escapeHtml(userData.username);
   
   // HTML pentru dropdown
   bar.innerHTML = `
@@ -182,7 +196,7 @@ async function initLoginPage() {
       <div class="user-dropdown-container" id="userDropdownContainer">
         <button class="user-profile-btn" id="userProfileBtn">
           <span class="user-ico">👤</span>
-          <span class="user-txt">${escapeHtml(me.user.username)} (${escapeHtml(me.user.role)})</span>
+          <span class="user-txt">${displayName}</span>
           <span class="dropdown-arrow">▼</span>
         </button>
         
