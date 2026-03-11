@@ -14,39 +14,65 @@ const crypto = require("crypto");
 // ===== EMAIL CONFIG (Nodemailer) =====
 const nodemailer = require("nodemailer");
 
-// Configurare Gmail cu TLS corect
+// Configurare Email (Gmail sau SendGrid)
 let emailTransporter = null;
 if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
   const isGmail = process.env.EMAIL_HOST.includes('gmail') || process.env.EMAIL_HOST.includes('google');
+  const isSendGrid = process.env.EMAIL_HOST.includes('sendgrid');
   
-  // Configurare specifică pentru Gmail
-  const transportConfig = isGmail ? {
-    service: 'gmail',  // Folosește configurația predefinită pentru Gmail
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    },
-    debug: true,
-    logger: true
-  } : {
-    host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    },
-    tls: {
-      rejectUnauthorized: false
-    },
-    debug: true,
-    logger: true
-  };
+  let transportConfig;
+  
+  if (isSendGrid) {
+    // Configurare SendGrid - cel mai fiabil pentru producție
+    transportConfig = {
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'apikey',  // SendGrid folosește "apikey" ca username
+        pass: process.env.EMAIL_PASS
+      },
+      debug: true,
+      logger: true
+    };
+  } else if (isGmail) {
+    // Configurare Gmail
+    transportConfig = {
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      debug: true,
+      logger: true
+    };
+  } else {
+    // Configurare custom
+    transportConfig = {
+      host: process.env.EMAIL_HOST,
+      port: parseInt(process.env.EMAIL_PORT) || 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      debug: true,
+      logger: true
+    };
+  }
   
   emailTransporter = nodemailer.createTransport(transportConfig);
   
-  console.log("📧 Email transporter configurat pentru:", process.env.EMAIL_USER);
-  console.log("📧 Folosind serviciu:", isGmail ? 'gmail' : 'custom');
+  console.log("📧 Email transporter configurat");
+  console.log("📧 Folosind serviciu:", isSendGrid ? 'sendgrid' : isGmail ? 'gmail' : 'custom');
   
   console.log("📧 Email transporter configurat cu succes");
 } else {
@@ -77,7 +103,7 @@ async function sendEmail(to, subject, html, text) {
   
   try {
     const info = await emailTransporter.sendMail({
-      from: `"openBill" <${process.env.EMAIL_USER}>`,
+      from: `"openBill" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       to,
       subject,
       text,
