@@ -3158,8 +3158,11 @@ app.get("/api/test-email", isAdmin, async (req, res) => {
       console.log("📧 SendGrid API test passed!");
     }
     
+    const testEmail = req.session.user.email || process.env.EMAIL_FROM || 'support@openbill.ro';
+    console.log("📧 Sending test email to:", testEmail);
+    
     const testResult = await sendEmailWithTimeout(
-      req.session.user.username,
+      testEmail,
       "Test openBill Email",
       "<h1>Test Email</h1><p>Acesta este un email de test.</p>",
       "Test Email - Acesta este un email de test."
