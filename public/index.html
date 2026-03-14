@@ -209,17 +209,21 @@
         
         const role = data.user.role;
         
-        // Ascunde cardul "Birou" complet pentru utilizatori
+        // User: poate vedea Rapoarte și Încarcă Raport Excel, dar NU Administrare clienți și Companie
         if (role === 'user') {
-          const birouCard = document.querySelector('.dashboard-card.warning');
-          if (birouCard) birouCard.style.display = 'none';
+          const adminClientiBtn = document.querySelector('a[href="clienti.html"]');
+          const companieBtn = document.querySelector('a[href="companie.html"]');
+          if (adminClientiBtn) adminClientiBtn.style.display = 'none';
+          if (companieBtn) companieBtn.style.display = 'none';
         }
         
-        // Ascunde "Companie" pentru admin (doar superadmin poate vedea)
+        // Admin: poate vedea tot din Birou EXCEPTAT Companie
         if (role === 'admin') {
           const companieBtn = document.querySelector('a[href="companie.html"]');
           if (companieBtn) companieBtn.style.display = 'none';
         }
+        
+        // SuperAdmin: vede tot (nu ascundem nimic)
       } catch (e) {
         console.error('Eroare verificare rol:', e);
       }
