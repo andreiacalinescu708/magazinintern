@@ -3995,12 +3995,21 @@ app.post("/api/clients/:id/prices", async (req, res) => {
     const { id } = req.params;
     const { product_id, special_price } = req.body;
     
+    console.log("📊 POST /api/clients/:id/prices received:");
+    console.log("  - client_id:", id);
+    console.log("  - product_id:", product_id);
+    console.log("  - special_price:", special_price);
+    console.log("  - typeof special_price:", typeof special_price);
+    
     // Validare
     if (!product_id) {
       return res.status(400).json({ error: "ID produs lipsă" });
     }
     
     const priceValue = Number(special_price);
+    console.log("  - Number(special_price):", priceValue);
+    console.log("  - Number.isFinite:", Number.isFinite(priceValue));
+    
     if (!Number.isFinite(priceValue) || priceValue <= 0) {
       return res.status(400).json({ error: "Preț invalid. Trebuie să fie un număr mai mare decât 0." });
     }
