@@ -970,19 +970,22 @@ async function saveSpecialPrice() {
   }
   
   try {
-    await fetch(`/api/clients/${client.id}/prices`, {
+    const res = await fetch(`/api/clients/${client.id}/prices`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ product_id: productId, special_price: price })
     });
     
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Eroare la salvare');
+    }
+    
     closePriceModal();
     loadSpecialPrices(); // Reîncarcă lista
-    
-    // Afișează notificare de succes (opțional)
     console.log('✅ Preț salvat cu succes');
   } catch (err) {
-    alert('Eroare la salvare!');
+    alert('❌ ' + err.message);
   }
 }
 
@@ -1065,24 +1068,34 @@ document.getElementById('priceModal').addEventListener('click', function(e) {
 
     async function addSpecialPrice() {
       if (!selectedProduct) return alert('Selectează un produs!');
-      const price = document.getElementById('newSpecialPrice').value;
-      if (!price) return alert('Introdu prețul!');
+      const priceInput = document.getElementById('newSpecialPrice').value;
+      const price = parseFloat(priceInput);
+      
+      if (!priceInput || !Number.isFinite(price) || price <= 0) {
+        return alert('Introdu un preț valid (număr mai mare decât 0)!');
+      }
       
       const client = JSON.parse(localStorage.getItem('clientSelectat') || '{}');
       
       try {
-        await fetch(`/api/clients/${client.id}/prices`, {
+        const res = await fetch(`/api/clients/${client.id}/prices`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ product_id: selectedProduct.id, special_price: price })
         });
-        alert('Preț adăugat!');
+        
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Eroare la salvare');
+        }
+        
+        alert('✅ Preț adăugat!');
         loadSpecialPrices();
         selectedProduct = null;
         document.getElementById('selectedProductBox').innerHTML = '<i>(niciun produs selectat)</i>';
         document.getElementById('newSpecialPrice').value = '';
       } catch (err) {
-        alert('Eroare la salvare!');
+        alert('❌ ' + err.message);
       }
     }
 

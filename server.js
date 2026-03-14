@@ -3995,6 +3995,16 @@ app.post("/api/clients/:id/prices", async (req, res) => {
     const { id } = req.params;
     const { product_id, special_price } = req.body;
     
+    // Validare
+    if (!product_id) {
+      return res.status(400).json({ error: "ID produs lipsă" });
+    }
+    
+    const priceValue = Number(special_price);
+    if (!Number.isFinite(priceValue) || priceValue <= 0) {
+      return res.status(400).json({ error: "Preț invalid. Trebuie să fie un număr mai mare decât 0." });
+    }
+    
     // Ia prețurile curente
     const r = await db.q(
       `SELECT prices FROM clients WHERE id = $1`,
@@ -4004,7 +4014,7 @@ app.post("/api/clients/:id/prices", async (req, res) => {
     if (!r.rows.length) return res.status(404).json({ error: "Client negăsit" });
     
     const prices = r.rows[0].prices || {};
-    prices[String(product_id)] = Number(special_price);
+    prices[String(product_id)] = priceValue;
     
     // Salvează
     await db.q(
