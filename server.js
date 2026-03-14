@@ -2796,7 +2796,14 @@ app.post("/api/login", async (req, res) => {
 
     if (!u.active) return res.status(401).json({ error: "Email sau parolă greșită" });
 
-    const ok = bcrypt.compareSync(password, u.password_hash);
+    // Verificare parolă cu bcrypt async
+    let ok;
+    try {
+      ok = await bcrypt.compare(password, u.password_hash);
+    } catch (err) {
+      console.error("Eroare bcrypt compare:", err);
+      return res.status(500).json({ error: "Eroare server" });
+    }
     
     if (!ok) {
       const newAttempts = (u.failed_attempts || 0) + 1;
@@ -2904,10 +2911,12 @@ app.post("/api/register", async (req, res) => {
       return res.status(403).json({ error: "Înregistrarea este permisă doar prin invitație" });
     }
 
-    const passwordHash = bcrypt.hashSync(password, 10);
+    // Hash parolă async
+    const passwordHash = await bcrypt.hash(password, 10);
 
     // Creează userul cu datele din invitație (inclusiv rolul)
     const userRole = inviteData.role || 'user';
+    console.log("📧 Register - inviteData.role:", inviteData.role, "=> userRole:", userRole);
     const r = await db.q(
       `INSERT INTO users (username, password_hash, role, active, is_approved, failed_attempts, first_name, last_name, email)
        VALUES ($1,$2,$3,true,false,0,$4,$5,$6)
@@ -3668,11 +3677,11 @@ app.post("/api/invites/accept", async (req, res) => {
       return res.status(400).json({ error: "Există deja un cont cu acest email" });
     }
     
-    // Hash parola
-    const bcrypt = require("bcrypt");
-    const passwordHash = bcrypt.hashSync(password, 10);
+    // Hash parola async
+    const passwordHash = await bcrypt.hash(password, 10);
     
-    // Creează utilizatorul
+    // Creează utilizatorul cu rolul din invitație
+    console.log("📧 Accept invite - invite.role:", invite.role);
     const userResult = await db.q(
       `INSERT INTO users (email, password_hash, role, first_name, last_name, 
                           is_approved, active, created_at)
@@ -5065,9 +5074,8 @@ app.post("/api/auth/reset-password", async (req, res) => {
     
     const reset = resetRes.rows[0];
     
-    // Hash noua parolă
-    const bcrypt = require("bcrypt");
-    const passwordHash = bcrypt.hashSync(password, 10);
+    // Hash noua parolă async
+    const passwordHash = await bcrypt.hash(password, 10);
     
     // Actualizează parola
     await db.q(
