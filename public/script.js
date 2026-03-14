@@ -190,9 +190,28 @@ async function initLoginPage() {
     ? `${escapeHtml(userData.first_name)} ${escapeHtml(userData.last_name[0])}.`
     : escapeHtml(userData.username);
   
+  // Obține datele companiei
+  let companyHtml = '';
+  try {
+    const companyRes = await apiFetch("/api/company-info");
+    if (companyRes.ok) {
+      const companyData = await companyRes.json();
+      const companyName = escapeHtml(companyData.name || 'openBill');
+      const companyCui = companyData.cui ? escapeHtml(companyData.cui) : '';
+      companyHtml = `
+        <div class="userbar-company" style="flex: 1; text-align: center;">
+          <div style="font-weight: 700; font-size: 1.1rem; color: #f59e0b;">${companyName}</div>
+          ${companyCui ? `<div style="font-size: 0.8rem; color: #94a3b8;">CUI: ${companyCui}</div>` : ''}
+        </div>
+      `;
+    }
+  } catch (e) {
+    console.error('Eroare încărcare companie:', e);
+  }
+  
   // HTML pentru dropdown
   bar.innerHTML = `
-    <div class="userbar-inner">
+    <div class="userbar-inner" style="display: flex; align-items: center; width: 100%;">
       <div class="user-dropdown-container" id="userDropdownContainer">
         <button class="user-profile-btn" id="userProfileBtn">
           <span class="user-ico">👤</span>
@@ -226,6 +245,10 @@ async function initLoginPage() {
           </button>
         </div>
       </div>
+      
+      ${companyHtml}
+      
+      <div style="width: 150px;"></div>
     </div>
   `;
 
