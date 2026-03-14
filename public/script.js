@@ -992,8 +992,29 @@ async function initCheckPricePage() {
   const search = document.getElementById("productsSearch");
   const btnClear = document.getElementById("btnClearSearch");
   const countEl = document.getElementById("cpCount");
+  const btnShowAdd = document.getElementById("btnShowAddProduct");
 
   if (!box) return;
+  
+  // Verifică rolul utilizatorului pentru a restricționa acțiunile
+  let userRole = 'user';
+  try {
+    const authRes = await fetch('/api/auth/check');
+    const authData = await authRes.json();
+    if (authData.loggedIn) {
+      userRole = authData.user.role;
+    }
+  } catch (e) {
+    console.error('Eroare verificare rol:', e);
+  }
+  
+  // Utilizatorii obișnuiți nu pot adăuga, edita sau șterge produse
+  const canEdit = userRole === 'superadmin' || userRole === 'admin';
+  
+  // Ascunde butonul "Adaugă produs" pentru utilizatori
+  if (!canEdit && btnShowAdd) {
+    btnShowAdd.style.display = 'none';
+  }
 
   // ---- modal refs
   const modal = document.getElementById("editProductModal");
@@ -1161,8 +1182,10 @@ async function initCheckPricePage() {
 
         <td>
           <div class="cp-actionsCell">
-            <button class="cp-btn cp-rowbtn" data-act="edit" data-id="${esc(p.id)}">Edit</button>
-            <button class="cp-btn cp-rowbtn danger" data-act="del" data-id="${esc(p.id)}">Șterge</button>
+            ${canEdit ? `
+              <button class="cp-btn cp-rowbtn" data-act="edit" data-id="${esc(p.id)}">Edit</button>
+              <button class="cp-btn cp-rowbtn danger" data-act="del" data-id="${esc(p.id)}">Șterge</button>
+            ` : `<span class="cp-pill" style="color:#64748b;">Vizualizare</span>`}
           </div>
         </td>
       `;

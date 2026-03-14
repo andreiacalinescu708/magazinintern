@@ -300,6 +300,30 @@
   </style>
 </head>
 <body>
+  <script>
+    // Verifică accesul - doar Admin și SuperAdmin pot accesa clienții
+    (async function checkAccess() {
+      try {
+        const res = await fetch('/api/auth/check');
+        const data = await res.json();
+        
+        if (!data.loggedIn) {
+          window.location.href = 'login.html';
+          return;
+        }
+        
+        // Utilizatorii obișnuiți nu au acces la clienți
+        if (data.user.role === 'user') {
+          alert('Acces interzis! Nu ai permisiunea să accesezi această pagină.');
+          window.location.href = 'index.html';
+          return;
+        }
+      } catch (err) {
+        console.error('Eroare verificare acces:', err);
+        window.location.href = 'login.html';
+      }
+    })();
+  </script>
   <div class="topbar">
     <a href="index.html" class="btnBack">← Înapoi</a>
     <h2>Administrare Clienți</h2>
