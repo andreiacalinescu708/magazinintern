@@ -4373,14 +4373,34 @@ app.post("/api/auth/register", async (req, res) => {
       VALUES ($1, $2, 'superadmin', true, false, $3, $4, $5, $6, $7)
     `, [emailClean, passwordHash, verificationCode, codeExpiresAt, firstName || '', lastName || '', phone || '']);
     
-    // 4. Trimitem email cu codul (sau logăm pentru development)
-    console.log(`\n📧 EMAIL DE VERIFICARE pentru ${emailClean}:`);
-    console.log(`   Cod: ${verificationCode}`);
-    console.log(`   Expiră: ${codeExpiresAt.toISOString()}`);
-    console.log(`   Schema: ${schemaName}\n`);
+    // 4. Trimitem email cu codul
+    const emailSubject = 'Verificare cont openBill';
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #3b82f6;">Bun venit în openBill!</h2>
+        <p>Mulțumim pentru înregistrare, <strong>${firstName || ''} ${lastName || ''}</strong>.</p>
+        <p>Pentru a activa contul companiei <strong>${companyName}</strong>, folosește codul de mai jos:</p>
+        <div style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">${verificationCode}</span>
+        </div>
+        <p style="color: #dc2626;"><strong>Important:</strong> Codul expiră în 10 minute.</p>
+        <p>Dacă nu ai solicitat acest cont, ignoră acest email.</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+        <p style="color: #6b7280; font-size: 12px;">openBill - Sistem de Management pentru Distribuție Medicală</p>
+      </div>
+    `;
+    const emailText = `Bun venit în openBill!\n\nCodul tău de verificare este: ${verificationCode}\n\nAcest cod expiră în 10 minute.\n\nDacă nu ai solicitat acest cont, ignoră acest email.`;
     
-    // TODO: Implementare trimitere email real via SendGrid
-    // await sendEmailViaSendGridAPI(emailClean, 'Verificare cont openBill', ...);
+    const emailResult = await sendEmailViaSendGridAPI(emailClean, emailSubject, emailHtml, emailText);
+    
+    if (!emailResult.success) {
+      console.error("Eroare trimitere email:", emailResult.error);
+      // Continuăm chiar dacă emailul nu a fost trimis - logăm codul în consolă
+      console.log(`\n📧 EMAIL DE VERIFICARE (fallback console) pentru ${emailClean}:`);
+      console.log(`   Cod: ${verificationCode}`);
+    } else {
+      console.log(`✅ Email de verificare trimis către ${emailClean}`);
+    }
     
     res.json({
       success: true,
@@ -4547,10 +4567,32 @@ app.post("/api/auth/resend-code", async (req, res) => {
       WHERE email = $3
     `, [newCode, newExpiresAt, emailClean]);
     
-    // Log/trimitem email
-    console.log(`\n📧 EMAIL DE VERIFICARE (RESEND) pentru ${emailClean}:`);
-    console.log(`   Cod: ${newCode}`);
-    console.log(`   Încercare: ${user.resend_attempts + 1}/3\n`);
+    // Trimitem email cu codul nou
+    const resendSubject = 'Cod nou de verificare - openBill';
+    const resendHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #3b82f6;">Cod nou de verificare</h2>
+        <p>Ai solicitat un nou cod de verificare pentru contul tău openBill.</p>
+        <div style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1e40af;">${newCode}</span>
+        </div>
+        <p style="color: #dc2626;"><strong>Important:</strong> Codul expiră în 10 minute.</p>
+        <p>Dacă nu ai solicitat acest cod, ignoră acest email.</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+        <p style="color: #6b7280; font-size: 12px;">openBill - Sistem de Management pentru Distribuție Medicală</p>
+      </div>
+    `;
+    const resendText = `Cod nou de verificare openBill\n\nCodul tău este: ${newCode}\n\nAcest cod expiră în 10 minute.`;
+    
+    const resendResult = await sendEmailViaSendGridAPI(emailClean, resendSubject, resendHtml, resendText);
+    
+    if (!resendResult.success) {
+      console.error("Eroare trimitere email resend:", resendResult.error);
+      console.log(`\n📧 EMAIL RESEND (fallback console) pentru ${emailClean}:`);
+      console.log(`   Cod: ${newCode}`);
+    } else {
+      console.log(`✅ Email resend trimis către ${emailClean} (încercarea ${user.resend_attempts + 1}/3)`);
+    }
     
     res.json({
       success: true,
