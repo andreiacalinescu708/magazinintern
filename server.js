@@ -4898,6 +4898,200 @@ app.get("/api/auth/check-email", async (req, res) => {
 });
 
 // ==========================================
+// FORGOT PASSWORD / RESET PASSWORD
+// ==========================================
+
+// Tabel pentru reset tokens (va fi creat automat în schema fiecărei companii)
+async function ensurePasswordResetTable() {
+  try {
+    await db.q(`
+      CREATE TABLE IF NOT EXISTS password_resets (
+        id SERIAL PRIMARY KEY,
+        email TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        used BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await db.q(`CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token)`);
+    await db.q(`CREATE INDEX IF NOT EXISTS idx_password_resets_email ON password_resets(email)`);
+  } catch (e) {
+    console.error("Eroare creare tabel password_resets:", e.message);
+  }
+}
+
+// POST /api/auth/forgot-password - Cere resetare parolă
+app.post("/api/auth/forgot-password", async (req, res) => {
+  try {
+    await ensurePasswordResetTable();
+    
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email obligatoriu" });
+    }
+    
+    const emailClean = email.toLowerCase().trim();
+    
+    // Verifică dacă utilizatorul există
+    const userRes = await db.q(
+      "SELECT id, email, first_name, last_name FROM users WHERE email = $1",
+      [emailClean]
+    );
+    
+    // Nu dezvăluim dacă emailul există sau nu (securitate)
+    if (userRes.rows.length === 0) {
+      console.log(`📧 Forgot password requested for non-existent email: ${emailClean}`);
+      return res.json({ 
+        ok: true, 
+        message: "Dacă există un cont cu acest email, vei primi un link de resetare." 
+      });
+    }
+    
+    const user = userRes.rows[0];
+    
+    // Generează token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // Expiră în 1 oră
+    
+    // Salvează token
+    await db.q(
+      `INSERT INTO password_resets (email, token, expires_at) VALUES ($1, $2, $3)`,
+      [emailClean, token, expiresAt]
+    );
+    
+    // Trimite email
+    const resetLink = `${req.protocol}://${req.get('host')}/reset-password.html?token=${token}`;
+    
+    const emailSubject = 'Resetare parolă openBill';
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #3b82f6;">Resetare parolă</h2>
+        <p>Salut <strong>${user.first_name || ''} ${user.last_name || ''}</strong>,</p>
+        <p>Ai solicitat resetarea parolei pentru contul tău openBill.</p>
+        <p>Click pe butonul de mai jos pentru a seta o parolă nouă:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetLink}" style="background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block;">Resetează parola</a>
+        </div>
+        <p>Sau copiază linkul în browser:</p>
+        <p style="word-break: break-all; color: #64748b;">${resetLink}</p>
+        <p style="color: #dc2626;"><strong>Atenție:</strong> Linkul expiră în 1 oră.</p>
+        <p>Dacă nu tu ai solicitat resetarea, ignoră acest email.</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+        <p style="color: #6b7280; font-size: 12px;">openBill - Sistem de Management pentru Distribuție Medicală</p>
+      </div>
+    `;
+    const emailText = `Resetare parolă openBill\n\nSalut,\n\nAi solicitat resetarea parolei.\n\nAccesează linkul:\n${resetLink}\n\nLinkul expiră în 1 oră.\n\nDacă nu tu ai solicitat, ignoră acest email.`;
+    
+    const emailResult = await sendEmailViaSendGridAPI(emailClean, emailSubject, emailHtml, emailText);
+    
+    if (!emailResult.success) {
+      console.error("Eroare trimitere email reset:", emailResult.error);
+    } else {
+      console.log(`✅ Email resetare trimis către ${emailClean}`);
+    }
+    
+    res.json({ 
+      ok: true, 
+      message: "Dacă există un cont cu acest email, vei primi un link de resetare." 
+    });
+    
+  } catch (err) {
+    console.error("Eroare forgot password:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// GET /api/auth/validate-reset-token - Validează token de resetare
+app.get("/api/auth/validate-reset-token", async (req, res) => {
+  try {
+    await ensurePasswordResetTable();
+    
+    const { token } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ error: "Token lipsă" });
+    }
+    
+    const result = await db.q(
+      `SELECT * FROM password_resets 
+       WHERE token = $1 
+         AND used = false 
+         AND expires_at > NOW()`,
+      [token]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: "Token invalid sau expirat" });
+    }
+    
+    res.json({ ok: true });
+    
+  } catch (err) {
+    console.error("Eroare validare token:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// POST /api/auth/reset-password - Resetează parola
+app.post("/api/auth/reset-password", async (req, res) => {
+  try {
+    await ensurePasswordResetTable();
+    
+    const { token, password } = req.body;
+    
+    if (!token || !password) {
+      return res.status(400).json({ error: "Token și parola sunt obligatorii" });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Parola trebuie să aibă minim 6 caractere" });
+    }
+    
+    // Găsește token valid
+    const resetRes = await db.q(
+      `SELECT * FROM password_resets 
+       WHERE token = $1 
+         AND used = false 
+         AND expires_at > NOW()`,
+      [token]
+    );
+    
+    if (resetRes.rows.length === 0) {
+      return res.status(400).json({ error: "Token invalid sau expirat" });
+    }
+    
+    const reset = resetRes.rows[0];
+    
+    // Hash noua parolă
+    const bcrypt = require("bcrypt");
+    const passwordHash = bcrypt.hashSync(password, 10);
+    
+    // Actualizează parola
+    await db.q(
+      "UPDATE users SET password_hash = $1 WHERE email = $2",
+      [passwordHash, reset.email]
+    );
+    
+    // Marchează tokenul ca folosit
+    await db.q(
+      "UPDATE password_resets SET used = true WHERE id = $1",
+      [reset.id]
+    );
+    
+    console.log(`✅ Parolă resetată pentru ${reset.email}`);
+    
+    res.json({ ok: true, message: "Parola a fost resetată cu succes" });
+    
+  } catch (err) {
+    console.error("Eroare reset password:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// ==========================================
 // CRON JOB - Curățare conturi nevalidate
 // ==========================================
 
