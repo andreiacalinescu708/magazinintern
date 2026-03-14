@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Acceptă Invitația - openBill</title>
+  <link rel="stylesheet" href="global.css" />
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-xl);
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: var(--space-6);
+    }
+
+    .auth-header img {
+      height: 50px;
+      width: auto;
+      margin-bottom: var(--space-4);
+    }
+
+    .auth-header h1 {
+      font-size: 1.5rem;
+      margin-bottom: var(--space-2);
+    }
+
+    .auth-header p {
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .company-info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin: var(--space-4) 0;
+      text-align: center;
+    }
+
+    .company-info h3 {
+      color: var(--primary-400);
+      margin: 0 0 var(--space-2) 0;
+      font-size: 1.25rem;
+    }
+
+    .company-info p {
+      color: var(--text-muted);
+      margin: 0;
+      font-size: 0.875rem;
+    }
+
+    .invite-details {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-bottom: var(--space-5);
+    }
+
+    .invite-details p {
+      margin: var(--space-2) 0;
+      font-size: 0.9375rem;
+    }
+
+    .invite-details strong {
+      color: var(--text-primary);
+    }
+
+    .form-group {
+      margin-bottom: var(--space-4);
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-2);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: var(--space-3) var(--space-4);
+      font-size: 0.9375rem;
+      color: var(--text-primary);
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      transition: all var(--transition-fast);
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .form-input:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #messageBox {
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-lg);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      display: none;
+      margin-bottom: var(--space-4);
+    }
+
+    #messageBox.show {
+      display: block;
+    }
+
+    .msg-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--danger-500);
+    }
+
+    .msg-success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: var(--success-400);
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <img src="logo.svg" alt="openBill">
+        <h1>🎉 Ești invitat!</h1>
+        <p>Completează datele pentru a te alătura echipei</p>
+      </div>
+
+      <div id="loadingState" style="text-align: center; padding: var(--space-8);">
+        <div class="loading"></div>
+        <p style="color: var(--text-muted); margin-top: var(--space-4);">Se încarcă invitația...</p>
+      </div>
+
+      <div id="inviteContent" style="display: none;">
+        <div class="company-info">
+          <h3 id="companyName">-</h3>
+          <p>Companie pe openBill</p>
+        </div>
+
+        <div class="invite-details">
+          <p><strong>👤 Nume:</strong> <span id="inviteeName">-</span></p>
+          <p><strong>📧 Email:</strong> <span id="inviteeEmail">-</span></p>
+          <p><strong>🎭 Rol:</strong> <span id="inviteeRole">-</span></p>
+        </div>
+
+        <div id="messageBox"></div>
+
+        <form id="acceptForm">
+          <div class="form-group">
+            <label class="form-label" for="password">Setează parola *</label>
+            <input type="password" id="password" class="form-input" placeholder="Minim 6 caractere" required minlength="6">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="confirmPassword">Confirmă parola *</label>
+            <input type="password" id="confirmPassword" class="form-input" placeholder="Repetă parola" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" id="btnAccept" style="width: 100%;">
+            Acceptă invitația și creează cont
+          </button>
+        </form>
+      </div>
+
+      <div id="errorState" style="display: none; text-align: center; padding: var(--space-4);">
+        <div style="font-size: 3rem; margin-bottom: var(--space-4);">⚠️</div>
+        <h3 style="color: var(--danger-500); margin-bottom: var(--space-2);">Invitație invalidă</h3>
+        <p style="color: var(--text-muted);">Această invitație a expirat sau a fost deja folosită.</p>
+        <a href="login.html" class="btn btn-primary" style="margin-top: var(--space-4);">Mergi la Login</a>
+      </div>
+
+      <div id="successState" style="display: none; text-align: center; padding: var(--space-4);">
+        <div style="font-size: 3rem; margin-bottom: var(--space-4);">✅</div>
+        <h3 style="color: var(--success-400); margin-bottom: var(--space-2);">Cont creat cu succes!</h3>
+        <p style="color: var(--text-muted);">Te poți autentifica acum în aplicație.</p>
+        <a href="login.html" class="btn btn-primary" style="margin-top: var(--space-4);">Mergi la Login</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Extrage tokenul din URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteToken = urlParams.get('invite');
+
+    const loadingState = document.getElementById('loadingState');
+    const inviteContent = document.getElementById('inviteContent');
+    const errorState = document.getElementById('errorState');
+    const successState = document.getElementById('successState');
+    const messageBox = document.getElementById('messageBox');
+
+    let inviteData = null;
+
+    function showMessage(text, type) {
+      messageBox.textContent = text;
+      messageBox.className = 'show msg-' + type;
+    }
+
+    function hideMessage() {
+      messageBox.className = '';
+      messageBox.textContent = '';
+    }
+
+    // Validează invitația la încărcare
+    async function validateInvite() {
+      if (!inviteToken) {
+        loadingState.style.display = 'none';
+        errorState.style.display = 'block';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/invites/validate/${inviteToken}`);
+        const data = await res.json();
+
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || 'Invitație invalidă');
+        }
+
+        inviteData = data.invite;
+
+        // Populează datele
+        document.getElementById('inviteeName').textContent = 
+          `${inviteData.first_name || ''} ${inviteData.last_name || ''}`.trim() || '-';
+        document.getElementById('inviteeEmail').textContent = inviteData.email;
+        document.getElementById('inviteeRole').textContent = 
+          inviteData.role === 'admin' ? 'Administrator' : 'Utilizator';
+
+        // Pre-completează emailul (readonly)
+        // document.getElementById('email').value = inviteData.email;
+
+        loadingState.style.display = 'none';
+        inviteContent.style.display = 'block';
+
+        // Încarcă numele companiei
+        loadCompanyInfo();
+
+      } catch (err) {
+        console.error('Eroare validare:', err);
+        loadingState.style.display = 'none';
+        errorState.style.display = 'block';
+      }
+    }
+
+    // Încarcă info companie
+    async function loadCompanyInfo() {
+      try {
+        const res = await fetch('/api/company-info-public');
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('companyName').textContent = data.name || 'openBill';
+        }
+      } catch (e) {
+        console.log('Nu s-a putut încărca numele companiei');
+      }
+    }
+
+    // Acceptă invitația
+    document.getElementById('acceptForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideMessage();
+
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (password.length < 6) {
+        showMessage('Parola trebuie să aibă minim 6 caractere', 'error');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showMessage('Parolele nu coincid', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnAccept');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="loading"></div> Se procesează...';
+
+      try {
+        const res = await fetch('/api/invites/accept', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: inviteToken,
+            password: password
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          inviteContent.style.display = 'none';
+          successState.style.display = 'block';
+        } else {
+          showMessage(data.error || 'Eroare la crearea contului', 'error');
+          btn.disabled = false;
+          btn.textContent = 'Acceptă invitația și creează cont';
+        }
+      } catch (err) {
+        showMessage('Eroare de conexiune. Încearcă din nou.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Acceptă invitația și creează cont';
+      }
+    });
+
+    // Începe validarea
+    validateInvite();
+  </script>
+</body>
+</html>

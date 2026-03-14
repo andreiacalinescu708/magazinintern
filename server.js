@@ -3256,7 +3256,7 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     );
     
     // Trimite email
-    const inviteLink = `${req.protocol}://${req.get('host')}/register.html?invite=${token}`;
+    const inviteLink = `${req.protocol}://${req.get('host')}/accept-invite.html?invite=${token}`;
     
     // Obține datele companiei
     const company = await getCompanyDetails();
@@ -3599,6 +3599,104 @@ app.get("/api/test-email", isAdmin, async (req, res) => {
   }
 });
 
+// POST /api/invites/accept - Acceptă o invitație și creează cont
+app.post("/api/invites/accept", async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    
+    if (!token || !password) {
+      return res.status(400).json({ error: "Token și parola sunt obligatorii" });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Parola trebuie să aibă minim 6 caractere" });
+    }
+    
+    // Găsește invitația
+    const inviteRes = await db.q(
+      `SELECT id, email, first_name, last_name, role, status, expires_at 
+       FROM user_invites 
+       WHERE token = $1`,
+      [token]
+    );
+    
+    if (inviteRes.rows.length === 0) {
+      return res.status(404).json({ error: "Invitație invalidă" });
+    }
+    
+    const invite = inviteRes.rows[0];
+    
+    // Verifică status
+    if (invite.status !== 'pending') {
+      return res.status(400).json({ error: "Invitația a fost deja folosită" });
+    }
+    
+    // Verifică expirarea
+    if (new Date(invite.expires_at) < new Date()) {
+      return res.status(400).json({ error: "Invitația a expirat" });
+    }
+    
+    // Verifică dacă există deja un utilizator cu acest email
+    const existingUser = await db.q(
+      "SELECT id FROM users WHERE email = $1",
+      [invite.email]
+    );
+    
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: "Există deja un cont cu acest email" });
+    }
+    
+    // Hash parola
+    const bcrypt = require("bcrypt");
+    const passwordHash = bcrypt.hashSync(password, 10);
+    
+    // Creează utilizatorul
+    const userResult = await db.q(
+      `INSERT INTO users (email, password_hash, role, first_name, last_name, 
+                          is_approved, active, created_at)
+       VALUES ($1, $2, $3, $4, $5, true, true, NOW())
+       RETURNING id, email, role, first_name, last_name`,
+      [invite.email, passwordHash, invite.role, invite.first_name, invite.last_name]
+    );
+    
+    // Marchează invitația ca folosită
+    await db.q(
+      "UPDATE user_invites SET status = 'used', used_at = NOW() WHERE id = $1",
+      [invite.id]
+    );
+    
+    console.log(`✅ Cont creat pentru ${invite.email} cu rolul ${invite.role}`);
+    
+    res.json({
+      ok: true,
+      message: "Cont creat cu succes",
+      user: userResult.rows[0]
+    });
+    
+  } catch (e) {
+    console.error("Eroare acceptare invitație:", e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/company-info-public - Info companie pentru pagina publică (fără auth)
+app.get("/api/company-info-public", async (req, res) => {
+  try {
+    // Încearcă să obțină din company_settings
+    const r = await db.q(`SELECT name, cui FROM company_settings WHERE id = 'default'`);
+    if (r.rows.length > 0) {
+      return res.json({
+        name: r.rows[0].name || 'openBill',
+        cui: r.rows[0].cui || ''
+      });
+    }
+    
+    res.json({ name: 'openBill', cui: '' });
+  } catch (e) {
+    res.json({ name: 'openBill', cui: '' });
+  }
+});
+
 // POST /api/invites/:id/resend - Retrimite o invitație (doar admin)
 app.post("/api/invites/:id/resend", isAdmin, async (req, res) => {
   try {
@@ -3623,7 +3721,7 @@ app.post("/api/invites/:id/resend", isAdmin, async (req, res) => {
     }
     
     // Generează linkul
-    const inviteLink = `${req.protocol}://${req.get('host')}/register.html?invite=${invite.token}`;
+    const inviteLink = `${req.protocol}://${req.get('host')}/accept-invite.html?invite=${invite.token}`;
     
     // Trimite email
     const fullName = [invite.first_name, invite.last_name].filter(Boolean).join(' ');
