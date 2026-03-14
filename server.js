@@ -1087,6 +1087,30 @@ app.put("/api/company-settings", isSuperAdmin, async (req, res) => {
   }
 });
 
+// ===== COMPANY INFO (PUBLIC - pentru toți utilizatorii logați) =====
+// Returnează doar numele și CUI-ul companiei pentru afișare în navbar
+app.get("/api/company-info", requireAuth, async (req, res) => {
+  try {
+    if (db.hasDb()) {
+      const r = await db.q(`SELECT name, cui FROM company_settings WHERE id = 'default'`);
+      if (r.rows.length > 0) {
+        return res.json({
+          name: r.rows[0].name || 'openBill',
+          cui: r.rows[0].cui || ''
+        });
+      }
+    }
+    // fallback
+    res.json({
+      name: 'Fast Medical Distribution',
+      cui: 'RO47095864'
+    });
+  } catch (e) {
+    console.error("GET /api/company-info error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
 // ===== CLIENT CATEGORIES MANAGEMENT API =====
 // Adaugă categorie nouă
 app.post("/api/client-categories", async (req, res) => {

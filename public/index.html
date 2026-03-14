@@ -240,7 +240,7 @@
     // Încarcă datele companiei în user bar
     (async function loadCompanyInfo() {
       try {
-        const res = await fetch('/api/company-settings');
+        const res = await fetch('/api/company-info');
         if (!res.ok) return; // Dacă nu are acces, nu afișăm nimic
         
         const data = await res.json();
