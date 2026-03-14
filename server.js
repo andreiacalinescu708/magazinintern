@@ -172,16 +172,22 @@ async function sendEmailWithTimeout(to, subject, html, text, timeoutMs = 30000) 
 }
 
 async function sendEmail(to, subject, html, text) {
+  // Verificăm dacă avem SendGrid API key (indiferent de EMAIL_HOST)
+  const hasSendGridKey = process.env.EMAIL_PASS && process.env.EMAIL_PASS.startsWith('SG.');
   const isSendGrid = process.env.EMAIL_HOST && process.env.EMAIL_HOST.includes('sendgrid');
   
-  // Dacă e SendGrid, folosim API HTTP în loc de SMTP
-  if (isSendGrid) {
-    console.log("📧 Using SendGrid API (HTTP) instead of SMTP");
+  // Dacă e SendGrid sau avem cheie SendGrid, folosim API HTTP
+  if (isSendGrid || hasSendGridKey) {
+    console.log("📧 Using SendGrid API (HTTP)");
+    console.log("📧 EMAIL_HOST:", process.env.EMAIL_HOST || 'not set');
+    console.log("📧 Has SendGrid key:", hasSendGridKey);
     return sendEmailViaSendGridAPI(to, subject, html, text);
   }
   
   if (!emailTransporter) {
     console.log("📧 Email transporter not configured");
+    console.log("📧 EMAIL_HOST:", process.env.EMAIL_HOST);
+    console.log("📧 EMAIL_USER:", process.env.EMAIL_USER);
     return { success: false, error: "Email not configured" };
   }
   
@@ -217,22 +223,28 @@ const app = express();
 const SMARTBILL_TOKEN = process.env.SMARTBILL_TOKEN || 'cristiana_paun@yahoo.com:002|797b74e49656fba88457a0eb0854941e';
 const SMARTBILL_BASE_URL = 'https://ws.smartbill.ro/SBORO/api';
 
-let companyCache = null;
+// Cache per-schema pentru multi-tenant
+const companyCache = new Map();
 
 async function getCompanyDetails() {
-  if (companyCache) return companyCache;
+  // Pentru multi-tenant, folosim schema curentă ca key
+  const cacheKey = 'current_schema';
+  
+  // Verificăm dacă avem deja date în cache pentru această sesiune
+  // Dar nu folosim cache în mod agresiv pentru multi-tenant
   try {
     const r = await db.q(`SELECT * FROM company_settings WHERE id = 'default'`);
-    if (r.rows.length) {
-      companyCache = r.rows[0];
-      return companyCache;
+    if (r.rows.length && r.rows[0].name) {
+      return r.rows[0];
     }
   } catch (e) {
     console.error('Eroare la citire date firmă:', e);
   }
+  
+  // Fallback la datele din sesiune sau default
   return {
-    name: 'Fast Medical Distribution',
-    cui: 'RO47095864',
+    name: 'openBill',
+    cui: '',
     smartbill_series: 'FMD'
   };
 }
