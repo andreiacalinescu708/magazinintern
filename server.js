@@ -2687,6 +2687,106 @@ app.delete("/api/stock/:id", async (req, res) => {
 
 
 
+// DIAGNOSTIC: Test bcrypt direct (fără DB)
+app.get("/api/test-bcrypt", async (req, res) => {
+  try {
+    const testPassword = "test123";
+    console.log("🧪 TEST BCRYPT - Generare hash...");
+    const hash = await bcrypt.hash(testPassword, 10);
+    console.log("🧪 TEST BCRYPT - Hash generat:", hash.substring(0, 30) + "...");
+    
+    console.log("🧪 TEST BCRYPT - Verificare parolă corectă...");
+    const correct = await bcrypt.compare(testPassword, hash);
+    console.log("🧪 TEST BCRYPT - Rezultat parolă corectă:", correct);
+    
+    console.log("🧪 TEST BCRYPT - Verificare parolă greșită...");
+    const wrong = await bcrypt.compare("wrongpass", hash);
+    console.log("🧪 TEST BCRYPT - Rezultat parolă greșită:", wrong);
+    
+    res.json({
+      ok: true,
+      bcryptWorks: correct === true && wrong === false,
+      hashGenerated: hash.substring(0, 30) + "...",
+      correctPasswordTest: correct,
+      wrongPasswordTest: wrong,
+      bcryptVersion: bcrypt.version || "unknown"
+    });
+  } catch (err) {
+    console.error("🧪 TEST BCRYPT - EROARE:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// DIAGNOSTIC: Test login pas cu pas
+app.post("/api/test-login", async (req, res) => {
+  const { email, password } = req.body;
+  const results = { steps: [], errors: [] };
+  
+  try {
+    results.steps.push("1. Verificare DB...");
+    if (!db.hasDb()) {
+      results.errors.push("DB neconfigurat");
+      return res.json(results);
+    }
+    results.steps.push("✓ DB conectat");
+    
+    results.steps.push("2. Căutare companie după email...");
+    const compRes = await db.q(
+      `SELECT id, schema_name FROM public.companies WHERE admin_email = $1`,
+      [email.toLowerCase().trim()]
+    );
+    
+    if (compRes.rows.length === 0) {
+      results.errors.push("Companie negăsită pentru email: " + email);
+      return res.json(results);
+    }
+    results.steps.push("✓ Companie găsită: " + compRes.rows[0].schema_name);
+    
+    const schemaName = compRes.rows[0].schema_name;
+    
+    results.steps.push("3. Căutare utilizator în schema " + schemaName + "...");
+    const userRes = await db.q(
+      `SELECT * FROM ${schemaName}.users WHERE email = $1`,
+      [email.toLowerCase().trim()]
+    );
+    
+    if (userRes.rows.length === 0) {
+      results.errors.push("Utilizator negăsit în schema");
+      return res.json(results);
+    }
+    results.steps.push("✓ Utilizator găsit: " + userRes.rows[0].email);
+    
+    const u = userRes.rows[0];
+    results.user = {
+      id: u.id,
+      email: u.email,
+      active: u.active,
+      role: u.role,
+      hasPasswordHash: !!u.password_hash,
+      hashPrefix: u.password_hash ? u.password_hash.substring(0, 20) + "..." : null
+    };
+    
+    results.steps.push("4. Verificare parolă cu bcrypt...");
+    results.passwordReceived = password ? "******" : "(goală)";
+    
+    const ok = await bcrypt.compare(password, u.password_hash);
+    results.bcryptResult = ok;
+    results.steps.push("✓ bcrypt.compare rezultat: " + ok);
+    
+    if (!ok) {
+      results.errors.push("Parola nu se potrivește (bcrypt a returnat false)");
+    } else {
+      results.steps.push("✓ LOGIN REUȘIT!");
+    }
+    
+    res.json(results);
+  } catch (err) {
+    results.errors.push("EXCEPTIE: " + err.message);
+    console.error("🧪 TEST LOGIN - EROARE:", err);
+    res.json(results);
+  }
+});
+
 // Login Multi-Tenant
 app.post("/api/login", async (req, res) => {
   try {
