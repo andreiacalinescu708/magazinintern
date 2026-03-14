@@ -41,26 +41,21 @@ async function testSendGridAPI() {
 }
 
 // Funcție pentru trimitere email prin SendGrid API (HTTP)
+const https = require('https');
+
 async function sendEmailViaSendGridAPI(to, subject, html, text) {
   console.log("📧 ========== SENDGRID API CALL ==========");
   console.log("📧 To:", to);
   console.log("📧 Subject:", subject);
-  console.log("📧 From:", process.env.EMAIL_FROM || 'support@openbill.ro');
-  console.log("📧 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
-  console.log("📧 EMAIL_PASS length:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
-  console.log("📧 EMAIL_PASS starts with SG.:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.startsWith('SG.') : false);
   
-  if (!to || typeof to !== 'string' || !to.includes('@')) {
-    console.log("📧 ERROR: Invalid recipient email:", to);
-    return { success: false, error: "Invalid recipient email: " + to };
-  }
+  const apiKey = process.env.EMAIL_PASS || '';
   
-  if (!process.env.EMAIL_PASS) {
+  if (!apiKey) {
     console.log("📧 ERROR: EMAIL_PASS not set!");
     return { success: false, error: "EMAIL_PASS not configured" };
   }
   
-  const body = {
+  const body = JSON.stringify({
     personalizations: [{
       to: [{ email: to }]
     }],
@@ -70,38 +65,57 @@ async function sendEmailViaSendGridAPI(to, subject, html, text) {
       { type: 'text/plain', value: text },
       { type: 'text/html', value: html }
     ]
-  };
+  });
   
-  console.log("📧 Request body:", JSON.stringify(body, null, 2));
+  console.log("📧 Making HTTPS request to SendGrid...");
   
-  try {
-    console.log("📧 Making fetch request to SendGrid...");
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'api.sendgrid.com',
+      port: 443,
+      path: '/v3/mail/send',
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.EMAIL_PASS}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body)
       },
-      body: JSON.stringify(body)
+      timeout: 10000 // 10 sec timeout
+    };
+    
+    const req = https.request(options, (res) => {
+      console.log("📧 Response status:", res.statusCode);
+      
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log("📧 SendGrid API send SUCCESS");
+          resolve({ success: true, messageId: 'sendgrid-api-' + Date.now() });
+        } else {
+          console.log("📧 SendGrid API send FAILED:", data);
+          resolve({ success: false, error: data, status: res.statusCode });
+        }
+      });
     });
     
-    console.log("📧 Response status:", response.status);
-    console.log("📧 Response ok:", response.ok);
+    req.on('error', (err) => {
+      console.error("📧 HTTPS Request Error:", err.message);
+      resolve({ success: false, error: err.message });
+    });
     
-    if (response.ok || response.status === 202) {
-      console.log("📧 SendGrid API send SUCCESS");
-      return { success: true, messageId: 'sendgrid-api-' + Date.now() };
-    } else {
-      const errorText = await response.text();
-      console.log("📧 SendGrid API send FAILED:", errorText);
-      console.log("📧 Response status:", response.status);
-      return { success: false, error: errorText, status: response.status };
-    }
-  } catch (err) {
-    console.log("📧 SendGrid API send ERROR:", err.message);
-    console.log("📧 Error stack:", err.stack);
-    return { success: false, error: err.message };
-  }
+    req.on('timeout', () => {
+      console.error("📧 HTTPS Request Timeout");
+      req.destroy();
+      resolve({ success: false, error: 'Request timeout' });
+    });
+    
+    req.write(body);
+    req.end();
+  });
 }
 
 // Configurare Email (Gmail sau SendGrid)
