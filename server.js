@@ -2787,6 +2787,33 @@ app.post("/api/test-login", async (req, res) => {
   }
 });
 
+// DEBUG: Lista toate companiile (fără date sensibile)
+app.get("/api/debug/companies", async (req, res) => {
+  try {
+    if (!db.hasDb()) return res.json({ error: "DB neconfigurat" });
+    
+    const result = await db.q(
+      `SELECT id, name, admin_email, schema_name, status, created_at 
+       FROM public.companies 
+       ORDER BY created_at DESC`
+    );
+    
+    res.json({
+      count: result.rows.length,
+      companies: result.rows.map(c => ({
+        id: c.id,
+        name: c.name,
+        admin_email: c.admin_email,
+        schema_name: c.schema_name,
+        status: c.status,
+        created_at: c.created_at
+      }))
+    });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 // Login Multi-Tenant
 app.post("/api/login", async (req, res) => {
   try {
