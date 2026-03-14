@@ -954,12 +954,20 @@ function selectModalProduct(product) {
 
 // Salvare
 async function saveSpecialPrice() {
-  const price = parseFloat(document.getElementById('modalSpecialPrice').value);
+  const priceInput = document.getElementById('modalSpecialPrice');
+  const rawValue = priceInput ? priceInput.value : 'INPUT_NOT_FOUND';
+  const price = parseFloat(rawValue);
+  
+  console.log('🔍 DEBUG saveSpecialPrice:');
+  console.log('  - priceInput:', priceInput);
+  console.log('  - rawValue:', rawValue);
+  console.log('  - parsed price:', price);
+  
   const editingId = document.getElementById('editingProductId').value;
   const client = JSON.parse(localStorage.getItem('clientSelectat') || '{}');
   
   if (!price || price <= 0) {
-    alert('Introdu un preț valid!');
+    alert('Introdu un preț valid! (valoare primită: ' + rawValue + ')');
     return;
   }
   
