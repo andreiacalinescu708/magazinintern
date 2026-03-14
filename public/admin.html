@@ -313,7 +313,7 @@
           div.innerHTML = `
             <div class="user-info">
               <div class="user-name">
-                ${escapeHtml(user.username)}
+                ${escapeHtml(user.first_name && user.last_name ? user.first_name + ' ' + user.last_name : user.email)}
                 <span class="badge badge-${user.role === 'superadmin' ? 'danger' : user.role === 'admin' ? 'approved' : 'pending'}" style="margin-left: 8px; font-size: 0.75rem;">${roleText}</span>
               </div>
               <div class="user-meta">
@@ -322,8 +322,8 @@
               </div>
             </div>
             <div>
-              <button class="btn-approve" onclick="handleUserAction(${user.id}, '${escapeHtml(user.username)}', 'approve')">✓ Aprobă</button>
-              <button class="btn-reject" onclick="handleUserAction(${user.id}, '${escapeHtml(user.username)}', 'reject')">✗ Respinge</button>
+              <button class="btn-approve" onclick="handleUserAction(${user.id}, '${escapeHtml(user.email)}', 'approve')">✓ Aprobă</button>
+              <button class="btn-reject" onclick="handleUserAction(${user.id}, '${escapeHtml(user.email)}', 'reject')">✗ Respinge</button>
             </div>
           `;
           container.appendChild(div);
@@ -361,7 +361,7 @@
           div.innerHTML = `
             <div class="user-info">
               <div class="user-name">
-                ${escapeHtml(user.username)}
+                ${escapeHtml(user.first_name && user.last_name ? user.first_name + ' ' + user.last_name : user.email)}
                 <span class="badge badge-danger">BLOCAT ${timeText}</span>
               </div>
               <div class="user-meta">
@@ -404,7 +404,7 @@
           return `
           <tr>
             <td>${user.id}</td>
-            <td><strong>${escapeHtml(user.username)}</strong></td>
+            <td><strong>${escapeHtml(user.email)}</strong><br><small>${escapeHtml(user.first_name || '')} ${escapeHtml(user.last_name || '')}</small></td>
             <td><span class="badge ${roleClass}">${roleText}</span></td>
             <td>
               <span class="badge badge-${user.is_approved ? 'approved' : 'pending'}">

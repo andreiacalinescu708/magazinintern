@@ -2971,7 +2971,7 @@ app.post("/api/clients", async (req, res) => {
 app.get("/api/users/pending", isAdmin, async (req, res) => {
   try {
     const r = await db.q(
-      `SELECT id, username, created_at, failed_attempts 
+      `SELECT id, email, first_name, last_name, created_at, failed_attempts 
        FROM users 
        WHERE is_approved = false AND role = 'user'
        ORDER BY 
@@ -3017,7 +3017,7 @@ app.post("/api/users/approve/:id", isAdmin, async (req, res) => {
 app.get("/api/users/locked", isAdmin, async (req, res) => {
   try {
     const r = await db.q(
-      `SELECT id, username, failed_attempts, unlock_at, 
+      `SELECT id, email, first_name, last_name, failed_attempts, unlock_at, 
               CASE 
                 WHEN unlock_at > NOW() THEN EXTRACT(EPOCH FROM (unlock_at - NOW()))/60
                 ELSE 0 
@@ -3046,7 +3046,7 @@ app.post("/api/users/reject/:id", isAdmin, async (req, res) => {
 app.get("/api/users", isAdmin, async (req, res) => {
   try {
     const r = await db.q(
-      `SELECT id, username, role, is_approved, active, created_at 
+      `SELECT id, email, first_name, last_name, role, is_approved, active, created_at 
        FROM users 
        ORDER BY created_at DESC`
     );
@@ -3163,7 +3163,7 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     
     // Verifică dacă email-ul e deja folosit
     const existingUser = await db.q(
-      "SELECT id FROM users WHERE username = $1",
+      "SELECT id FROM users WHERE email = $1",
       [normalizedEmail]
     );
     if (existingUser.rows.length > 0) {
@@ -3369,9 +3369,9 @@ https://openbill.ro
 app.get("/api/invites", isAdmin, async (req, res) => {
   try {
     const r = await db.q(
-      `SELECT i.*, u.username as invited_by_name
+      `SELECT i.*, u.email as invited_by_email, u.first_name as invited_by_first_name, u.last_name as invited_by_last_name
        FROM user_invites i
-       LEFT JOIN users u ON i.invited_by = u.username
+       LEFT JOIN users u ON i.invited_by = u.email
        ORDER BY i.created_at DESC`
     );
     res.json(r.rows);
