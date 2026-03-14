@@ -488,8 +488,19 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// Servește fișierele statice din public
-app.use(express.static("public"));
+// Ruta principală - servește landing.html dacă nu ești logat, altfel index.html
+app.get("/", (req, res) => {
+  if (req.session?.user) {
+    // Utilizator logat - servește index.html
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+  } else {
+    // Utilizator nelogat - servește landing.html
+    res.sendFile(path.join(__dirname, "public", "landing.html"));
+  }
+});
+
+// Servește fișierele statice din public (excluzând index.html care e servit de ruta de mai sus)
+app.use(express.static("public", { index: false }));
 
 function accessDeniedHtml() {
   return `
