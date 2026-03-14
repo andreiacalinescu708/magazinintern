@@ -144,6 +144,14 @@
           <div style="font-size: 0.875rem; color: var(--text-muted);" id="userRole">Rol</div>
         </div>
       </div>
+      
+      <!-- Info Companie - centru -->
+      <div class="company-info" id="companyInfo" style="flex: 1; text-align: center; display: none;">
+        <div style="font-weight: 700; font-size: 1.1rem; color: #f59e0b;" id="companyName"></div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);" id="companyCui"></div>
+      </div>
+      
+      <div style="width: 150px;"></div> <!-- Spacer pentru echilibrare -->
     </div>
 
     <!-- Dashboard Grid -->
@@ -226,6 +234,28 @@
         // SuperAdmin: vede tot (nu ascundem nimic)
       } catch (e) {
         console.error('Eroare verificare rol:', e);
+      }
+    })();
+    
+    // Încarcă datele companiei în user bar
+    (async function loadCompanyInfo() {
+      try {
+        const res = await fetch('/api/company-settings');
+        if (!res.ok) return; // Dacă nu are acces, nu afișăm nimic
+        
+        const data = await res.json();
+        const companyName = data.name || 'Companie';
+        const companyCui = data.cui || '';
+        
+        const companyInfoDiv = document.getElementById('companyInfo');
+        const companyNameEl = document.getElementById('companyName');
+        const companyCuiEl = document.getElementById('companyCui');
+        
+        if (companyNameEl) companyNameEl.textContent = companyName;
+        if (companyCuiEl) companyCuiEl.textContent = companyCui ? `CUI: ${companyCui}` : '';
+        if (companyInfoDiv) companyInfoDiv.style.display = 'block';
+      } catch (e) {
+        console.error('Eroare încărcare date companie:', e);
       }
     })();
   </script>
