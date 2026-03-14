@@ -377,4 +377,358 @@ async function auditLog({ action, entity, entity_id = null, user = null, details
   return id;
 }
 
-module.exports = { q, ensureTables, hasDb, auditLog };
+// ================= MULTI-TENANT FUNCTIONS =================
+
+// Tabela master pentru companii (în schema public)
+async function ensureCompaniesTable() {
+  if (!pool) return;
+  
+  await q(`
+    CREATE TABLE IF NOT EXISTS public.companies (
+      id TEXT PRIMARY KEY,
+      schema_name TEXT UNIQUE NOT NULL,
+      admin_email TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      cui TEXT,
+      address TEXT,
+      city TEXT,
+      phone TEXT,
+      status TEXT NOT NULL DEFAULT 'pending_verification',
+      trial_expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // Indexuri pentru căutare rapidă
+  await q(`CREATE INDEX IF NOT EXISTS idx_companies_status ON public.companies(status)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_companies_admin_email ON public.companies(admin_email)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_companies_created_at ON public.companies(created_at)`);
+}
+
+// Creare schema nouă pentru tenant cu toate tabelele
+async function createTenantSchema(schemaName, companyData) {
+  if (!pool) throw new Error("DB neconfigurat");
+  
+  // Validare nume schema (doar litere, cifre, underscore)
+  if (!/^[a-z][a-z0-9_]*$/.test(schemaName)) {
+    throw new Error("Nume schema invalid");
+  }
+  
+  // 1. Creăm schema
+  await q(`CREATE SCHEMA IF NOT EXISTS ${schemaName}`);
+  
+  // 2. Creăm toate tabelele în schema nouă
+  
+  // USERS - modificat pentru email-based auth
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.users (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      active BOOLEAN NOT NULL DEFAULT true,
+      is_approved BOOLEAN NOT NULL DEFAULT false,
+      email_verified BOOLEAN NOT NULL DEFAULT false,
+      email_verification_code TEXT,
+      email_verification_expires_at TIMESTAMPTZ,
+      resend_attempts INT NOT NULL DEFAULT 0,
+      resend_last_try TIMESTAMPTZ,
+      failed_attempts INT NOT NULL DEFAULT 0,
+      unlock_at TIMESTAMPTZ,
+      last_failed_at TIMESTAMPTZ,
+      first_name TEXT,
+      last_name TEXT,
+      phone TEXT,
+      position TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // CLIENTS
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.clients (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      group_name TEXT,
+      category TEXT,
+      cui TEXT,
+      payment_terms INTEGER DEFAULT 0,
+      prices JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // PRODUCTS
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.products (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      gtin TEXT,
+      gtins JSONB NOT NULL DEFAULT '[]'::jsonb,
+      category TEXT,
+      price NUMERIC(12,2),
+      active BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // ORDERS
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.orders (
+      id TEXT PRIMARY KEY,
+      client JSONB NOT NULL,
+      items JSONB NOT NULL,
+      status TEXT NOT NULL DEFAULT 'in_procesare',
+      sent_to_smartbill BOOLEAN NOT NULL DEFAULT false,
+      smartbill_draft_sent BOOLEAN NOT NULL DEFAULT false,
+      smartbill_error TEXT,
+      smartbill_response JSONB,
+      smartbill_series TEXT,
+      smartbill_number TEXT,
+      due_date DATE,
+      payment_terms INTEGER,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // STOCK
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.stock (
+      id TEXT PRIMARY KEY,
+      gtin TEXT NOT NULL,
+      product_name TEXT NOT NULL,
+      lot TEXT NOT NULL,
+      expires_at DATE NOT NULL,
+      qty INT NOT NULL DEFAULT 0,
+      location TEXT NOT NULL DEFAULT 'A',
+      warehouse TEXT NOT NULL DEFAULT 'depozit',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // STOCK_TRANSFERS
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.stock_transfers (
+      id TEXT PRIMARY KEY,
+      gtin TEXT NOT NULL,
+      product_name TEXT NOT NULL,
+      lot TEXT NOT NULL,
+      expires_at DATE,
+      qty INT NOT NULL,
+      from_warehouse TEXT NOT NULL,
+      to_warehouse TEXT NOT NULL,
+      from_location TEXT,
+      to_location TEXT,
+      created_by TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // DRIVERS
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.drivers (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      active BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // VEHICLES
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.vehicles (
+      id TEXT PRIMARY KEY,
+      plate_number TEXT NOT NULL UNIQUE,
+      active BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // TRIP_SHEETS
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.trip_sheets (
+      id TEXT PRIMARY KEY,
+      date DATE NOT NULL,
+      driver_id TEXT NOT NULL,
+      vehicle_id TEXT NOT NULL,
+      km_start INTEGER NOT NULL,
+      km_end INTEGER,
+      locations TEXT NOT NULL DEFAULT '',
+      trip_number VARCHAR(20) UNIQUE,
+      created_by TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // FUEL_RECEIPTS
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.fuel_receipts (
+      id TEXT PRIMARY KEY,
+      trip_sheet_id TEXT NOT NULL,
+      type TEXT NOT NULL CHECK (type IN ('diesel', 'adblue')),
+      receipt_number TEXT NOT NULL,
+      liters NUMERIC(8,2) NOT NULL,
+      km_at_refuel INTEGER NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // AUDIT
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.audit (
+      id TEXT PRIMARY KEY,
+      action TEXT NOT NULL,
+      entity TEXT NOT NULL,
+      entity_id TEXT,
+      user_json JSONB,
+      details JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // USER_INVITES
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.user_invites (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      first_name TEXT,
+      last_name TEXT,
+      role TEXT NOT NULL DEFAULT 'user',
+      token TEXT UNIQUE NOT NULL,
+      invited_by TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ
+    )
+  `);
+  
+  // COMPANY_SETTINGS
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.company_settings (
+      id TEXT PRIMARY KEY DEFAULT 'default',
+      name TEXT NOT NULL,
+      cui TEXT NOT NULL,
+      smartbill_series TEXT DEFAULT 'FMD',
+      address TEXT,
+      city TEXT,
+      country TEXT DEFAULT 'Romania',
+      phone TEXT,
+      updated_at TIMESTAMPTZ DEFAULT now()
+    )
+  `);
+  
+  // CLIENT_BALANCES
+  await q(`
+    CREATE TABLE IF NOT EXISTS ${schemaName}.client_balances (
+      id SERIAL PRIMARY KEY,
+      client_id TEXT,
+      cui TEXT,
+      invoice_number TEXT,
+      invoice_date DATE,
+      due_date DATE,
+      currency TEXT,
+      total_value NUMERIC(12,2),
+      balance_due NUMERIC(12,2),
+      days_overdue INTEGER,
+      status TEXT,
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  
+  // 3. Inserăm datele companiei în company_settings
+  await q(`
+    INSERT INTO ${schemaName}.company_settings (id, name, cui, address, city, phone)
+    VALUES ('default', $1, $2, $3, $4, $5)
+  `, [companyData.name, companyData.cui || '', companyData.address || '', companyData.city || '', companyData.phone || '']);
+  
+  // 4. Indexuri pentru performanță
+  await q(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON ${schemaName}.orders (created_at DESC)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_stock_gtin ON ${schemaName}.stock (gtin)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_stock_warehouse ON ${schemaName}.stock (warehouse)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_products_name ON ${schemaName}.products (name)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_products_category ON ${schemaName}.products (category)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_clients_name ON ${schemaName}.clients (name)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_audit_created_at ON ${schemaName}.audit (created_at DESC)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_trip_sheets_date ON ${schemaName}.trip_sheets (date DESC)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_fuel_receipts_sheet ON ${schemaName}.fuel_receipts (trip_sheet_id)`);
+  
+  // Unique index pentru gtin
+  await q(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_products_gtin_ux 
+    ON ${schemaName}.products (gtin) 
+    WHERE gtin IS NOT NULL
+  `);
+  
+  return true;
+}
+
+// Ștergere schema tenant
+async function dropTenantSchema(schemaName) {
+  if (!pool) throw new Error("DB neconfigurat");
+  
+  // Validare nume schema
+  if (!/^[a-z][a-z0-9_]*$/.test(schemaName)) {
+    throw new Error("Nume schema invalid");
+  }
+  
+  await q(`DROP SCHEMA IF EXISTS ${schemaName} CASCADE`);
+  return true;
+}
+
+// Curățare companii nevalidate (cron job)
+async function cleanupUnverifiedCompanies() {
+  if (!pool) return { deleted: 0 };
+  
+  // Găsim companiile nevalidate, create acum > 10 minute
+  const expired = await q(`
+    SELECT id, schema_name 
+    FROM public.companies 
+    WHERE status = 'pending_verification' 
+    AND created_at < NOW() - INTERVAL '10 minutes'
+  `);
+  
+  let deleted = 0;
+  for (const company of expired.rows) {
+    try {
+      // Ștergem schema
+      await dropTenantSchema(company.schema_name);
+      // Ștergem înregistrarea
+      await q(`DELETE FROM public.companies WHERE id = $1`, [company.id]);
+      deleted++;
+      console.log(`🗑️ Șters cont nevalidat: ${company.schema_name}`);
+    } catch (err) {
+      console.error(`Eroare la ștergerea ${company.schema_name}:`, err.message);
+    }
+  }
+  
+  return { deleted };
+}
+
+// Obține schema pentru un email
+async function getSchemaByEmail(email) {
+  if (!pool) return null;
+  
+  const r = await q(`
+    SELECT schema_name, status, trial_expires_at 
+    FROM public.companies 
+    WHERE admin_email = $1
+  `, [email.toLowerCase().trim()]);
+  
+  if (r.rows.length === 0) return null;
+  return r.rows[0];
+}
+
+module.exports = { 
+  q, 
+  ensureTables, 
+  hasDb, 
+  auditLog,
+  // Multi-tenant exports
+  ensureCompaniesTable,
+  createTenantSchema,
+  dropTenantSchema,
+  cleanupUnverifiedCompanies,
+  getSchemaByEmail
+};

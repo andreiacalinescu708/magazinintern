@@ -32,7 +32,7 @@ async function initLoginPage() {
     msg.className = ""; 
     msg.style.display = "none";
 
-    const username = document.getElementById("loginUser").value.trim();
+    const email = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPass").value;
 
     try {
@@ -41,7 +41,7 @@ async function initLoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ email, password })
       });
 
       const data = await res.json().catch(() => ({}));
@@ -49,22 +49,41 @@ async function initLoginPage() {
       if (!res.ok) {
         msg.style.display = "block";
         
+        // ✅ Email neverificat (403 + unverified)
+        if (res.status === 403 && data.unverified) {
+          msg.innerHTML = "📧 <strong>Email neverificat!</strong><br>" + 
+                         (data.message || "Verifică emailul și introdu codul de confirmare.") + 
+                         '<br><a href="verify-email.html" style="color: var(--primary-400);">Click aici pentru verificare</a>';
+          msg.className = "msg-warning show";
+        }
+        // ✅ Trial expirat (403 + trialExpired)
+        else if (res.status === 403 && data.trialExpired) {
+          msg.innerHTML = "⏰ <strong>Perioada de trial a expirat!</strong><br>" + 
+                         (data.message || "Contactează-ne pentru activarea contului.");
+          msg.className = "msg-error show";
+        }
+        // ✅ Cont suspendat (403 + suspended)
+        else if (res.status === 403 && data.suspended) {
+          msg.innerHTML = "🚫 <strong>Cont suspendat!</strong><br>" + 
+                         (data.message || "Contactează administratorul.");
+          msg.className = "msg-error show";
+        }
         // ✅ Cont în așteptare (403 + pending)
-        if (res.status === 403 && data.pending) {
+        else if (res.status === 403 && data.pending) {
           msg.innerHTML = "⏳ <strong>Cont în așteptare!</strong><br>" + 
                          (data.message || "Așteaptă aprobarea administratorului.");
           msg.className = "msg-warning show";
         } 
-        // ✅ ADAUGĂ AICI: Cont blocat temporar (403 + locked)
+        // ✅ Cont blocat temporar (403 + locked)
         else if (res.status === 403 && data.locked) {
           const minutes = data.minutesLeft || 30;
           msg.innerHTML = `🔒 <strong>Cont blocat temporar!</strong><br>` + 
                          (data.message || `Mai așteaptă ${minutes} minute.`);
           msg.className = "msg-error show";
         }
-        // ✅ User/Parolă greșită (401)
+        // ✅ Email/Parolă greșită (401)
         else if (res.status === 401) {
-          let html = "❌ <strong>User sau parolă greșită!</strong><br>";
+          let html = "❌ <strong>Email sau parolă greșită!</strong><br>";
           
           if (data.attemptsLeft > 0) {
             html += `⚠️ Mai ai <strong>${data.attemptsLeft}</strong> încercări rămase.<br>`;
@@ -85,7 +104,8 @@ async function initLoginPage() {
       }
 
       // Login reușit
-      localStorage.setItem('username', username);
+      localStorage.setItem('userEmail', email);
+      localStorage.setItem('userName', data.user?.first_name + ' ' + data.user?.last_name);
       location.href = "index.html";
       
     } catch (err) {
@@ -97,40 +117,11 @@ async function initLoginPage() {
   };
 }
 
+  // DEPRECATED: Funcția initRegister e înlocuită de register.html propriu cu JS inline
+  // Pentru multi-tenant, folosim /api/auth/register în register.html
   async function initRegister() {
-    if (!location.pathname.endsWith("register.html")) return;
-
-    const form = document.getElementById("registerForm");
-    const msg = document.getElementById("registerMsg");
-    if (!form) return;
-
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      msg.textContent = "";
-
-      const username = document.getElementById("regUser").value.trim();
-      const password = document.getElementById("regPass").value;
-
-      if (!username || !password) {
-        msg.textContent = "Completează toate câmpurile";
-        return;
-      }
-
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        msg.textContent = data.error || "Eroare";
-        return;
-      }
-
-      alert("Cont creat. Te poți loga.");
-      location.href = "login.html";
-    };
+    // Nu mai facem nimic aici - register.html are propriul JavaScript
+    return;
   }
 
   function escapeHtml(s) {

@@ -1,167 +1,382 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ro">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Creează cont</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="global.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Înregistrare - openBill</title>
+  <link rel="stylesheet" href="global.css" />
   <style>
-    /* Fix pentru vizibilitate inputuri */
-    .authInput {
-      color: #f8fafc !important; /* Text alb */
-      background: #1e293b !important; /* Fundal închis dar vizibil */
-      border: 2px solid #334155 !important;
-      padding: 0.75rem 1rem !important;
-      border-radius: 0.5rem !important;
-      font-size: 1rem !important;
-      width: 100% !important;
-      margin-top: 0.5rem !important;
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
     }
-    
-    .authInput:focus {
-      outline: none !important;
-      border-color: #0284c7 !important;
-      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
+
+    .auth-card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-xl);
+      animation: fadeIn 0.4s ease-out;
     }
-    
-    /* Placeholder gri deschis */
-    .authInput::placeholder {
-      color: #64748b !important;
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: var(--space-6);
     }
-    
-    /* Label alb */
-    .authLabel {
-      color: #f8fafc !important;
-      font-weight: 500 !important;
-      display: block !important;
-      margin-bottom: 1rem !important;
+
+    .auth-header img {
+      height: 50px;
+      width: auto;
+      margin-bottom: var(--space-4);
     }
-    
-    /* Mesaj eroare */
-    .authMsg {
-      color: #ef4444 !important;
-      margin-top: 1rem !important;
-      font-size: 0.9rem !important;
-      min-height: 1.5rem !important;
+
+    .auth-header h1 {
+      font-size: 1.5rem;
+      margin-bottom: var(--space-2);
+    }
+
+    .auth-header p {
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .form-section {
+      margin-bottom: var(--space-5);
+      padding-bottom: var(--space-5);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .form-section:last-of-type {
+      border-bottom: none;
+    }
+
+    .section-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--primary-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-3);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+    }
+
+    .form-group {
+      margin-bottom: var(--space-4);
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-2);
+    }
+
+    .form-label .required {
+      color: var(--danger-500);
+      margin-left: 2px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: var(--space-3) var(--space-4);
+      font-size: 0.9375rem;
+      color: var(--text-primary);
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      transition: all var(--transition-fast);
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: var(--space-6);
+      padding-top: var(--space-6);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .auth-footer a {
+      color: var(--primary-400);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .auth-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Mesaje */
+    #registerMsg {
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-lg);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      display: none;
+      margin-bottom: var(--space-4);
+    }
+
+    #registerMsg.show {
+      display: block;
+    }
+
+    .msg-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--danger-500);
+    }
+
+    .msg-success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: var(--success-400);
+    }
+
+    .msg-info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: var(--primary-400);
+    }
+
+    /* Trial badge */
+    .trial-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: var(--radius-full);
+      color: var(--warning-500);
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-top: var(--space-3);
+    }
+
+    /* Loading */
+    .btn-loading {
+      position: relative;
+      color: transparent !important;
+    }
+
+    .btn-loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .auth-card {
+        padding: var(--space-5);
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
-<body class="authBody">
-  <nav class="navbar" style="position: fixed; top: 0; left: 0; right: 0; z-index: 100;">
-    <div class="navbar-inner">
-      <a href="index.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem;">
-        <img src="logo.svg" alt="oBill" style="height: 36px; width: auto;">
-      </a>
-    </div>
-  </nav>
-  <div class="authCard" style="margin-top: 60px;">
-    <div class="authHeader">
-      <div class="authLogo">👤</div>
-      <h1>Creează cont</h1>
-      <p class="muted" id="inviteSubtitle">Se validează invitația...</p>
-    </div>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <img src="logo.svg" alt="openBill">
+        <h1>Creează cont nou</h1>
+        <p>Înregistrează compania ta și începe trialul gratuit</p>
+        <div class="trial-badge">🎁 14 zile trial gratuit</div>
+      </div>
 
-    <div id="inviteError" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; text-align: center;"></div>
+      <div id="registerMsg"></div>
 
-    <form id="registerForm" class="authForm" autocomplete="on" style="display: none;">
-      <label class="authLabel">
-        Email (Username)
-        <input id="regUser" class="authInput" type="email" autocomplete="username" required placeholder="Introdu email" readonly style="opacity: 0.7;" />
-      </label>
+      <form class="auth-form" id="registerForm">
+        <!-- Date Companie -->
+        <div class="form-section">
+          <div class="section-title">Date Companie</div>
+          
+          <div class="form-group">
+            <label class="form-label" for="companyName">Numele companiei <span class="required">*</span></label>
+            <input type="text" id="companyName" class="form-input" placeholder="Ex: Farmacia X SRL" required />
+          </div>
 
-      <label class="authLabel">
-        Parolă
-        <input id="regPass" class="authInput" type="password" autocomplete="new-password" required placeholder="Minim 6 caractere" />
-      </label>
+          <div class="form-group">
+            <label class="form-label" for="cui">CUI / CIF</label>
+            <input type="text" id="cui" class="form-input" placeholder="Ex: RO12345678" />
+          </div>
 
-      <button id="btnRegister" class="authBtn" type="submit">Creează cont</button>
-      <div id="registerMsg" class="authMsg"></div>
-    </form>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="city">Oraș</label>
+              <input type="text" id="city" class="form-input" placeholder="Ex: București" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="address">Adresă</label>
+              <input type="text" id="address" class="form-input" placeholder="Ex: Str. Exemplu nr. 1" />
+            </div>
+          </div>
+        </div>
 
-    <div class="authFooter" id="authFooter" style="display: none;">
-      <a class="authLinkBtn" href="login.html">Am deja cont</a>
+        <!-- Date Administrator -->
+        <div class="form-section">
+          <div class="section-title">Date Administrator</div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="firstName">Prenume</label>
+              <input type="text" id="firstName" class="form-input" placeholder="Ex: Ion" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="lastName">Nume</label>
+              <input type="text" id="lastName" class="form-input" placeholder="Ex: Popescu" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="email">Email <span class="required">*</span></label>
+            <input type="email" id="email" class="form-input" placeholder="exemplu@companie.ro" required autocomplete="email" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="phone">Telefon</label>
+            <input type="tel" id="phone" class="form-input" placeholder="Ex: 0712345678" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">Parolă <span class="required">*</span></label>
+            <input type="password" id="password" class="form-input" placeholder="Minim 6 caractere" required minlength="6" autocomplete="new-password" />
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" id="btnRegister">
+          Creează cont
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <span style="color: var(--text-muted);">Ai deja cont?</span>
+        <a href="login.html">Autentifică-te</a>
+      </div>
     </div>
   </div>
 
-  <script src="script.js"></script>
   <script>
-    // Gestionare invitație
-    (async function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const inviteToken = urlParams.get('invite');
-      
-      const subtitle = document.getElementById('inviteSubtitle');
-      const errorDiv = document.getElementById('inviteError');
-      const form = document.getElementById('registerForm');
-      const footer = document.getElementById('authFooter');
-      
-      if (!inviteToken) {
-        subtitle.textContent = '';
-        errorDiv.innerHTML = '<strong>⛔ Înregistrare prin invitație obligatorie</strong><br><br>Pentru a crea un cont, trebuie să primești o invitație de la administrator.<br>Contactează administratorul companiei pentru a primi acces.';
-        errorDiv.style.display = 'block';
+    const registerForm = document.getElementById('registerForm');
+    const btnRegister = document.getElementById('btnRegister');
+    const registerMsg = document.getElementById('registerMsg');
+
+    function showMessage(text, type) {
+      registerMsg.textContent = text;
+      registerMsg.className = 'show msg-' + type;
+    }
+
+    function hideMessage() {
+      registerMsg.className = '';
+      registerMsg.textContent = '';
+    }
+
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideMessage();
+
+      const data = {
+        companyName: document.getElementById('companyName').value.trim(),
+        cui: document.getElementById('cui').value.trim(),
+        city: document.getElementById('city').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        firstName: document.getElementById('firstName').value.trim(),
+        lastName: document.getElementById('lastName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        password: document.getElementById('password').value
+      };
+
+      // Validare
+      if (data.password.length < 6) {
+        showMessage('Parola trebuie să aibă minim 6 caractere.', 'error');
         return;
       }
-      
+
+      btnRegister.classList.add('btn-loading');
+      btnRegister.disabled = true;
+
       try {
-        // Validează tokenul
-        const res = await fetch(`/api/invites/validate/${inviteToken}`);
-        const data = await res.json();
-        
-        if (!res.ok) {
-          subtitle.textContent = '';
-          errorDiv.innerHTML = `<strong>⛔ Invitație invalidă</strong><br><br>${data.error || 'Linkul de invitație nu este valid.'}`;
-          errorDiv.style.display = 'block';
-          return;
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          showMessage('✅ Cont creat! Redirectare către verificare email...', 'success');
+          
+          // Salvăm emailul pentru pagina de verificare
+          localStorage.setItem('verifyEmail', data.email);
+          
+          // Redirectăm la verificare după 2 secunde
+          setTimeout(() => {
+            window.location.href = 'verify-email.html';
+          }, 2000);
+        } else {
+          showMessage(result.error || 'Eroare la înregistrare', 'error');
         }
-        
-        // Pre-completează emailul
-        document.getElementById('regUser').value = data.invite.email;
-        subtitle.innerHTML = `Completează datele pentru a finaliza înregistrarea.<br><small style="color: #64748b;">Invitație pentru: <strong>${data.invite.first_name || ''} ${data.invite.last_name || ''}</strong></small>`;
-        form.style.display = 'block';
-        footer.style.display = 'block';
-        
-        // Modifică handler-ul formularului pentru a include tokenul
-        form.onsubmit = async (e) => {
-          e.preventDefault();
-          const msg = document.getElementById('registerMsg');
-          msg.textContent = '';
-          
-          const username = document.getElementById('regUser').value.trim();
-          const password = document.getElementById('regPass').value;
-          
-          if (!username || !password) {
-            msg.textContent = 'Completează toate câmpurile';
-            return;
-          }
-          
-          if (password.length < 6) {
-            msg.textContent = 'Parola trebuie să aibă minim 6 caractere';
-            return;
-          }
-          
-          const res = await fetch('/api/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, inviteToken })
-          });
-          
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) {
-            msg.textContent = data.error || 'Eroare la înregistrare';
-            return;
-          }
-          
-          alert('✅ Cont creat cu succes! Contul tău este în așteptarea aprobării administratorului.');
-          location.href = 'login.html';
-        };
-        
       } catch (err) {
-        subtitle.textContent = '';
-        errorDiv.innerHTML = `<strong>⛔ Eroare</strong><br><br>${err.message}`;
-        errorDiv.style.display = 'block';
+        showMessage('Eroare de conexiune. Încearcă din nou.', 'error');
+        console.error(err);
+      } finally {
+        btnRegister.classList.remove('btn-loading');
+        btnRegister.disabled = false;
       }
-    })();
+    });
   </script>
 </body>
 </html>

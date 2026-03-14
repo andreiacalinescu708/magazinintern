@@ -428,6 +428,26 @@ app.use(session({
   }
 }));
 
+// Middleware Multi-Tenant: Setează schema PostgreSQL pentru request
+app.use(async (req, res, next) => {
+  // Dacă userul e logat și are schema_name, setăm search_path
+  if (req.session?.user?.schema_name && db.hasDb()) {
+    try {
+      const schemaName = req.session.user.schema_name;
+      // Validare nume schema pentru securitate
+      if (!/^[a-z][a-z0-9_]*$/.test(schemaName)) {
+        console.error("Nume schema invalid:", schemaName);
+        return res.status(500).json({ error: "Configurație invalidă" });
+      }
+      // Setăm search_path pentru această conexiune
+      await db.q(`SET search_path TO ${schemaName}, public`);
+    } catch (err) {
+      console.error("Eroare setare schema:", err.message);
+    }
+  }
+  next();
+});
+
 // Endpoint pentru verificarea autentificării (pentru frontend)
 app.get("/api/auth/check", async (req, res) => {
   if (!req.session.user) return res.json({ loggedIn: false });
@@ -2561,32 +2581,87 @@ app.delete("/api/stock/:id", async (req, res) => {
 
 
 
-// Login
+// Login Multi-Tenant
 app.post("/api/login", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
     if (!db.hasDb()) return res.status(500).json({ error: "DB neconfigurat" });
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email și parolă sunt obligatorii" });
+    }
+    
+    const emailClean = email.toLowerCase().trim();
 
+    // 1. Găsim compania după email
+    const companyRes = await db.q(
+      `SELECT id, schema_name, status, trial_expires_at, name 
+       FROM public.companies 
+       WHERE admin_email = $1 LIMIT 1`,
+      [emailClean]
+    );
+    
+    if (companyRes.rows.length === 0) {
+      return res.status(401).json({ error: "Email sau parolă greșită" });
+    }
+    
+    const company = companyRes.rows[0];
+    
+    // 2. Verificăm statusul companiei
+    if (company.status === 'pending_verification') {
+      return res.status(403).json({ 
+        unverified: true, 
+        message: "Emailul nu a fost verificat. Verifică căsuța de email." 
+      });
+    }
+    
+    if (company.status === 'suspended') {
+      return res.status(403).json({ 
+        suspended: true, 
+        message: "Contul a fost suspendat. Contactează administratorul." 
+      });
+    }
+    
+    // Verificăm trialul
+    if (company.status === 'trial' && company.trial_expires_at) {
+      if (new Date() > new Date(company.trial_expires_at)) {
+        await db.q(
+          `UPDATE public.companies SET status = 'trial_expired' WHERE id = $1`,
+          [company.id]
+        );
+        company.status = 'trial_expired';
+      }
+    }
+    
+    if (company.status === 'trial_expired') {
+      return res.status(403).json({ 
+        trialExpired: true, 
+        message: "Perioada de trial a expirat. Contactează-ne pentru activare." 
+      });
+    }
+
+    // 3. Căutăm userul în schema tenant
+    const schemaName = company.schema_name;
     const r = await db.q(
-      `SELECT id, username, password_hash, role, active, is_approved, failed_attempts, unlock_at, last_failed_at
-       FROM users WHERE username=$1 LIMIT 1`,
-      [username]
+      `SELECT id, email, password_hash, role, active, is_approved, 
+              failed_attempts, unlock_at, last_failed_at, first_name, last_name
+       FROM ${schemaName}.users WHERE email=$1 LIMIT 1`,
+      [emailClean]
     );
 
     const u = r.rows[0];
-    if (!u) return res.status(401).json({ error: "User sau parolă greșită" });
+    if (!u) return res.status(401).json({ error: "Email sau parolă greșită" });
 
     const now = new Date();
 
-    // ✅ SCENARIUL 2: Dacă au trecut 30 min de la ultima încercare → reset counter
+    // Reset counter după 30 min de inactivitate
     if (u.failed_attempts > 0 && u.last_failed_at) {
       const lastFail = new Date(u.last_failed_at);
       const thirtyMinAgo = new Date(now.getTime() - 30 * 60000);
       
       if (lastFail < thirtyMinAgo) {
-        // Reset complet după 30 min de inactivitate
         await db.q(
-          `UPDATE users SET failed_attempts = 0, unlock_at = null, last_failed_at = null WHERE id = $1`,
+          `UPDATE ${schemaName}.users SET failed_attempts = 0, unlock_at = null, last_failed_at = null WHERE id = $1`,
           [u.id]
         );
         u.failed_attempts = 0;
@@ -2594,7 +2669,7 @@ app.post("/api/login", async (req, res) => {
       }
     }
 
-    // ✅ SCENARIUL 1: Verifică dacă e încă blocat (în cele 30 min)
+    // Verifică blocare
     if (u.failed_attempts >= 3 && u.unlock_at) {
       const unlockTime = new Date(u.unlock_at);
       if (unlockTime > now) {
@@ -2602,22 +2677,18 @@ app.post("/api/login", async (req, res) => {
         return res.status(403).json({ 
           locked: true,
           minutesLeft: minutesLeft,
-          message: `Cont blocat. Mai așteaptă ${minutesLeft} minute sau contactează administratorul.` 
+          message: `Cont blocat. Mai așteaptă ${minutesLeft} minute.` 
         });
       } else {
-        // Au trecut cele 30 min de blocare → deblocare automată
         await db.q(
-          `UPDATE users SET failed_attempts = 0, unlock_at = null, last_failed_at = null WHERE id = $1`,
+          `UPDATE ${schemaName}.users SET failed_attempts = 0, unlock_at = null, last_failed_at = null WHERE id = $1`,
           [u.id]
         );
         u.failed_attempts = 0;
       }
     }
 
-    if (!u.active) return res.status(401).json({ error: "User sau parolă greșită" });
-    if (!u.is_approved) {
-      return res.status(403).json({ pending: true, message: "Cont în așteptare" });
-    }
+    if (!u.active) return res.status(401).json({ error: "Email sau parolă greșită" });
 
     const ok = bcrypt.compareSync(password, u.password_hash);
     
@@ -2625,10 +2696,9 @@ app.post("/api/login", async (req, res) => {
       const newAttempts = (u.failed_attempts || 0) + 1;
       
       if (newAttempts >= 3) {
-        // Blochează pentru 30 minute
         const unlockAt = new Date(now.getTime() + 30 * 60000);
         await db.q(
-          `UPDATE users SET failed_attempts = $1, last_failed_at = NOW(), unlock_at = $2 WHERE id = $3`,
+          `UPDATE ${schemaName}.users SET failed_attempts = $1, last_failed_at = NOW(), unlock_at = $2 WHERE id = $3`,
           [newAttempts, unlockAt, u.id]
         );
         
@@ -2638,27 +2708,48 @@ app.post("/api/login", async (req, res) => {
           message: "Cont blocat pentru 30 minute după 3 încercări eșuate." 
         });
       } else {
-        // Doar incrementezi
         await db.q(
-          `UPDATE users SET failed_attempts = $1, last_failed_at = NOW() WHERE id = $2`,
+          `UPDATE ${schemaName}.users SET failed_attempts = $1, last_failed_at = NOW() WHERE id = $2`,
           [newAttempts, u.id]
         );
         
         return res.status(401).json({ 
-          error: "User sau parolă greșită",
+          error: "Email sau parolă greșită",
           attemptsLeft: 3 - newAttempts 
         });
       }
     }
 
-    // Login reușit → curăță tot
+    // Login reușit
     await db.q(
-      `UPDATE users SET failed_attempts = 0, unlock_at = null, last_failed_at = null WHERE id = $1`,
+      `UPDATE ${schemaName}.users SET failed_attempts = 0, unlock_at = null, last_failed_at = null WHERE id = $1`,
       [u.id]
     );
 
-    req.session.user = { id: u.id, username: u.username, email: u.email, role: u.role, is_approved: u.is_approved };
-    res.json({ ok: true, user: req.session.user });
+    // Setăm sesiunea cu schema_name pentru multi-tenant
+    req.session.user = { 
+      id: u.id, 
+      email: u.email, 
+      role: u.role, 
+      is_approved: u.is_approved,
+      first_name: u.first_name,
+      last_name: u.last_name,
+      company_name: company.name,
+      schema_name: schemaName,
+      trial_expires_at: company.trial_expires_at
+    };
+    
+    res.json({ 
+      ok: true, 
+      user: {
+        id: u.id,
+        email: u.email,
+        role: u.role,
+        first_name: u.first_name,
+        last_name: u.last_name,
+        company_name: company.name
+      }
+    });
     
   } catch (e) {
     console.error("LOGIN error:", e);
@@ -4204,6 +4295,340 @@ app.get("/api/products/search", async (req, res) => {
   }
 });
 
+// ==========================================
+// MULTI-TENANT AUTH API
+// ==========================================
+
+// Helper: Generare cod verificare 6 cifre
+function generateVerificationCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Helper: Generare schema name din company name
+function generateSchemaName(companyName) {
+  const normalized = companyName
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '_')
+    .replace(/_+/g, '_')
+    .substring(0, 20);
+  const random = Math.random().toString(36).substring(2, 8);
+  return `tenant_${normalized}_${random}`;
+}
+
+// POST /api/auth/register - Înregistrare nouă companie
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { companyName, cui, email, password, firstName, lastName, phone, address, city } = req.body;
+    
+    // Validare
+    if (!companyName || !email || !password) {
+      return res.status(400).json({ error: "Companie, email și parolă sunt obligatorii" });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Parola trebuie să aibă minim 6 caractere" });
+    }
+    
+    const emailClean = email.toLowerCase().trim();
+    
+    // Verificăm dacă emailul e deja folosit
+    const existingCheck = await db.q(
+      `SELECT 1 FROM public.companies WHERE admin_email = $1`,
+      [emailClean]
+    );
+    
+    if (existingCheck.rows.length > 0) {
+      return res.status(409).json({ error: "Acest email este deja înregistrat" });
+    }
+    
+    // Generăm schema name unic
+    const schemaName = generateSchemaName(companyName);
+    const companyId = crypto.randomUUID();
+    const verificationCode = generateVerificationCode();
+    const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minute
+    const trialExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 zile
+    
+    // Hash parolă
+    const bcrypt = require("bcrypt");
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    // 1. Inserăm în public.companies
+    await db.q(`
+      INSERT INTO public.companies (id, schema_name, admin_email, name, cui, address, city, phone, status, trial_expires_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending_verification', $9)
+    `, [companyId, schemaName, emailClean, companyName, cui || '', address || '', city || '', phone || '', trialExpiresAt]);
+    
+    // 2. Creăm schema și tabelele
+    await db.createTenantSchema(schemaName, {
+      name: companyName,
+      cui: cui || '',
+      address: address || '',
+      city: city || '',
+      phone: phone || ''
+    });
+    
+    // 3. Inserăm userul admin în schema nouă
+    await db.q(`
+      INSERT INTO ${schemaName}.users (email, password_hash, role, is_approved, email_verified, email_verification_code, email_verification_expires_at, first_name, last_name, phone)
+      VALUES ($1, $2, 'superadmin', true, false, $3, $4, $5, $6, $7)
+    `, [emailClean, passwordHash, verificationCode, codeExpiresAt, firstName || '', lastName || '', phone || '']);
+    
+    // 4. Trimitem email cu codul (sau logăm pentru development)
+    console.log(`\n📧 EMAIL DE VERIFICARE pentru ${emailClean}:`);
+    console.log(`   Cod: ${verificationCode}`);
+    console.log(`   Expiră: ${codeExpiresAt.toISOString()}`);
+    console.log(`   Schema: ${schemaName}\n`);
+    
+    // TODO: Implementare trimitere email real via SendGrid
+    // await sendEmailViaSendGridAPI(emailClean, 'Verificare cont openBill', ...);
+    
+    res.json({
+      success: true,
+      message: "Cont creat. Verifică emailul pentru cod.",
+      email: emailClean,
+      // În development returnăm codul pentru testare
+      _dev_code: verificationCode
+    });
+    
+  } catch (err) {
+    console.error("Eroare înregistrare:", err);
+    res.status(500).json({ error: err.message || "Eroare server" });
+  }
+});
+
+// POST /api/auth/verify-email - Verificare cod
+app.post("/api/auth/verify-email", async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    
+    if (!email || !code) {
+      return res.status(400).json({ error: "Email și cod sunt obligatorii" });
+    }
+    
+    const emailClean = email.toLowerCase().trim();
+    
+    // Găsim compania
+    const companyRes = await db.q(
+      `SELECT id, schema_name, status FROM public.companies WHERE admin_email = $1`,
+      [emailClean]
+    );
+    
+    if (companyRes.rows.length === 0) {
+      return res.status(404).json({ error: "Cont negăsit" });
+    }
+    
+    const company = companyRes.rows[0];
+    
+    if (company.status !== 'pending_verification') {
+      return res.status(400).json({ error: "Email deja verificat sau cont suspendat" });
+    }
+    
+    // Verificăm codul în schema tenant
+    const userRes = await db.q(`
+      SELECT email_verification_code, email_verification_expires_at
+      FROM ${company.schema_name}.users
+      WHERE email = $1
+    `, [emailClean]);
+    
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: "Utilizator negăsit în sistem" });
+    }
+    
+    const user = userRes.rows[0];
+    
+    // Verificăm expirarea
+    if (new Date() > new Date(user.email_verification_expires_at)) {
+      return res.status(410).json({ error: "Cod expirat. Solicită un cod nou." });
+    }
+    
+    // Verificăm codul
+    if (user.email_verification_code !== code) {
+      return res.status(400).json({ error: "Cod incorect" });
+    }
+    
+    // Marcăm ca verificat
+    await db.q(`
+      UPDATE ${company.schema_name}.users
+      SET email_verified = true, 
+          email_verification_code = NULL,
+          email_verification_expires_at = NULL
+      WHERE email = $1
+    `, [emailClean]);
+    
+    // Actualizăm status companie
+    await db.q(`
+      UPDATE public.companies
+      SET status = 'trial'
+      WHERE id = $1
+    `, [company.id]);
+    
+    res.json({
+      success: true,
+      message: "Email verificat cu succes!",
+      redirect: "/login.html"
+    });
+    
+  } catch (err) {
+    console.error("Eroare verificare email:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// POST /api/auth/resend-code - Retrimitere cod
+app.post("/api/auth/resend-code", async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email obligatoriu" });
+    }
+    
+    const emailClean = email.toLowerCase().trim();
+    
+    // Găsim compania
+    const companyRes = await db.q(
+      `SELECT schema_name, status FROM public.companies WHERE admin_email = $1`,
+      [emailClean]
+    );
+    
+    if (companyRes.rows.length === 0) {
+      return res.status(404).json({ error: "Cont negăsit" });
+    }
+    
+    const company = companyRes.rows[0];
+    
+    if (company.status !== 'pending_verification') {
+      return res.status(400).json({ error: "Email deja verificat" });
+    }
+    
+    // Verificăm limitele de retry
+    const userRes = await db.q(`
+      SELECT resend_attempts, resend_last_try
+      FROM ${company.schema_name}.users
+      WHERE email = $1
+    `, [emailClean]);
+    
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: "Utilizator negăsit" });
+    }
+    
+    const user = userRes.rows[0];
+    
+    // Max 3 încercări totale
+    if (user.resend_attempts >= 3) {
+      return res.status(429).json({ error: "Prea multe încercări. Creează un cont nou." });
+    }
+    
+    // Cooldown 60 secunde
+    if (user.resend_last_try) {
+      const lastTry = new Date(user.resend_last_try);
+      const now = new Date();
+      const diffSeconds = (now - lastTry) / 1000;
+      
+      if (diffSeconds < 60) {
+        const waitSeconds = Math.ceil(60 - diffSeconds);
+        return res.status(429).json({ 
+          error: `Așteaptă ${waitSeconds} secunde înainte să soliciți un nou cod.` 
+        });
+      }
+    }
+    
+    // Generăm cod nou
+    const newCode = generateVerificationCode();
+    const newExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    
+    // Actualizăm
+    await db.q(`
+      UPDATE ${company.schema_name}.users
+      SET email_verification_code = $1,
+          email_verification_expires_at = $2,
+          resend_attempts = resend_attempts + 1,
+          resend_last_try = NOW()
+      WHERE email = $3
+    `, [newCode, newExpiresAt, emailClean]);
+    
+    // Log/trimitem email
+    console.log(`\n📧 EMAIL DE VERIFICARE (RESEND) pentru ${emailClean}:`);
+    console.log(`   Cod: ${newCode}`);
+    console.log(`   Încercare: ${user.resend_attempts + 1}/3\n`);
+    
+    res.json({
+      success: true,
+      message: "Cod nou trimis. Verifică emailul.",
+      _dev_code: newCode
+    });
+    
+  } catch (err) {
+    console.error("Eroare resend code:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// GET /api/auth/check-email - Verifică dacă emailul există (pentru login)
+app.get("/api/auth/check-email", async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email obligatoriu" });
+    }
+    
+    const emailClean = email.toLowerCase().trim();
+    
+    const result = await db.q(
+      `SELECT status, trial_expires_at FROM public.companies WHERE admin_email = $1`,
+      [emailClean]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.json({ exists: false });
+    }
+    
+    const company = result.rows[0];
+    
+    // Verificăm dacă trialul a expirat
+    if (company.status === 'trial' && company.trial_expires_at) {
+      if (new Date() > new Date(company.trial_expires_at)) {
+        // Actualizăm status
+        await db.q(
+          `UPDATE public.companies SET status = 'trial_expired' WHERE admin_email = $1`,
+          [emailClean]
+        );
+        company.status = 'trial_expired';
+      }
+    }
+    
+    res.json({
+      exists: true,
+      status: company.status,
+      canLogin: company.status === 'trial' || company.status === 'active'
+    });
+    
+  } catch (err) {
+    console.error("Eroare check email:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// ==========================================
+// CRON JOB - Curățare conturi nevalidate
+// ==========================================
+
+// Rulează la fiecare 60 secunde
+setInterval(async () => {
+  try {
+    const result = await db.cleanupUnverifiedCompanies();
+    if (result.deleted > 0) {
+      console.log(`🧹 Cleanup: ${result.deleted} conturi nevalidate șterse`);
+    }
+  } catch (err) {
+    console.error("Eroare cleanup:", err.message);
+  }
+}, 60 * 1000);
+
+console.log("✅ Multi-tenant auth system activat");
+console.log("⏰ Cron job curățare: fiecare 60 secunde");
+
 
 
 // ==========================================
@@ -4213,7 +4638,8 @@ app.get("/api/products/search", async (req, res) => {
 (async () => {
   try {
     await db.ensureTables();
-    console.log("✅ DB ready");
+    await db.ensureCompaniesTable();
+    console.log("✅ DB ready (multi-tenant)");
     // Configurare seed: Admin + Produse (fara clienti)
     // await seedClientsFromFileIfEmpty();  // Dezactivat - clienti goi
     await seedProductsFromFileIfEmpty();      // Activat - produse din JSON

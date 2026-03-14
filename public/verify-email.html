@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Verificare Email - openBill</title>
+  <link rel="stylesheet" href="global.css" />
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-xl);
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: var(--space-6);
+    }
+
+    .auth-header img {
+      height: 50px;
+      width: auto;
+      margin-bottom: var(--space-4);
+    }
+
+    .auth-header h1 {
+      font-size: 1.5rem;
+      margin-bottom: var(--space-2);
+    }
+
+    .auth-header p {
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .email-display {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: var(--radius-full);
+      color: var(--primary-400);
+      font-weight: 600;
+      font-size: 0.9375rem;
+      margin-top: var(--space-3);
+    }
+
+    .code-inputs {
+      display: flex;
+      gap: var(--space-3);
+      justify-content: center;
+      margin: var(--space-6) 0;
+    }
+
+    .code-input {
+      width: 56px;
+      height: 64px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      background: var(--bg-input);
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      transition: all var(--transition-fast);
+    }
+
+    .code-input:focus {
+      outline: none;
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .code-input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .timer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: var(--space-4);
+    }
+
+    .timer.expired {
+      color: var(--danger-500);
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    /* Mesaje */
+    #verifyMsg {
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-lg);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      display: none;
+      margin-bottom: var(--space-4);
+      text-align: center;
+    }
+
+    #verifyMsg.show {
+      display: block;
+    }
+
+    .msg-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--danger-500);
+    }
+
+    .msg-success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: var(--success-400);
+    }
+
+    .msg-info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: var(--primary-400);
+    }
+
+    .msg-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--warning-500);
+    }
+
+    /* Loading */
+    .btn-loading {
+      position: relative;
+      color: transparent !important;
+    }
+
+    .btn-loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .resend-section {
+      text-align: center;
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border-color);
+      margin-top: var(--space-4);
+    }
+
+    .resend-info {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: var(--space-2);
+    }
+
+    .attempts-left {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: var(--space-2);
+    }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .auth-card {
+        padding: var(--space-5);
+      }
+
+      .code-input {
+        width: 48px;
+        height: 56px;
+        font-size: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <img src="logo.svg" alt="openBill">
+        <h1>Verifică emailul</h1>
+        <p>Am trimis un cod de 6 cifre la adresa ta</p>
+        <div class="email-display" id="emailDisplay">-</div>
+      </div>
+
+      <div id="verifyMsg"></div>
+
+      <div class="timer" id="timer">Codul expiră în: <strong>10:00</strong></div>
+
+      <form id="verifyForm">
+        <div class="code-inputs">
+          <input type="text" class="code-input" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+          <input type="text" class="code-input" maxlength="1" inputmode="numeric">
+          <input type="text" class="code-input" maxlength="1" inputmode="numeric">
+          <input type="text" class="code-input" maxlength="1" inputmode="numeric">
+          <input type="text" class="code-input" maxlength="1" inputmode="numeric">
+          <input type="text" class="code-input" maxlength="1" inputmode="numeric">
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary btn-lg" id="btnVerify">
+            Verifică
+          </button>
+        </div>
+      </form>
+
+      <div class="resend-section">
+        <p class="resend-info">Nu ai primit codul?</p>
+        <button type="button" class="btn btn-ghost" id="btnResend" disabled>
+          Retrimite codul
+        </button>
+        <p class="attempts-left" id="attemptsLeft">Încercări rămase: 3</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Preluăm emailul din localStorage
+    const email = localStorage.getItem('verifyEmail');
+    const emailDisplay = document.getElementById('emailDisplay');
+    const verifyForm = document.getElementById('verifyForm');
+    const btnVerify = document.getElementById('btnVerify');
+    const btnResend = document.getElementById('btnResend');
+    const verifyMsg = document.getElementById('verifyMsg');
+    const timerEl = document.getElementById('timer');
+    const attemptsLeftEl = document.getElementById('attemptsLeft');
+    const codeInputs = document.querySelectorAll('.code-input');
+
+    if (!email) {
+      // Dacă nu avem email, redirectăm la register
+      window.location.href = 'register.html';
+    } else {
+      emailDisplay.textContent = email;
+    }
+
+    // Timer 10 minute
+    let timeLeft = 10 * 60; // secunde
+    let timerInterval;
+    let attemptsRemaining = 3;
+    let resendCooldown = 60;
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 10 * 60;
+      
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerEl.innerHTML = `Codul expiră în: <strong>${minutes}:${seconds.toString().padStart(2, '0')}</strong>`;
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          timerEl.innerHTML = '<strong>Codul a expirat</strong>';
+          timerEl.classList.add('expired');
+          disableCodeInputs();
+          showMessage('Codul a expirat. Solicită un cod nou.', 'warning');
+        }
+      }, 1000);
+    }
+
+    function disableCodeInputs() {
+      codeInputs.forEach(input => input.disabled = true);
+      btnVerify.disabled = true;
+    }
+
+    function enableCodeInputs() {
+      codeInputs.forEach(input => input.disabled = false);
+      btnVerify.disabled = false;
+      codeInputs[0].focus();
+    }
+
+    function showMessage(text, type) {
+      verifyMsg.textContent = text;
+      verifyMsg.className = 'show msg-' + type;
+    }
+
+    function hideMessage() {
+      verifyMsg.className = '';
+      verifyMsg.textContent = '';
+    }
+
+    // Auto-focus între câmpuri
+    codeInputs.forEach((input, index) => {
+      input.addEventListener('input', (e) => {
+        if (e.target.value.length === 1) {
+          if (index < codeInputs.length - 1) {
+            codeInputs[index + 1].focus();
+          }
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !e.target.value && index > 0) {
+          codeInputs[index - 1].focus();
+        }
+      });
+
+      // Accept doar cifre
+      input.addEventListener('keypress', (e) => {
+        if (!/[0-9]/.test(e.key)) {
+          e.preventDefault();
+        }
+      });
+    });
+
+    // Submit verificare
+    verifyForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideMessage();
+
+      const code = Array.from(codeInputs).map(i => i.value).join('');
+
+      if (code.length !== 6) {
+        showMessage('Introdu toate cele 6 cifre', 'error');
+        return;
+      }
+
+      btnVerify.classList.add('btn-loading');
+      btnVerify.disabled = true;
+
+      try {
+        const res = await fetch('/api/auth/verify-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code })
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          showMessage('✅ Email verificat! Redirectare...', 'success');
+          clearInterval(timerInterval);
+          
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 2000);
+        } else {
+          showMessage(result.error || 'Cod incorect', 'error');
+          btnVerify.classList.remove('btn-loading');
+          btnVerify.disabled = false;
+          
+          // Resetăm inputurile
+          codeInputs.forEach(i => i.value = '');
+          codeInputs[0].focus();
+        }
+      } catch (err) {
+        showMessage('Eroare de conexiune. Încearcă din nou.', 'error');
+        btnVerify.classList.remove('btn-loading');
+        btnVerify.disabled = false;
+      }
+    });
+
+    // Resend code
+    btnResend.addEventListener('click', async () => {
+      if (attemptsRemaining <= 0) {
+        showMessage('Prea multe încercări. Creează un cont nou.', 'error');
+        return;
+      }
+
+      hideMessage();
+      btnResend.disabled = true;
+      btnResend.textContent = 'Se trimite...';
+
+      try {
+        const res = await fetch('/api/auth/resend-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          showMessage('✅ Cod nou trimis! Verifică emailul.', 'success');
+          attemptsRemaining--;
+          attemptsLeftEl.textContent = `Încercări rămase: ${attemptsRemaining}`;
+          
+          // Restart timer
+          timerEl.classList.remove('expired');
+          enableCodeInputs();
+          startTimer();
+          
+          // Cooldown 60 secunde
+          resendCooldown = 60;
+          updateResendButton();
+        } else {
+          showMessage(result.error || 'Eroare la retrimitere', 'error');
+          if (res.status === 429) {
+            attemptsRemaining = 0;
+            attemptsLeftEl.textContent = 'Prea multe încercări';
+          }
+          btnResend.disabled = false;
+        }
+      } catch (err) {
+        showMessage('Eroare de conexiune.', 'error');
+        btnResend.disabled = false;
+      } finally {
+        btnResend.textContent = 'Retrimite codul';
+      }
+    });
+
+    function updateResendButton() {
+      if (resendCooldown > 0) {
+        btnResend.textContent = `Așteaptă ${resendCooldown}s`;
+        btnResend.disabled = true;
+        setTimeout(() => {
+          resendCooldown--;
+          updateResendButton();
+        }, 1000);
+      } else {
+        btnResend.textContent = 'Retrimite codul';
+        btnResend.disabled = attemptsRemaining <= 0;
+      }
+    }
+
+    // Inițializare
+    startTimer();
+    updateResendButton();
+    codeInputs[0].focus();
+  </script>
+</body>
+</html>
