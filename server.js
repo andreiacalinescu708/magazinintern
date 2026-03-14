@@ -349,9 +349,18 @@ mentions: `Punct de lucru: ${order.client?.name || 'Client'}`,
   }
 }
 
-// Middleware pentru verificare admin
+// Middleware pentru verificare superadmin (Administrator principal - acces la companie)
+function isSuperAdmin(req, res, next) {
+  if (req.session?.user?.role !== 'superadmin') {
+    return res.status(403).json({ error: "Acces interzis. Doar Administratorul principal." });
+  }
+  next();
+}
+
+// Middleware pentru verificare admin (SuperAdmin sau Admin - acces la administrare utilizatori)
 function isAdmin(req, res, next) {
-  if (req.session?.user?.role !== 'admin') {
+  const role = req.session?.user?.role;
+  if (role !== 'superadmin' && role !== 'admin') {
     return res.status(403).json({ error: "Acces interzis. Doar admin." });
   }
   next();
@@ -378,6 +387,27 @@ app.set("trust proxy", 1);
 
 // middleware
 app.use(express.json());
+
+// Protejare companie.html - doar SuperAdmin are acces
+app.use((req, res, next) => {
+  if (req.path === '/companie.html' || req.path === '/companie') {
+    if (!req.session?.user || req.session.user.role !== 'superadmin') {
+      return res.status(403).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Acces interzis</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+          <h1>⛔ Acces interzis</h1>
+          <p>Doar Administratorul principal poate accesa această pagină.</p>
+          <a href="/">Înapoi la aplicație</a>
+        </body>
+        </html>
+      `);
+    }
+  }
+  next();
+});
+
 app.use(express.static("public"));
 app.use(session({
   name: "magazin.sid",
@@ -924,7 +954,8 @@ app.put("/api/clients/:id/category", async (req, res) => {
 });
 
 // ===== COMPANY SETTINGS API =====
-app.get("/api/company-settings", async (req, res) => {
+// Doar SuperAdmin poate vedea/modifica setările companiei
+app.get("/api/company-settings", isSuperAdmin, async (req, res) => {
   try {
     if (db.hasDb()) {
       const r = await db.q(`SELECT * FROM company_settings WHERE id = 'default'`);
@@ -948,7 +979,7 @@ app.get("/api/company-settings", async (req, res) => {
   }
 });
 
-app.put("/api/company-settings", async (req, res) => {
+app.put("/api/company-settings", isSuperAdmin, async (req, res) => {
   try {
     const { name, cui, smartbill_series, address, city, county, phone } = req.body;
     
@@ -2533,7 +2564,7 @@ app.post("/api/register", async (req, res) => {
     let inviteData = null;
     if (inviteToken) {
       const inviteRes = await db.q(
-        `SELECT email, first_name, last_name, status, expires_at
+        `SELECT email, first_name, last_name, role, status, expires_at
          FROM user_invites
          WHERE token = $1`,
         [inviteToken]
@@ -2564,12 +2595,13 @@ app.post("/api/register", async (req, res) => {
 
     const passwordHash = bcrypt.hashSync(password, 10);
 
-    // Creează userul cu datele din invitație
+    // Creează userul cu datele din invitație (inclusiv rolul)
+    const userRole = inviteData.role || 'user';
     const r = await db.q(
       `INSERT INTO users (username, password_hash, role, active, is_approved, failed_attempts, first_name, last_name, email)
-       VALUES ($1,$2,'user',true,false,0,$3,$4,$5)
+       VALUES ($1,$2,$3,true,false,0,$4,$5,$6)
        RETURNING id, username, role, is_approved, first_name, last_name`,
-      [username.trim(), passwordHash, inviteData.first_name || null, inviteData.last_name || null, inviteData.email]
+      [username.trim(), passwordHash, userRole, inviteData.first_name || null, inviteData.last_name || null, inviteData.email]
     );
     
     // Marchează invitația ca folosită
@@ -2852,13 +2884,34 @@ function generateInviteToken() {
 // POST /api/invites - Trimite invitație (doar admin)
 app.post("/api/invites", isAdmin, async (req, res) => {
   try {
-    const { email, first_name, last_name } = req.body;
+    const { email, first_name, last_name, role: requestedRole } = req.body;
     
     console.log("📧 INVITE REQUEST received:");
     console.log("  - email:", email);
     console.log("  - first_name:", first_name);
     console.log("  - last_name:", last_name);
+    console.log("  - requestedRole:", requestedRole);
+    console.log("  - inviterRole:", req.session.user.role);
     console.log("  - body:", JSON.stringify(req.body));
+    
+    // Determină rolul pentru invitație
+    let inviteRole = 'user'; // Default
+    
+    if (requestedRole) {
+      // SuperAdmin poate invita cu orice rol (admin sau user)
+      if (req.session.user.role === 'superadmin') {
+        if (requestedRole === 'admin' || requestedRole === 'user') {
+          inviteRole = requestedRole;
+        }
+      } 
+      // Admin obișnuit poate invita doar cu rolul 'user'
+      else if (req.session.user.role === 'admin' && requestedRole === 'user') {
+        inviteRole = 'user';
+      }
+      // Orice alt rol solicitat e resetat la 'user'
+    }
+    
+    console.log("📧 Final inviteRole:", inviteRole);
     
     if (!email) {
       return res.status(400).json({ error: "Email-ul este obligatoriu" });
@@ -2900,9 +2953,9 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     
     const inviteId = crypto.randomUUID();
     await db.q(
-      `INSERT INTO user_invites (id, email, first_name, last_name, token, invited_by, expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [inviteId, normalizedEmail, first_name || null, last_name || null, token, req.session.user.email || req.session.user.username, expiresAt]
+      `INSERT INTO user_invites (id, email, first_name, last_name, role, token, invited_by, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [inviteId, normalizedEmail, first_name || null, last_name || null, inviteRole, token, req.session.user.email || req.session.user.username, expiresAt]
     );
     
     // Trimite email
@@ -2920,6 +2973,9 @@ app.post("/api/invites", isAdmin, async (req, res) => {
       : req.session.user.username;
     const inviterEmail = req.session.user.email || 'support@openbill.ro';
     
+    // Text pentru rol
+    const roleText = inviteRole === 'admin' ? 'Administrator' : 'Utilizator';
+    
     const emailSubject = `${inviterName} te invită în echipa ${companyName} pe openBill`;
     const emailText = `📋 openBill Platformă
 
@@ -2928,6 +2984,8 @@ app.post("/api/invites", isAdmin, async (req, res) => {
 Bună ${displayName},
 
 ${inviterName} te invită să te alături echipei ${companyName} pe openBill! 🎉
+
+Rol: ${roleText}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -3002,6 +3060,7 @@ https://openbill.ro
         <div class="inviter-info">
           <h4>${inviterName}</h4>
           <p><span class="highlight">te invită să te alături echipei ${companyName} pe openBill</span></p>
+          <p style="margin-top: 10px;"><span style="background: ${inviteRole === 'admin' ? '#8b5cf6' : '#10b981'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${roleText}</span></p>
         </div>
       </div>
 

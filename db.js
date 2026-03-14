@@ -147,6 +147,7 @@ await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
       email TEXT NOT NULL,
       first_name TEXT,
       last_name TEXT,
+      role TEXT NOT NULL DEFAULT 'user',
       token TEXT UNIQUE NOT NULL,
       invited_by TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
@@ -155,12 +156,17 @@ await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
       used_at TIMESTAMPTZ
     )
   `);
+  // Migrație: adaug coloana role dacă nu există
+  await q(`ALTER TABLE user_invites ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`);
   await q(`CREATE INDEX IF NOT EXISTS idx_invites_token ON user_invites(token)`);
   await q(`CREATE INDEX IF NOT EXISTS idx_invites_email ON user_invites(email)`);
 
-// Asigură-te că adminul existent rămâne aprobat (pentru compatibilitate)
-await q(`UPDATE users SET is_approved = true WHERE role = 'admin'`);
-await q(`UPDATE users SET is_approved = false WHERE is_approved IS NULL`);
+  // Migrație: utilizatorii cu role='admin' devin 'superadmin' (Administrator principal)
+  await q(`UPDATE users SET role = 'superadmin' WHERE role = 'admin'`);
+  
+  // Asigură-te că superadminul existent rămâne aprobat (pentru compatibilitate)
+  await q(`UPDATE users SET is_approved = true WHERE role = 'superadmin'`);
+  await q(`UPDATE users SET is_approved = false WHERE is_approved IS NULL`);
 
   // indexuri
   await q(`CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders (created_at DESC)`);

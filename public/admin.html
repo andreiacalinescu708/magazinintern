@@ -239,6 +239,15 @@
           <input type="email" id="inviteEmail" required style="width: 100%; padding: 0.75rem; background: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; color: white; font-size: 1rem; box-sizing: border-box;" placeholder="ex: ion.popescu@firma.ro">
         </div>
         
+        <div id="roleSelectContainer" style="margin-bottom: 1.5rem; display: none;">
+          <label style="display: block; color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.5rem;">Rol</label>
+          <select id="inviteRole" style="width: 100%; padding: 0.75rem; background: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; color: white; font-size: 1rem; box-sizing: border-box;">
+            <option value="user">Utilizator</option>
+            <option value="admin">Admin</option>
+          </select>
+          <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">Utilizatorii au acces limitat. Adminii pot gestiona alți utilizatori.</p>
+        </div>
+        
         <div style="display: flex; gap: 1rem; justify-content: flex-end;">
           <button type="button" onclick="closeInviteModal()" style="padding: 0.75rem 1.5rem; background: transparent; border: 1px solid #334155; border-radius: 0.5rem; color: #94a3b8; cursor: pointer;">Anulează</button>
           <button type="submit" style="padding: 0.75rem 1.5rem; background: #10b981; border: none; border-radius: 0.5rem; color: white; font-weight: 600; cursor: pointer;">Trimite Invitație</button>
@@ -297,11 +306,16 @@
         
         container.innerHTML = '';
         data.forEach(user => {
+          const roleText = user.role === 'superadmin' ? 'Administrator' : 
+                          user.role === 'admin' ? 'Admin' : 'Utilizator';
           const div = document.createElement('div');
           div.className = 'user-card';
           div.innerHTML = `
             <div class="user-info">
-              <div class="user-name">${escapeHtml(user.username)}</div>
+              <div class="user-name">
+                ${escapeHtml(user.username)}
+                <span class="badge badge-${user.role === 'superadmin' ? 'danger' : user.role === 'admin' ? 'approved' : 'pending'}" style="margin-left: 8px; font-size: 0.75rem;">${roleText}</span>
+              </div>
               <div class="user-meta">
                 ID: ${user.id} • Înregistrat: ${new Date(user.created_at).toLocaleDateString('ro-RO')}
                 ${user.failed_attempts > 0 ? `<br>⚠️ Încercări eșuate: ${user.failed_attempts}` : ''}
@@ -382,11 +396,16 @@
           return;
         }
         
-        tbody.innerHTML = data.map(user => `
+        tbody.innerHTML = data.map(user => {
+          const roleText = user.role === 'superadmin' ? 'Administrator' : 
+                          user.role === 'admin' ? 'Admin' : 'Utilizator';
+          const roleClass = user.role === 'superadmin' ? 'badge-danger' : 
+                           user.role === 'admin' ? 'badge-approved' : 'badge-pending';
+          return `
           <tr>
             <td>${user.id}</td>
             <td><strong>${escapeHtml(user.username)}</strong></td>
-            <td><span class="badge badge-${user.role}">${user.role}</span></td>
+            <td><span class="badge ${roleClass}">${roleText}</span></td>
             <td>
               <span class="badge badge-${user.is_approved ? 'approved' : 'pending'}">
                 ${user.is_approved ? '✓ Aprobat' : '⏳ În așteptare'}
@@ -395,7 +414,7 @@
             </td>
             <td>${new Date(user.created_at).toLocaleDateString('ro-RO')}</td>
           </tr>
-        `).join('');
+        `}).join('');
       } catch (err) {
         console.error(err);
         tbody.innerHTML = `<tr><td colspan="5" style="color:#ef4444">Eroare: ${err.message}</td></tr>`;
@@ -486,12 +505,13 @@
       const email = document.getElementById('inviteEmail').value.trim();
       const firstName = document.getElementById('inviteFirstName').value.trim();
       const lastName = document.getElementById('inviteLastName').value.trim();
+      const role = document.getElementById('inviteRole').value;
       
       try {
         const res = await fetch('/api/invites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, first_name: firstName, last_name: lastName })
+          body: JSON.stringify({ email, first_name: firstName, last_name: lastName, role })
         });
         
         const data = await res.json();
@@ -553,13 +573,15 @@
           return;
         }
         
-        let html = '<table><thead><tr><th>Email</th><th>Nume</th><th>Status</th><th>Invitat de</th><th>Data</th><th>Expiră</th><th>Acțiuni</th></tr></thead><tbody>';
+        let html = '<table><thead><tr><th>Email</th><th>Nume</th><th>Rol</th><th>Status</th><th>Invitat de</th><th>Data</th><th>Expiră</th><th>Acțiuni</th></tr></thead><tbody>';
         
         for (const invite of invites) {
           const statusClass = invite.status === 'pending' ? 'badge-pending' : 
                              invite.status === 'used' ? 'badge-approved' : 'badge-danger';
           const statusText = invite.status === 'pending' ? 'În așteptare' : 
                             invite.status === 'used' ? 'Folosită' : 'Expirată';
+          const roleText = invite.role === 'admin' ? 'Admin' : 'Utilizator';
+          const roleClass = invite.role === 'admin' ? 'badge-approved' : 'badge-pending';
           
           const createdAt = new Date(invite.created_at).toLocaleDateString('ro-RO');
           const expiresAt = new Date(invite.expires_at).toLocaleDateString('ro-RO');
@@ -577,6 +599,7 @@
             <tr>
               <td>${escapeHtml(invite.email)}</td>
               <td>${escapeHtml(fullName)}</td>
+              <td><span class="badge ${roleClass}">${roleText}</span></td>
               <td><span class="badge ${statusClass}">${statusText}</span></td>
               <td>${escapeHtml(invite.invited_by)}</td>
               <td>${createdAt}</td>
@@ -697,16 +720,27 @@
       }
     }
 
+    // Variabilă globală pentru rolul utilizatorului curent
+    let currentUserRole = null;
+    
     // Inițializare
     async function init() {
       try {
         const res = await fetch('/api/auth/check');
         const data = await res.json();
         
-        if (!data.loggedIn || data.user.role !== 'admin') {
+        if (!data.loggedIn || (data.user.role !== 'admin' && data.user.role !== 'superadmin')) {
           alert('Acces interzis! Doar administratorii pot vedea această pagină.');
           window.location.href = 'index.html';
           return;
+        }
+        
+        // Salvează rolul utilizatorului
+        currentUserRole = data.user.role;
+        
+        // Afișează dropdown-ul de rol doar pentru superadmin
+        if (currentUserRole === 'superadmin') {
+          document.getElementById('roleSelectContainer').style.display = 'block';
         }
         
         // Încarcă datele inițiale (doar pentru tab-ul activ)
