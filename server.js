@@ -42,14 +42,22 @@ async function testSendGridAPI() {
 
 // Funcție pentru trimitere email prin SendGrid API (HTTP)
 async function sendEmailViaSendGridAPI(to, subject, html, text) {
-  console.log("📧 Sending via SendGrid API (HTTP)...");
+  console.log("📧 ========== SENDGRID API CALL ==========");
   console.log("📧 To:", to);
   console.log("📧 Subject:", subject);
   console.log("📧 From:", process.env.EMAIL_FROM || 'support@openbill.ro');
+  console.log("📧 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+  console.log("📧 EMAIL_PASS length:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
+  console.log("📧 EMAIL_PASS starts with SG.:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.startsWith('SG.') : false);
   
   if (!to || typeof to !== 'string' || !to.includes('@')) {
     console.log("📧 ERROR: Invalid recipient email:", to);
     return { success: false, error: "Invalid recipient email: " + to };
+  }
+  
+  if (!process.env.EMAIL_PASS) {
+    console.log("📧 ERROR: EMAIL_PASS not set!");
+    return { success: false, error: "EMAIL_PASS not configured" };
   }
   
   const body = {
@@ -64,7 +72,10 @@ async function sendEmailViaSendGridAPI(to, subject, html, text) {
     ]
   };
   
+  console.log("📧 Request body:", JSON.stringify(body, null, 2));
+  
   try {
+    console.log("📧 Making fetch request to SendGrid...");
     const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
@@ -74,16 +85,21 @@ async function sendEmailViaSendGridAPI(to, subject, html, text) {
       body: JSON.stringify(body)
     });
     
+    console.log("📧 Response status:", response.status);
+    console.log("📧 Response ok:", response.ok);
+    
     if (response.ok || response.status === 202) {
       console.log("📧 SendGrid API send SUCCESS");
       return { success: true, messageId: 'sendgrid-api-' + Date.now() };
     } else {
       const errorText = await response.text();
       console.log("📧 SendGrid API send FAILED:", errorText);
-      return { success: false, error: errorText };
+      console.log("📧 Response status:", response.status);
+      return { success: false, error: errorText, status: response.status };
     }
   } catch (err) {
     console.log("📧 SendGrid API send ERROR:", err.message);
+    console.log("📧 Error stack:", err.stack);
     return { success: false, error: err.message };
   }
 }
@@ -172,24 +188,43 @@ async function sendEmailWithTimeout(to, subject, html, text, timeoutMs = 30000) 
 }
 
 async function sendEmail(to, subject, html, text) {
-  // Verificăm dacă avem SendGrid API key (indiferent de EMAIL_HOST)
-  const hasSendGridKey = process.env.EMAIL_PASS && process.env.EMAIL_PASS.startsWith('SG.');
-  const isSendGrid = process.env.EMAIL_HOST && process.env.EMAIL_HOST.includes('sendgrid');
+  console.log("📧 ========== SEND EMAIL (GLOBAL) ==========");
+  console.log("📧 To:", to);
   
-  // Dacă e SendGrid sau avem cheie SendGrid, folosim API HTTP
-  if (isSendGrid || hasSendGridKey) {
-    console.log("📧 Using SendGrid API (HTTP)");
-    console.log("📧 EMAIL_HOST:", process.env.EMAIL_HOST || 'not set');
-    console.log("📧 Has SendGrid key:", hasSendGridKey);
+  // Verificare simplă: dacă avem cheie SendGrid, o folosim
+  const emailPass = process.env.EMAIL_PASS || '';
+  const isSendGridKey = emailPass.startsWith('SG.');
+  
+  console.log("📧 EMAIL_PASS length:", emailPass.length);
+  console.log("📧 Is SendGrid key:", isSendGridKey);
+  
+  if (isSendGridKey) {
+    console.log("📧 Using SendGrid API (Global)");
     return sendEmailViaSendGridAPI(to, subject, html, text);
   }
   
-  if (!emailTransporter) {
-    console.log("📧 Email transporter not configured");
-    console.log("📧 EMAIL_HOST:", process.env.EMAIL_HOST);
-    console.log("📧 EMAIL_USER:", process.env.EMAIL_USER);
-    return { success: false, error: "Email not configured" };
+  // Fallback la SMTP dacă avem transporter
+  if (emailTransporter) {
+    console.log("📧 Using SMTP transporter");
+    try {
+      const info = await emailTransporter.sendMail({
+        from: `"openBill" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        text,
+        html
+      });
+      console.log("📧 SMTP Email sent:", info.messageId);
+      return { success: true, messageId: info.messageId };
+    } catch (err) {
+      console.error("📧 SMTP Error:", err.message);
+      return { success: false, error: err.message };
+    }
   }
+  
+  console.log("📧 ERROR: No email configuration found!");
+  console.log("📧 Set EMAIL_PASS=SG.xxx (SendGrid API key)");
+  return { success: false, error: "Email not configured. Set EMAIL_PASS environment variable." };
   
   console.log("📧 ========== START SEND EMAIL ==========");
   console.log("📧 To:", to);
