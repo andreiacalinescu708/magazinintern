@@ -2797,15 +2797,22 @@ app.post("/api/login", async (req, res) => {
     if (!u.active) return res.status(401).json({ error: "Email sau parolă greșită" });
 
     // Verificare parolă cu bcrypt async
+    console.log("🔐 LOGIN - Verificare parolă:");
+    console.log("  - Email:", email);
+    console.log("  - Parola primită:", password ? "******" : "(goală)");
+    console.log("  - Hash din DB:", u.password_hash ? u.password_hash.substring(0, 20) + "..." : "(lipsă)");
+    
     let ok;
     try {
       ok = await bcrypt.compare(password, u.password_hash);
+      console.log("  - bcrypt.compare rezultat:", ok);
     } catch (err) {
       console.error("Eroare bcrypt compare:", err);
       return res.status(500).json({ error: "Eroare server" });
     }
     
     if (!ok) {
+      console.log("  - Parolă INCORECTĂ pentru:", email);
       const newAttempts = (u.failed_attempts || 0) + 1;
       
       if (newAttempts >= 3) {
@@ -2912,7 +2919,10 @@ app.post("/api/register", async (req, res) => {
     }
 
     // Hash parolă async
+    console.log("🔐 REGISTER - Hash parolă:");
+    console.log("  - Parola primită:", password ? "******" : "(goală)");
     const passwordHash = await bcrypt.hash(password, 10);
+    console.log("  - Hash generat:", passwordHash.substring(0, 20) + "...");
 
     // Creează userul cu datele din invitație (inclusiv rolul)
     const userRole = inviteData.role || 'user';
