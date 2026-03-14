@@ -349,21 +349,50 @@ mentions: `Punct de lucru: ${order.client?.name || 'Client'}`,
   }
 }
 
-// Middleware pentru verificare superadmin (Administrator principal - acces la companie)
-function isSuperAdmin(req, res, next) {
-  if (req.session?.user?.role !== 'superadmin') {
-    return res.status(403).json({ error: "Acces interzis. Doar Administratorul principal." });
+// Middleware pentru verificare superadmin (din DB, nu din session)
+async function isSuperAdmin(req, res, next) {
+  if (!req.session?.user?.id) {
+    return res.status(403).json({ error: "Nu ești autentificat." });
   }
-  next();
+  
+  try {
+    const r = await db.q(`SELECT role FROM users WHERE id = $1`, [req.session.user.id]);
+    if (r.rows.length === 0 || r.rows[0].role !== 'superadmin') {
+      return res.status(403).json({ error: "Acces interzis. Doar Administratorul principal." });
+    }
+    // Actualizează session cu rolul corect
+    req.session.user.role = r.rows[0].role;
+    next();
+  } catch (e) {
+    console.error('Eroare isSuperAdmin:', e);
+    return res.status(500).json({ error: "Eroare server." });
+  }
 }
 
-// Middleware pentru verificare admin (SuperAdmin sau Admin - acces la administrare utilizatori)
-function isAdmin(req, res, next) {
-  const role = req.session?.user?.role;
-  if (role !== 'superadmin' && role !== 'admin') {
-    return res.status(403).json({ error: "Acces interzis. Doar admin." });
+// Middleware pentru verificare admin (SuperAdmin sau Admin) - din DB
+async function isAdmin(req, res, next) {
+  if (!req.session?.user?.id) {
+    return res.status(403).json({ error: "Nu ești autentificat." });
   }
-  next();
+  
+  try {
+    const r = await db.q(`SELECT role FROM users WHERE id = $1`, [req.session.user.id]);
+    if (r.rows.length === 0) {
+      return res.status(403).json({ error: "Utilizator negăsit." });
+    }
+    
+    const role = r.rows[0].role;
+    if (role !== 'superadmin' && role !== 'admin') {
+      return res.status(403).json({ error: "Acces interzis. Doar admin." });
+    }
+    
+    // Actualizează session cu rolul corect
+    req.session.user.role = role;
+    next();
+  } catch (e) {
+    console.error('Eroare isAdmin:', e);
+    return res.status(500).json({ error: "Eroare server." });
+  }
 }
 
 // Middleware pentru verificare autentificare (orice user)
@@ -388,27 +417,6 @@ app.set("trust proxy", 1);
 // middleware
 app.use(express.json());
 
-// Protejare companie.html - doar SuperAdmin are acces
-app.use((req, res, next) => {
-  if (req.path === '/companie.html' || req.path === '/companie') {
-    if (!req.session?.user || req.session.user.role !== 'superadmin') {
-      return res.status(403).send(`
-        <!DOCTYPE html>
-        <html>
-        <head><title>Acces interzis</title></head>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-          <h1>⛔ Acces interzis</h1>
-          <p>Doar Administratorul principal poate accesa această pagină.</p>
-          <a href="/">Înapoi la aplicație</a>
-        </body>
-        </html>
-      `);
-    }
-  }
-  next();
-});
-
-app.use(express.static("public"));
 app.use(session({
   name: "magazin.sid",
   secret: process.env.SESSION_SECRET || "schimba-asta-cu-o-cheie-lunga",
@@ -450,6 +458,49 @@ app.get("/api/auth/check", async (req, res) => {
   
   res.json({ loggedIn: true, user: req.session.user });
 });
+
+// Protejare companie.html - doar SuperAdmin are acces (verificare async în DB)
+app.use(async (req, res, next) => {
+  if (req.path === '/companie.html' || req.path === '/companie') {
+    // Dacă nu are session, respinge
+    if (!req.session?.user) {
+      return res.status(403).send(accessDeniedHtml());
+    }
+    
+    // Verifică rolul direct din DB (nu din session)
+    try {
+      const r = await db.q(
+        `SELECT role FROM users WHERE id = $1`,
+        [req.session.user.id]
+      );
+      
+      if (r.rows.length === 0 || r.rows[0].role !== 'superadmin') {
+        return res.status(403).send(accessDeniedHtml());
+      }
+      
+      // Actualizează și session-ul
+      req.session.user.role = r.rows[0].role;
+    } catch (e) {
+      console.error('Eroare verificare acces companie:', e);
+      return res.status(403).send(accessDeniedHtml());
+    }
+  }
+  next();
+});
+
+function accessDeniedHtml() {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head><title>Acces interzis</title></head>
+    <body style="font-family: Arial; text-align: center; padding: 50px;">
+      <h1>⛔ Acces interzis</h1>
+      <p>Doar Administratorul principal poate accesa această pagină.</p>
+      <a href="/">Înapoi la aplicație</a>
+    </body>
+    </html>
+  `;
+}
 
 const DATA_DIR = path.join(__dirname, "data");
 const CLIENTS_FILE = path.join(DATA_DIR, "clients.json");
