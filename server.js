@@ -2908,6 +2908,11 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     // Trimite email
     const inviteLink = `${req.protocol}://${req.get('host')}/register.html?invite=${token}`;
     
+    // Obține datele companiei
+    const company = await getCompanyDetails();
+    const companyName = company.name || 'Fast Medical Distribution';
+    console.log("📧 Company name for invite:", companyName);
+    
     const fullName = [first_name, last_name].filter(Boolean).join(' ');
     const displayName = fullName || email;
     const inviterName = req.session.user.first_name && req.session.user.last_name 
@@ -2915,14 +2920,14 @@ app.post("/api/invites", isAdmin, async (req, res) => {
       : req.session.user.username;
     const inviterEmail = req.session.user.email || 'support@openbill.ro';
     
-    const emailSubject = "Ai fost invitat să te alături echipei noastre - openBill";
-    const emailText = `📋 openBill - Platforma ta de Business
+    const emailSubject = `${inviterName} te invită în echipa ${companyName}`;
+    const emailText = `📋 openBill - ${companyName}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Bună ${displayName},
 
-${inviterName} te invită să te alături echipei noastre pe openBill! 🎉
+${inviterName} te invită să te alături echipei ${companyName}! 🎉
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -2950,7 +2955,7 @@ https://openbill.ro
     .logo-container { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px; }
     .logo-icon { width: 45px; height: 45px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
     .logo-text { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
-    .company-name { font-size: 14px; opacity: 0.9; margin-top: 5px; text-transform: uppercase; letter-spacing: 2px; }
+    .company-name { font-size: 14px; opacity: 0.9; margin-top: 5px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
     .content { padding: 40px 30px; }
     .welcome-box { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-left: 4px solid #10b981; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
     .welcome-box h3 { margin: 0 0 10px; color: #065f46; font-size: 18px; }
@@ -2984,7 +2989,7 @@ https://openbill.ro
         <div class="logo-icon">📋</div>
         <div class="logo-text">openBill</div>
       </div>
-      <div class="company-name">Platforma ta de Business</div>
+      <div class="company-name">${companyName}</div>
     </div>
     <div class="content">
       <div class="welcome-box">
@@ -2996,7 +3001,7 @@ https://openbill.ro
         <div class="inviter-avatar">${inviterName.charAt(0).toUpperCase()}</div>
         <div class="inviter-info">
           <h4>${inviterName}</h4>
-          <p><span class="highlight">te invită să te alături echipei noastre pe openBill</span></p>
+          <p><span class="highlight">te invită să te alături echipei ${companyName}</span></p>
         </div>
       </div>
 
