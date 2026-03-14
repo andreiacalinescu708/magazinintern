@@ -183,7 +183,7 @@ async function initLoginPage() {
   
   localStorage.setItem('username', userData.username);
 
-  const isAdmin = userData.role === 'admin';
+  const isAdmin = userData.role === 'admin' || userData.role === 'superadmin';
   
   // Format: "Prenume N." (ex: Andrei C.) sau username
   const displayName = userData.first_name && userData.last_name 

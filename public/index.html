@@ -197,6 +197,34 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <script src="script.js"></script>
+  
+  <script>
+    // Verifică rolul și ascunde butoanele nepotrivite
+    (async function checkRoleAndHideButtons() {
+      try {
+        const res = await fetch('/api/auth/check');
+        const data = await res.json();
+        
+        if (!data.loggedIn) return;
+        
+        const role = data.user.role;
+        
+        // Ascunde cardul "Birou" complet pentru utilizatori
+        if (role === 'user') {
+          const birouCard = document.querySelector('.dashboard-card.warning');
+          if (birouCard) birouCard.style.display = 'none';
+        }
+        
+        // Ascunde "Companie" pentru admin (doar superadmin poate vedea)
+        if (role === 'admin') {
+          const companieBtn = document.querySelector('a[href="companie.html"]');
+          if (companieBtn) companieBtn.style.display = 'none';
+        }
+      } catch (e) {
+        console.error('Eroare verificare rol:', e);
+      }
+    })();
+  </script>
 
   <script>
 (function() {
