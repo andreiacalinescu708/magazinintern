@@ -2916,21 +2916,27 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     const inviterEmail = req.session.user.email || 'support@openbill.ro';
     
     const emailSubject = "Ai fost invitat să te alături echipei noastre - openBill";
-    const emailText = `Bună ${displayName},
+    const emailText = `📋 openBill - Platforma ta de Business
 
-Bun venit în echipa noastră! 🎉
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${inviterName} te invită să te alături platformei openBill pentru a colabora împreună la gestionarea eficientă a operațiunilor companiei.
+Bună ${displayName},
+
+${inviterName} te invită să te alături echipei noastre pe openBill! 🎉
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 openBill este soluția modernă pentru managementul stocurilor, facturilor și operațiunilor de business - totul într-un singur loc, simplu și intuitiv.
 
-Pentru a-ți activa contul și a intra în echipă, accesează linkul de mai jos (valabil 7 zile):
-${inviteLink}
+Pentru a-ți activa contul, accesează linkul de mai jos (valabil 7 zile):
+👉 ${inviteLink}
 
-Dacă ai întrebări, nu ezita să contactezi pe ${inviterName} la ${inviterEmail}.
+Ai întrebări? Contactează-l pe ${inviterName} la ${inviterEmail}.
 
-Cu drag,
-Echipa openBill
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+© 2026 openBill - Toate drepturile rezervate
+https://openbill.ro
 `;
     const emailHtml = `
 <!DOCTYPE html>
@@ -2940,29 +2946,32 @@ Echipa openBill
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #334155; background: #f1f5f9; margin: 0; padding: 20px; }
     .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
-    .header { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; padding: 40px 30px; text-align: center; }
-    .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
-    .header p { margin: 10px 0 0; opacity: 0.9; font-size: 16px; }
+    .header { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; padding: 30px; text-align: center; }
+    .logo-container { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px; }
+    .logo-icon { width: 45px; height: 45px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .logo-text { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+    .company-name { font-size: 14px; opacity: 0.9; margin-top: 5px; text-transform: uppercase; letter-spacing: 2px; }
     .content { padding: 40px 30px; }
     .welcome-box { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-left: 4px solid #10b981; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
     .welcome-box h3 { margin: 0 0 10px; color: #065f46; font-size: 18px; }
     .welcome-box p { margin: 0; color: #047857; font-size: 14px; }
-    .inviter-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin: 25px 0; display: flex; align-items: center; gap: 15px; }
-    .inviter-avatar { width: 50px; height: 50px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 20px; }
-    .inviter-info h4 { margin: 0 0 5px; color: #1e293b; font-size: 16px; }
-    .inviter-info p { margin: 0; color: #64748b; font-size: 14px; }
-    .button-container { text-align: center; margin: 30px 0; }
-    .button { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: transform 0.2s; }
-    .button:hover { transform: translateY(-2px); }
-    .link-box { background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0; }
-    .link-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-    .link { word-break: break-all; color: #0ea5e9; font-family: monospace; font-size: 13px; }
-    .expiry { text-align: center; color: #94a3b8; font-size: 13px; margin-top: 20px; }
-    .expiry strong { color: #64748b; }
-    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 25px 0; }
+    .inviter-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; }
+    .inviter-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 24px; margin: 0 auto 15px; }
+    .inviter-info h4 { margin: 0 0 8px; color: #1e293b; font-size: 20px; font-weight: 600; }
+    .inviter-info p { margin: 0; color: #64748b; font-size: 15px; }
+    .inviter-info .highlight { color: #0ea5e9; font-weight: 600; }
+    .button-container { text-align: center; margin: 35px 0; }
+    .button { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 18px 45px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 17px; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); transition: all 0.3s; }
+    .button:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5); }
+    .link-box { background: #f1f5f9; padding: 20px; border-radius: 10px; margin: 25px 0; }
+    .link-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; font-weight: 600; }
+    .link { word-break: break-all; color: #0ea5e9; font-family: monospace; font-size: 13px; background: #e0f2fe; padding: 12px; border-radius: 6px; }
+    .expiry { text-align: center; color: #94a3b8; font-size: 14px; margin-top: 25px; padding: 15px; background: #fef3c7; border-radius: 8px; }
+    .expiry strong { color: #d97706; }
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 30px 0; padding: 20px 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
     .feature { text-align: center; padding: 15px; }
-    .feature-icon { font-size: 24px; margin-bottom: 8px; }
-    .feature-text { font-size: 12px; color: #64748b; }
+    .feature-icon { font-size: 28px; margin-bottom: 10px; }
+    .feature-text { font-size: 13px; color: #64748b; font-weight: 500; }
     .footer { background: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; }
     .footer p { margin: 5px 0; font-size: 13px; color: #94a3b8; }
     .footer a { color: #0ea5e9; text-decoration: none; }
@@ -2971,8 +2980,11 @@ Echipa openBill
 <body>
   <div class="container">
     <div class="header">
-      <h1>🎉 Bun venit în echipă!</h1>
-      <p>openBill - Platforma ta de business</p>
+      <div class="logo-container">
+        <div class="logo-icon">📋</div>
+        <div class="logo-text">openBill</div>
+      </div>
+      <div class="company-name">Platforma ta de Business</div>
     </div>
     <div class="content">
       <div class="welcome-box">
@@ -2984,7 +2996,7 @@ Echipa openBill
         <div class="inviter-avatar">${inviterName.charAt(0).toUpperCase()}</div>
         <div class="inviter-info">
           <h4>${inviterName}</h4>
-          <p>Te invită să te alături echipei noastre pe openBill</p>
+          <p><span class="highlight">te invită să te alături echipei noastre pe openBill</span></p>
         </div>
       </div>
 
