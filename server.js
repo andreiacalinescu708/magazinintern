@@ -43,8 +43,10 @@ async function testSendGridAPI() {
 // Funcție pentru trimitere email prin SendGrid API (HTTP)
 const https = require('https');
 
-async function sendEmailViaSendGridAPI(to, subject, html, text) {
-  console.log("📧 ========== SENDGRID API CALL ==========");
+async function sendEmailViaSendGridAPI(to, subject, html, text, attempt = 1) {
+  const maxAttempts = 3;
+  
+  console.log(`📧 ========== SENDGRID API CALL (attempt ${attempt}/${maxAttempts}) ==========`);
   console.log("📧 To:", to);
   console.log("📧 Subject:", subject);
   
@@ -80,7 +82,7 @@ async function sendEmailViaSendGridAPI(to, subject, html, text) {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body)
       },
-      timeout: 10000 // 10 sec timeout
+      timeout: 30000 // 30 sec timeout
     };
     
     const req = https.request(options, (res) => {
@@ -102,15 +104,35 @@ async function sendEmailViaSendGridAPI(to, subject, html, text) {
       });
     });
     
-    req.on('error', (err) => {
+    req.on('error', async (err) => {
       console.error("📧 HTTPS Request Error:", err.message);
-      resolve({ success: false, error: err.message });
+      
+      // Retry on error
+      if (attempt < maxAttempts) {
+        console.log(`📧 Retrying in 2 seconds... (attempt ${attempt + 1})`);
+        setTimeout(async () => {
+          const retryResult = await sendEmailViaSendGridAPI(to, subject, html, text, attempt + 1);
+          resolve(retryResult);
+        }, 2000);
+      } else {
+        resolve({ success: false, error: err.message });
+      }
     });
     
     req.on('timeout', () => {
       console.error("📧 HTTPS Request Timeout");
       req.destroy();
-      resolve({ success: false, error: 'Request timeout' });
+      
+      // Retry on timeout
+      if (attempt < maxAttempts) {
+        console.log(`📧 Retrying after timeout... (attempt ${attempt + 1})`);
+        setTimeout(async () => {
+          const retryResult = await sendEmailViaSendGridAPI(to, subject, html, text, attempt + 1);
+          resolve(retryResult);
+        }, 2000);
+      } else {
+        resolve({ success: false, error: 'Request timeout after 3 attempts' });
+      }
     });
     
     req.write(body);
