@@ -2910,7 +2910,7 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     
     // Obține datele companiei
     const company = await getCompanyDetails();
-    const companyName = company.name || 'Fast Medical Distribution';
+    const companyName = company.name || 'openBill';
     console.log("📧 Company name for invite:", companyName);
     
     const fullName = [first_name, last_name].filter(Boolean).join(' ');
@@ -2920,18 +2920,18 @@ app.post("/api/invites", isAdmin, async (req, res) => {
       : req.session.user.username;
     const inviterEmail = req.session.user.email || 'support@openbill.ro';
     
-    const emailSubject = `${inviterName} te invită în echipa ${companyName}`;
-    const emailText = `📋 openBill - ${companyName}
+    const emailSubject = `${inviterName} te invită în echipa ${companyName} pe openBill`;
+    const emailText = `📋 openBill Platformă
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Bună ${displayName},
 
-${inviterName} te invită să te alături echipei ${companyName}! 🎉
+${inviterName} te invită să te alături echipei ${companyName} pe openBill! 🎉
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-openBill este soluția modernă pentru managementul stocurilor, facturilor și operațiunilor de business - totul într-un singur loc, simplu și intuitiv.
+openBill este platforma modernă pentru managementul stocurilor, facturilor și operațiunilor de business - totul într-un singur loc, simplu și intuitiv.
 
 Pentru a-ți activa contul, accesează linkul de mai jos (valabil 7 zile):
 👉 ${inviteLink}
@@ -2989,7 +2989,7 @@ https://openbill.ro
         <div class="logo-icon">📋</div>
         <div class="logo-text">openBill</div>
       </div>
-      <div class="company-name">${companyName}</div>
+      <div class="company-name">Echipa ${companyName}</div>
     </div>
     <div class="content">
       <div class="welcome-box">
@@ -3001,7 +3001,7 @@ https://openbill.ro
         <div class="inviter-avatar">${inviterName.charAt(0).toUpperCase()}</div>
         <div class="inviter-info">
           <h4>${inviterName}</h4>
-          <p><span class="highlight">te invită să te alături echipei ${companyName}</span></p>
+          <p><span class="highlight">te invită să te alături echipei ${companyName} pe openBill</span></p>
         </div>
       </div>
 
