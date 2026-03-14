@@ -452,7 +452,7 @@ app.use(async (req, res, next) => {
 app.get("/api/auth/check", async (req, res) => {
   if (!req.session.user) return res.json({ loggedIn: false });
   
-  // Verifică dacă rolul s-a schimbat în DB (pentru migrări)
+  // Verifică dacă rolul s-a schimbat în DB (pentru multi-tenant)
   try {
     const r = await db.q(
       `SELECT role, is_approved, first_name, last_name, email FROM users WHERE id = $1`,
@@ -463,7 +463,7 @@ app.get("/api/auth/check", async (req, res) => {
       const dbUser = r.rows[0];
       // Actualizează session dacă rolul s-a schimbat
       if (dbUser.role !== req.session.user.role) {
-        console.log(`🔄 Rol actualizat pentru ${req.session.user.username}: ${req.session.user.role} → ${dbUser.role}`);
+        console.log(`🔄 Rol actualizat pentru ${req.session.user.email}: ${req.session.user.role} → ${dbUser.role}`);
         req.session.user.role = dbUser.role;
       }
       // Actualizează și alte câmpuri
@@ -476,7 +476,20 @@ app.get("/api/auth/check", async (req, res) => {
     console.error('Eroare verificare rol:', e);
   }
   
-  res.json({ loggedIn: true, user: req.session.user });
+  // Returnăm userul cu toate câmpurile relevante pentru frontend
+  res.json({ 
+    loggedIn: true, 
+    user: {
+      id: req.session.user.id,
+      email: req.session.user.email,
+      role: req.session.user.role,
+      is_approved: req.session.user.is_approved,
+      first_name: req.session.user.first_name,
+      last_name: req.session.user.last_name,
+      company_name: req.session.user.company_name,
+      trial_expires_at: req.session.user.trial_expires_at
+    }
+  });
 });
 
 // Protejare companie.html - doar SuperAdmin are acces (verificare async în DB)
@@ -1122,19 +1135,29 @@ app.put("/api/company-settings", isSuperAdmin, async (req, res) => {
 // Returnează doar numele și CUI-ul companiei pentru afișare în navbar
 app.get("/api/company-info", requireAuth, async (req, res) => {
   try {
+    // Luăm numele companiei din sesiune (setat la login)
+    const sessionCompanyName = req.session.user?.company_name;
+    
     if (db.hasDb()) {
-      const r = await db.q(`SELECT name, cui FROM company_settings WHERE id = 'default'`);
-      if (r.rows.length > 0) {
-        return res.json({
-          name: r.rows[0].name || 'openBill',
-          cui: r.rows[0].cui || ''
-        });
+      // Încercăm să citim din company_settings din schema curentă (setată de middleware)
+      try {
+        const r = await db.q(`SELECT name, cui FROM company_settings WHERE id = 'default'`);
+        if (r.rows.length > 0 && r.rows[0].name) {
+          return res.json({
+            name: r.rows[0].name,
+            cui: r.rows[0].cui || ''
+          });
+        }
+      } catch (dbErr) {
+        // Dacă tabela nu există în schema, continuăm cu fallback
+        console.log('company_settings negăsit în schema, folosim fallback');
       }
     }
-    // fallback
+    
+    // Fallback la numele din sesiune sau default
     res.json({
-      name: 'Fast Medical Distribution',
-      cui: 'RO47095864'
+      name: sessionCompanyName || 'openBill',
+      cui: ''
     });
   } catch (e) {
     console.error("GET /api/company-info error:", e);
@@ -3035,12 +3058,12 @@ app.get("/api/users", isAdmin, async (req, res) => {
 
 // ========== PROFIL UTILIZATOR ==========
 
-// GET /api/me - Obține profilul utilizatorului curent
+// GET /api/me - Obține profilul utilizatorului curent (multi-tenant)
 app.get("/api/me", requireAuth, async (req, res) => {
   try {
     const userId = req.session.user.id;
     const r = await db.q(
-      `SELECT id, username, role, first_name, last_name, phone, email, position, created_at 
+      `SELECT id, email, role, first_name, last_name, phone, position, created_at 
        FROM users 
        WHERE id = $1`,
       [userId]
@@ -3050,7 +3073,12 @@ app.get("/api/me", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Utilizator negăsit" });
     }
     
-    res.json(r.rows[0]);
+    // Adăugăm company_name din sesiune pentru frontend
+    const userData = r.rows[0];
+    userData.company_name = req.session.user?.company_name;
+    userData.trial_expires_at = req.session.user?.trial_expires_at;
+    
+    res.json(userData);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

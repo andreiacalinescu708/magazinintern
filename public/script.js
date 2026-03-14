@@ -172,14 +172,15 @@ async function initLoginPage() {
     userData = me.user;
   }
   
-  localStorage.setItem('username', userData.username);
+  localStorage.setItem('userEmail', userData.email || userData.username);
 
   const isAdmin = userData.role === 'admin' || userData.role === 'superadmin';
+  const isSuperAdmin = userData.role === 'superadmin';
   
-  // Format: "Prenume N." (ex: Andrei C.) sau username
+  // Format: "Prenume N." (ex: Andrei C.) sau email
   const displayName = userData.first_name && userData.last_name 
     ? `${escapeHtml(userData.first_name)} ${escapeHtml(userData.last_name[0])}.`
-    : escapeHtml(userData.username);
+    : escapeHtml(userData.email || userData.username || 'Utilizator');
   
   // Obține datele companiei
   let companyHtml = '';
