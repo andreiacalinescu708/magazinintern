@@ -488,6 +488,9 @@ app.use(async (req, res, next) => {
   next();
 });
 
+// Servește fișierele statice din public
+app.use(express.static("public"));
+
 function accessDeniedHtml() {
   return `
     <!DOCTYPE html>
