@@ -421,8 +421,33 @@ app.use(session({
 }));
 
 // Endpoint pentru verificarea autentificării (pentru frontend)
-app.get("/api/auth/check", (req, res) => {
+app.get("/api/auth/check", async (req, res) => {
   if (!req.session.user) return res.json({ loggedIn: false });
+  
+  // Verifică dacă rolul s-a schimbat în DB (pentru migrări)
+  try {
+    const r = await db.q(
+      `SELECT role, is_approved, first_name, last_name, email FROM users WHERE id = $1`,
+      [req.session.user.id]
+    );
+    
+    if (r.rows.length > 0) {
+      const dbUser = r.rows[0];
+      // Actualizează session dacă rolul s-a schimbat
+      if (dbUser.role !== req.session.user.role) {
+        console.log(`🔄 Rol actualizat pentru ${req.session.user.username}: ${req.session.user.role} → ${dbUser.role}`);
+        req.session.user.role = dbUser.role;
+      }
+      // Actualizează și alte câmpuri
+      req.session.user.is_approved = dbUser.is_approved;
+      if (dbUser.first_name) req.session.user.first_name = dbUser.first_name;
+      if (dbUser.last_name) req.session.user.last_name = dbUser.last_name;
+      if (dbUser.email) req.session.user.email = dbUser.email;
+    }
+  } catch (e) {
+    console.error('Eroare verificare rol:', e);
+  }
+  
   res.json({ loggedIn: true, user: req.session.user });
 });
 
