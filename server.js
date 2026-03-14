@@ -3183,11 +3183,14 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     }
     
     // Verifică dacă există deja o invitație activă
+    console.log("📧 Checking for existing invite...");
     const existingInvite = await db.q(
-      "SELECT id FROM user_invites WHERE email = $1 AND status = 'pending' AND expires_at > NOW()",
+      "SELECT id, status, expires_at FROM user_invites WHERE email = $1 AND status = 'pending' AND expires_at > NOW()",
       [normalizedEmail]
     );
+    console.log("📧 Existing invites found:", existingInvite.rows.length);
     if (existingInvite.rows.length > 0) {
+      console.log("📧 Existing invite details:", existingInvite.rows[0]);
       return res.status(400).json({ error: "Există deja o invitație activă pentru acest email" });
     }
     
@@ -3433,6 +3436,39 @@ app.delete("/api/invites/:id", isAdmin, async (req, res) => {
       [req.params.id]
     );
     res.json({ ok: true, message: "Invitație ștearsă" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/invites/cleanup - Șterge toate invitațiile pentru un email (doar admin)
+app.post("/api/invites/cleanup", isAdmin, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email obligatoriu" });
+    }
+    
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    // Vezi ce există înainte
+    const before = await db.q(
+      "SELECT id, status, created_at FROM user_invites WHERE email = $1",
+      [normalizedEmail]
+    );
+    
+    // Șterge toate invitațiile pentru acest email
+    const result = await db.q(
+      "DELETE FROM user_invites WHERE email = $1 RETURNING id",
+      [normalizedEmail]
+    );
+    
+    res.json({ 
+      ok: true, 
+      message: `Șterse ${result.rows.length} invitații pentru ${normalizedEmail}`,
+      deleted: result.rows.length,
+      found_before: before.rows
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -187,6 +187,7 @@
         <h3>📧 Invitații trimise</h3>
         <div>
           <button onclick="testEmailConfig()" title="Testează configurația email" style="background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; margin-right: 0.5rem;">📧 Test Email</button>
+          <button onclick="cleanupInvites()" title="Curăță invitațiile blocate" style="background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; margin-right: 0.5rem;">🧹 Curăță</button>
           <button class="btn-approve" onclick="openInviteModal()">+ Invită Utilizator</button>
         </div>
       </div>
@@ -682,6 +683,33 @@
     }
 
     // Testează configurația email
+    // Curăță toate invitațiile pentru un email
+    async function cleanupInvites() {
+      const email = prompt('Introdu emailul pentru care vrei să ștergi TOATE invitațiile:');
+      if (!email) return;
+      
+      if (!confirm(`Ești sigur că vrei să ștergi TOATE invitațiile pentru ${email}?`)) return;
+      
+      try {
+        const res = await fetch('/api/invites/cleanup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+          alert(`✅ ${data.message}\n\nInvitații găsite înainte: ${data.found_before.length}\nInvitații șterse: ${data.deleted}`);
+          loadInvites(); // Reîncarcă lista
+        } else {
+          alert('❌ Eroare: ' + (data.error || 'Necunoscută'));
+        }
+      } catch (err) {
+        alert('❌ Eroare de conexiune: ' + err.message);
+      }
+    }
+
     async function testEmailConfig() {
       const resultDiv = document.getElementById('emailTestResult');
       resultDiv.style.display = 'block';
