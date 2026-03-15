@@ -3389,7 +3389,7 @@ app.put("/api/me", requireAuth, async (req, res) => {
       `UPDATE users 
        SET first_name = $1, last_name = $2, phone = $3, email = $4, position = $5
        WHERE id = $6
-       RETURNING id, username, role, first_name, last_name, phone, email, position, created_at`,
+       RETURNING id, email, role, first_name, last_name, phone, position, created_at`,
       [first_name || null, last_name || null, phone || null, email || null, position || null, userId]
     );
     
