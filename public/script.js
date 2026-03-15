@@ -417,6 +417,7 @@ function renderCart() {
   // Cart modal elements
   const cartModalBox = document.getElementById("cartModalBox");
   const cartModalTotal = document.getElementById("cartModalTotal");
+  const cartModalTotalHeader = document.getElementById("cartModalTotalHeader");
 
   const cart = getCart();
   const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
@@ -463,6 +464,7 @@ function renderCart() {
     if (cartModalBox) cartModalBox.innerHTML = emptyHtml;
     if (totalBox) totalBox.textContent = "0.00 RON";
     if (cartModalTotal) cartModalTotal.textContent = "0.00 RON";
+    if (cartModalTotalHeader) cartModalTotalHeader.textContent = "0.00 RON";
     updateStickyTotals();
     return;
   }
@@ -611,6 +613,7 @@ function renderCart() {
 
   if (totalBox) totalBox.textContent = `${cartTotal.toFixed(2)} RON`;
   if (cartModalTotal) cartModalTotal.textContent = `${cartTotal.toFixed(2)} RON`;
+  if (cartModalTotalHeader) cartModalTotalHeader.textContent = `${cartTotal.toFixed(2)} RON`;
   updateStickyTotals();
 }
 

@@ -42,13 +42,26 @@
       }
     }
 
-    /* Cart Modal Styles */
+    /* Cart Modal Styles - Simplificat */
     .cart-modal-content {
       max-height: 85vh;
       display: flex;
       flex-direction: column;
-      width: 95%;
-      max-width: 380px;
+      width: 92%;
+      max-width: 360px;
+    }
+
+    .cart-modal-header h3 {
+      font-size: 1rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .cart-modal-header h3 span {
+      color: var(--primary-400);
+      font-weight: 600;
     }
 
     /* Compact cart items in modal */
@@ -968,11 +981,11 @@
   <script src="script.js"></script>
 
  
-<!-- Modal Coș Comandă -->
+<!-- Modal Comandă -->
 <div id="cartModal" class="modal-overlay" style="display: none;">
   <div class="modal-content cart-modal-content">
-    <div class="modal-header">
-      <h3>🛒 Coș comandă</h3>
+    <div class="modal-header cart-modal-header" style="padding: 0.75rem 1rem;">
+      <h3>🛒 Comandă - <span id="cartModalTotalHeader">0.00 RON</span></h3>
       <button class="modal-close" onclick="closeCartModal()">×</button>
     </div>
     
@@ -987,14 +1000,10 @@
     </div>
 
     <div class="modal-footer cart-modal-footer">
-      <div class="cart-total-row" style="margin-bottom: 1rem;">
-        <span class="cart-total-label">Total comandă:</span>
-        <span class="cart-total-value" id="cartModalTotal">0.00 RON</span>
-      </div>
-      <div style="display: flex; gap: 0.75rem;">
-        <button class="btn-secondary" onclick="closeCartModal()" style="flex: 1;">Continuă comanda</button>
-        <button class="btn-send-order" id="btnModalSendOrder" style="flex: 2;">
-          ✅ Verifică și trimite
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn-secondary" onclick="closeCartModal()" style="flex: 1; padding: 0.5rem; font-size: 0.875rem;">Continuă comanda</button>
+        <button class="btn-send-order" id="btnModalSendOrder" style="flex: 1; padding: 0.5rem; font-size: 0.875rem;">
+          ✅ Trimite
         </button>
       </div>
     </div>
