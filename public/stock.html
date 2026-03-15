@@ -523,11 +523,11 @@
                 }
                 
                 const warehouse = warehouseSelect ? warehouseSelect.value : 'depozit';
-                const location = warehouse === 'magazin' ? 'MAGAZIN' : (locationSelect ? locationSelect.value : 'A');
+                const stockLocation = warehouse === 'magazin' ? 'MAGAZIN' : (locationSelect ? locationSelect.value : 'A');
                 const gtins = selectedProduct.gtins || [];
                 const gtin = gtins[0] || selectedProduct.gtin || '';
                 
-                console.log('Trimitere stoc:', { gtin, productName: selectedProduct.name, lot: 'N/A', expiresAt: '2099-12-31', qty: Number(qtyInput.value), location, warehouse });
+                console.log('Trimitere stoc:', { gtin, productName: selectedProduct.name, lot: 'N/A', expiresAt: '2099-12-31', qty: Number(qtyInput.value), location: stockLocation, warehouse });
                 
                 const res = await fetch('/api/stock', {
                   method: 'POST',
@@ -538,7 +538,7 @@
                     lot: 'N/A',
                     expiresAt: '2099-12-31',
                     qty: Number(qtyInput.value),
-                    location,
+                    location: stockLocation,
                     warehouse
                   })
                 });
@@ -557,7 +557,7 @@
                   if (typeof loadStock === 'function') {
                     loadStock();
                   } else {
-                    location.reload();
+                    window.location.reload();
                   }
                 } else {
                   const errData = await res.json().catch(() => ({}));
