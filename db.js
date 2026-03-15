@@ -232,12 +232,30 @@ await q(`
     km_start INTEGER NOT NULL,
     km_end INTEGER,
     locations TEXT NOT NULL DEFAULT '',
+    trip_number VARCHAR(20) UNIQUE,
+    departure_time VARCHAR(10),
+    arrival_time VARCHAR(10),
+    purpose TEXT,
+    tech_check_departure BOOLEAN DEFAULT false,
+    tech_check_arrival BOOLEAN DEFAULT false,
     created_by TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     FOREIGN KEY (driver_id) REFERENCES drivers(id),
     FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
   )
 `);
+
+// Migrație: Adaugă coloanele noi dacă nu există (pentru tabele existente)
+try {
+  await q(`ALTER TABLE trip_sheets ADD COLUMN IF NOT EXISTS trip_number VARCHAR(20)`);
+  await q(`ALTER TABLE trip_sheets ADD COLUMN IF NOT EXISTS departure_time VARCHAR(10)`);
+  await q(`ALTER TABLE trip_sheets ADD COLUMN IF NOT EXISTS arrival_time VARCHAR(10)`);
+  await q(`ALTER TABLE trip_sheets ADD COLUMN IF NOT EXISTS purpose TEXT`);
+  await q(`ALTER TABLE trip_sheets ADD COLUMN IF NOT EXISTS tech_check_departure BOOLEAN DEFAULT false`);
+  await q(`ALTER TABLE trip_sheets ADD COLUMN IF NOT EXISTS tech_check_arrival BOOLEAN DEFAULT false`);
+} catch (e) {
+  console.log('Note: trip_sheets migration:', e.message);
+}
 
 // TABEL BONURI ALIMENTARE
 await q(`
@@ -571,10 +589,27 @@ async function createTenantSchema(schemaName, companyData) {
       km_end INTEGER,
       locations TEXT NOT NULL DEFAULT '',
       trip_number VARCHAR(20) UNIQUE,
+      departure_time VARCHAR(10),
+      arrival_time VARCHAR(10),
+      purpose TEXT,
+      tech_check_departure BOOLEAN DEFAULT false,
+      tech_check_arrival BOOLEAN DEFAULT false,
       created_by TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
+  
+  // Migrație: Adaugă coloanele noi dacă nu există (pentru tabele existente în schema companiei)
+  try {
+    await q(`ALTER TABLE ${schemaName}.trip_sheets ADD COLUMN IF NOT EXISTS trip_number VARCHAR(20)`);
+    await q(`ALTER TABLE ${schemaName}.trip_sheets ADD COLUMN IF NOT EXISTS departure_time VARCHAR(10)`);
+    await q(`ALTER TABLE ${schemaName}.trip_sheets ADD COLUMN IF NOT EXISTS arrival_time VARCHAR(10)`);
+    await q(`ALTER TABLE ${schemaName}.trip_sheets ADD COLUMN IF NOT EXISTS purpose TEXT`);
+    await q(`ALTER TABLE ${schemaName}.trip_sheets ADD COLUMN IF NOT EXISTS tech_check_departure BOOLEAN DEFAULT false`);
+    await q(`ALTER TABLE ${schemaName}.trip_sheets ADD COLUMN IF NOT EXISTS tech_check_arrival BOOLEAN DEFAULT false`);
+  } catch (e) {
+    // Ignoră erorile de migrație
+  }
   
   // FUEL_RECEIPTS
   await q(`

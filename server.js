@@ -4340,13 +4340,13 @@ app.post("/api/trip-sheets", async (req, res) => {
 
 app.put("/api/trip-sheets/:id", async (req, res) => {
   try {
-    const { km_end, locations } = req.body;
+    const { km_end, locations, arrival_time, tech_check_arrival } = req.body;
     const r = await db.q(`
       UPDATE trip_sheets 
-      SET km_end = $1, locations = $2
-      WHERE id = $3
+      SET km_end = $1, locations = $2, arrival_time = $3, tech_check_arrival = $4
+      WHERE id = $5
       RETURNING km_start, km_end
-    `, [km_end, locations, req.params.id]);
+    `, [km_end, locations, arrival_time, tech_check_arrival || false, req.params.id]);
     
     if (r.rows.length === 0) return res.status(404).json({ error: "Not found" });
     
