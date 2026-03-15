@@ -3694,7 +3694,7 @@ app.get("/api/invites/validate/:token", async (req, res) => {
     const { token } = req.params;
     
     const r = await db.q(
-      `SELECT email, first_name, last_name, status, expires_at
+      `SELECT email, first_name, last_name, role, status, expires_at
        FROM public.user_invites
        WHERE token = $1`,
       [token]
