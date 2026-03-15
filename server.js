@@ -5416,9 +5416,9 @@ app.post("/api/superadmin/login", async (req, res) => {
       return res.status(400).json({ error: "Username și parolă obligatorii" });
     }
     
-    // Caută superadmin
+    // Caută superadmin (după username SAU email)
     const result = await db.q(
-      `SELECT id, username, password_hash, active FROM public.superadmins WHERE username = $1 LIMIT 1`,
+      `SELECT id, username, password_hash, active FROM public.superadmins WHERE username = $1 OR email = $1 LIMIT 1`,
       [username]
     );
     
