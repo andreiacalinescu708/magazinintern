@@ -396,21 +396,24 @@
     </div>
   </div>
 
-  <div class="form-group">
-    <label class="form-label">LOT</label>
-    <input type="text" id="stockLot" class="form-input" placeholder="Ex: LOT2024001" />
-  </div>
+  <!-- Lot și Expirare - doar pentru Pro și Enterprise -->
+  <div id="lotExpiryFields">
+    <div class="form-group">
+      <label class="form-label">LOT</label>
+      <input type="text" id="stockLot" class="form-input" placeholder="Ex: LOT2024001" />
+    </div>
 
-  <div class="form-group">
-    <label class="form-label">Data expirare</label>
-    <input 
-      type="text" 
-      id="stockExpire" 
-      class="form-input" 
-      placeholder="dd.mm.yyyy" 
-      maxlength="10"
-    />
-    <div class="date-hint">Format: zi.lună.an (ex: 31.12.2025)</div>
+    <div class="form-group">
+      <label class="form-label">Data expirare</label>
+      <input 
+        type="text" 
+        id="stockExpire" 
+        class="form-input" 
+        placeholder="dd.mm.yyyy" 
+        maxlength="10"
+      />
+      <div class="date-hint">Format: zi.lună.an (ex: 31.12.2025)</div>
+    </div>
   </div>
 
   <div class="form-group">
@@ -456,5 +459,32 @@
   </div>
 
   <script src="script.js"></script>
+  
+  <!-- Verificare plan și restricții -->
+  <script>
+    (async function checkPlanRestrictions() {
+      try {
+        const res = await fetch('/api/company/plan');
+        const planData = await res.json();
+        const plan = planData.plan || 'starter';
+        
+        // Pentru plan Starter, ascunde lot și expirare
+        if (plan === 'starter') {
+          const lotExpiryFields = document.getElementById('lotExpiryFields');
+          if (lotExpiryFields) {
+            lotExpiryFields.style.display = 'none';
+          }
+          
+          // Setează valori default pentru lot și expirare
+          const stockLot = document.getElementById('stockLot');
+          const stockExpire = document.getElementById('stockExpire');
+          if (stockLot) stockLot.value = 'N/A';
+          if (stockExpire) stockExpire.value = '31.12.2099';
+        }
+      } catch (e) {
+        console.error('Eroare verificare plan:', e);
+      }
+    })();
+  </script>
 </body>
 </html>

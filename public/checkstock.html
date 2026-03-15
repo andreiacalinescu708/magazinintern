@@ -674,6 +674,28 @@
 
     // Load inițial
     loadStock();
+    
+    // Verificare plan și aplicare restricții
+    (async function checkPlanRestrictions() {
+      try {
+        const res = await fetch('/api/company/plan');
+        const planData = await res.json();
+        const plan = planData.plan || 'starter';
+        
+        // Pentru plan Starter, ascunde coloanele lot și expirare
+        if (plan === 'starter') {
+          // Ascunde etichetele LOT și Expiră
+          document.querySelectorAll('.lot-field').forEach(el => {
+            const label = el.querySelector('.lot-label');
+            if (label && (label.textContent === 'LOT' || label.textContent === 'Expiră')) {
+              el.style.display = 'none';
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Eroare verificare plan:', e);
+      }
+    })();
   </script>
   <script src="script.js"></script>
 </body>
