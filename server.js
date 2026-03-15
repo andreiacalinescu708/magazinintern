@@ -1403,6 +1403,60 @@ app.post("/api/admin/delete-all-schemas", async (req, res) => {
   }
 });
 
+// ===== CLEANUP PUBLIC SCHEMA (SUPERADMIN ONLY - TEMPORAR) =====
+// Șterge tabelele de business din schema public (rămase de la teste)
+app.post("/api/admin/cleanup-public-schema", async (req, res) => {
+  try {
+    // Verificare superadmin
+    if (!req.session?.superadmin?.id) {
+      return res.status(403).json({ error: "Nu ești autentificat ca SuperAdmin." });
+    }
+    
+    if (!db.hasDb()) {
+      return res.status(500).json({ error: "DB neconfigurat" });
+    }
+    
+    // Tabele care ar trebui șterse din public (date de business, nu management)
+    const tablesToDrop = [
+      'orders', 'stock', 'audit', 'users', 'clients', 'products',
+      'company_settings', 'client_balances', 'drivers', 'vehicles',
+      'trip_sheets', 'fuel_receipts', 'stock_transfers', 'user_invites'
+    ];
+    
+    const dropped = [];
+    const errors = [];
+    
+    for (const table of tablesToDrop) {
+      try {
+        // Verificăm dacă tabela există
+        const check = await db.q(`
+          SELECT 1 FROM information_schema.tables 
+          WHERE table_schema = 'public' AND table_name = $1
+        `, [table]);
+        
+        if (check.rows.length > 0) {
+          await db.q(`DROP TABLE IF EXISTS public.${table} CASCADE`);
+          dropped.push(table);
+          console.log(`🗑️ Ștersă tabela public.${table}`);
+        }
+      } catch (err) {
+        console.error(`❌ Eroare la ștergerea ${table}:`, err.message);
+        errors.push({ table, error: err.message });
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      dropped: dropped.length,
+      tables: dropped,
+      errors: errors
+    });
+  } catch (e) {
+    console.error("CLEANUP PUBLIC SCHEMA error:", e);
+    res.status(500).json({ error: "Eroare server: " + e.message });
+  }
+});
+
 // ===== COMPANY INFO (PUBLIC - pentru toți utilizatorii logați) =====
 // Returnează doar numele și CUI-ul companiei pentru afișare în navbar
 app.get("/api/company-info", requireAuth, async (req, res) => {
