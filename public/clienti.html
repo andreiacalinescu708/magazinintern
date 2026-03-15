@@ -18,30 +18,7 @@
       min-height: 100vh;
     }
     
-    .topbar { 
-      background: #0284c7; 
-      padding: 1rem 2rem; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    
-    .topbar h2 { margin: 0; font-size: 1.5rem; }
-    
-    .btnBack { 
-      color: white; 
-      text-decoration: none; 
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      background: rgba(255,255,255,0.15);
-      border-radius: 0.5rem;
-      transition: background 0.3s;
-    }
-    .btnBack:hover { background: rgba(255,255,255,0.25); }
-    
+    /* Navbar standard folosit - vezi global.css */
     .container { 
       max-width: 1400px; 
       margin: 2rem auto; 
@@ -325,13 +302,16 @@
       }
     })();
   </script>
-  <div class="topbar">
-    <a href="index.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
-      <img src="favicon.svg" alt="openBill" style="height: 36px; width: auto;">
-      <span style="font-size: 1.5rem; font-weight: 700; color: white;">openBill</span>
-    </a>
-    <h2>Administrare Clienți</h2>
-  </div>
+  <!-- Navbar standard -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+        <img src="favicon.svg" alt="openBill" style="height: 36px; width: auto;">
+        <span style="font-size: 1.5rem; font-weight: 700; color: var(--primary-500, #3b82f6);">openBill</span>
+      </a>
+      <div class="navbar-actions"></div>
+    </div>
+  </nav>
 
   <div class="container">
     <!-- Lista Clienți -->
