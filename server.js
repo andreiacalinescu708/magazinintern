@@ -1351,6 +1351,58 @@ app.post("/api/admin/delete-all-companies", async (req, res) => {
   }
 });
 
+// ===== DELETE ALL TENANT SCHEMAS (SUPERADMIN ONLY - TEMPORAR) =====
+// Șterge TOATE schemele care încep cu 'tenant_' indiferent dacă sunt în public.companies
+app.post("/api/admin/delete-all-schemas", async (req, res) => {
+  try {
+    // Verificare superadmin
+    if (!req.session?.superadmin?.id) {
+      return res.status(403).json({ error: "Nu ești autentificat ca SuperAdmin." });
+    }
+    
+    if (!db.hasDb()) {
+      return res.status(500).json({ error: "DB neconfigurat" });
+    }
+    
+    // 1. Obținem TOATE schemele care încep cu 'tenant_'
+    const schemas = await db.q(`
+      SELECT schema_name 
+      FROM information_schema.schemata 
+      WHERE schema_name LIKE 'tenant_%'
+    `);
+    
+    console.log(`🗑️ Găsite ${schemas.rows.length} scheme tenant de șters`);
+    
+    const deleted = [];
+    const errors = [];
+    
+    // 2. Ștergem fiecare schemă
+    for (const row of schemas.rows) {
+      try {
+        await db.dropTenantSchema(row.schema_name);
+        deleted.push(row.schema_name);
+        console.log(`✅ Ștersă schema: ${row.schema_name}`);
+      } catch (err) {
+        console.error(`❌ Eroare la ștergerea ${row.schema_name}:`, err.message);
+        errors.push({ schema: row.schema_name, error: err.message });
+      }
+    }
+    
+    // 3. Ștergem și din public.companies pentru consistență
+    await db.q(`DELETE FROM public.companies WHERE schema_name != 'public'`);
+    
+    res.json({ 
+      success: true, 
+      deleted: deleted.length,
+      schemas: deleted,
+      errors: errors
+    });
+  } catch (e) {
+    console.error("DELETE ALL SCHEMAS error:", e);
+    res.status(500).json({ error: "Eroare server: " + e.message });
+  }
+});
+
 // ===== COMPANY INFO (PUBLIC - pentru toți utilizatorii logați) =====
 // Returnează doar numele și CUI-ul companiei pentru afișare în navbar
 app.get("/api/company-info", requireAuth, async (req, res) => {
