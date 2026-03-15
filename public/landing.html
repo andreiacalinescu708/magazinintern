@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>openBill - Sistem de Management pentru Distribuție Medicală</title>
+  <title>openBill - Sistem de Management pentru Distribuție</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
   <link rel="stylesheet" href="global.css" />
   <style>
     /* Hero Section */
@@ -127,7 +128,7 @@
     .hero-subtitle {
       font-size: clamp(1.125rem, 2.5vw, 1.375rem);
       color: var(--text-muted);
-      max-width: 600px;
+      max-width: 700px;
       margin: 0 auto var(--space-8);
       line-height: 1.7;
       animation: fadeIn 0.6s ease-out 0.2s both;
@@ -158,6 +159,22 @@
       background: rgba(148, 163, 184, 0.1);
       color: var(--text-primary);
       border-color: rgba(148, 163, 184, 0.3);
+    }
+
+    .hero-note {
+      margin-top: var(--space-6);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      animation: fadeIn 0.6s ease-out 0.4s both;
+    }
+
+    .hero-note a {
+      color: var(--primary-400);
+      text-decoration: none;
+    }
+
+    .hero-note a:hover {
+      text-decoration: underline;
     }
 
     /* Features Section */
@@ -269,18 +286,27 @@
       padding: var(--space-8) var(--space-6);
       background: var(--bg-secondary);
       border-top: 1px solid var(--border-color);
-      text-align: center;
     }
 
     .landing-footer-inner {
       max-width: 1200px;
       margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .landing-footer-top {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-4);
     }
 
     .landing-footer img {
       height: 32px;
       width: auto;
-      margin-bottom: var(--space-4);
       opacity: 0.7;
     }
 
@@ -288,6 +314,38 @@
       color: var(--text-muted);
       font-size: 0.875rem;
       margin: 0;
+      text-align: center;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: var(--space-6);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+
+    .footer-links a:hover {
+      color: var(--primary-400);
+    }
+
+    .footer-legal {
+      margin-top: var(--space-4);
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border-color);
+      width: 100%;
+      text-align: center;
+    }
+
+    .footer-legal p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
     }
 
     /* Animations */
@@ -332,6 +390,11 @@
       .features-grid {
         grid-template-columns: 1fr;
       }
+
+      .footer-links {
+        flex-direction: column;
+        gap: var(--space-2);
+      }
     }
   </style>
 </head>
@@ -356,8 +419,8 @@
         <div class="hero-badge">Sistem activ și operațional</div>
         <h1 class="hero-title">openBill</h1>
         <p class="hero-subtitle">
-          Sistem modern de management pentru distribuția de produse medicale. 
-          Gestionează comenzi, stocuri, clienți și facturare într-o singură platformă intuitivă.
+          Sistem modern de management pentru distribuția de produse. 
+          Preia comenzi, gestionează stocurile și trimite facturi direct în programul tău de facturare prin integrare API.
         </p>
         <div class="hero-cta">
           <a href="register.html" class="btn btn-primary btn-lg">
@@ -367,6 +430,9 @@
             <span>🔐</span> Autentificare
           </a>
         </div>
+        <p class="hero-note">
+          Prin înregistrare, ești de acord cu <a href="terms.html">Termenii și Condițiile</a> și <a href="privacy.html">Politica de Confidențialitate</a>
+        </p>
       </div>
     </section>
 
@@ -375,7 +441,7 @@
       <div class="features-inner">
         <div class="features-header">
           <h2>Funcționalități principale</h2>
-          <p>Tot ce ai nevoie pentru a-ți gestiona afacerea de distribuție medicală</p>
+          <p>Tot ce ai nevoie pentru a-ți gestiona afacerea de distribuție</p>
         </div>
         <div class="features-grid">
           <div class="feature-card">
@@ -385,8 +451,8 @@
           </div>
           <div class="feature-card">
             <div class="feature-icon">🛒</div>
-            <h3>Comenzi & Clienți</h3>
-            <p>Procesează comenzi rapid, gestionează relațiile cu clienții și urmărește istoricul comenzilor pentru fiecare client.</p>
+            <h3>Preluare Comenzi</h3>
+            <p>Preia comenzi rapid de la clienți, gestionează relațiile și urmărește istoricul comenzilor pentru fiecare client.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon">📋</div>
@@ -394,9 +460,9 @@
             <p>Generează liste de picking, organizează livrările și gestionează șoferii și vehiculele pentru distribuție eficientă.</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <h3>Rapoarte & Analize</h3>
-            <p>Vizualizează rapoarte detaliate despre vânzări, stocuri și performanță pentru decizii informate.</p>
+            <div class="feature-icon">🧾</div>
+            <h3>Facturare prin API</h3>
+            <p>Conectează-te prin API cu programul tău de facturare (SmartBill, Saga, etc.) pentru emiterea automată a facturilor.</p>
           </div>
         </div>
       </div>
@@ -405,8 +471,18 @@
     <!-- Footer -->
     <footer class="landing-footer">
       <div class="landing-footer-inner">
-        <img src="logo.svg" alt="openBill" />
-        <p>© 2026 openBill - Sistem de Management pentru Distribuție Medicală</p>
+        <div class="landing-footer-top">
+          <img src="logo.svg" alt="openBill" />
+          <p>© 2026 openBill - Sistem de Management pentru Distribuție</p>
+        </div>
+        <div class="footer-links">
+          <a href="terms.html">Termeni și Condiții</a>
+          <a href="privacy.html">Politica de Confidențialitate</a>
+          <a href="mailto:suport@ai-digitalsolutions.ro">Contact</a>
+        </div>
+        <div class="footer-legal">
+          <p>Dezvoltat de AI Digital Solutions. Toate drepturile rezervate.</p>
+        </div>
       </div>
     </footer>
   </div>
