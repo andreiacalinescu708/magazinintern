@@ -408,14 +408,39 @@ function renderCart() {
   const totalBox = document.getElementById("cartTotal");
   const countBadge = document.getElementById("cartCount");
   const footer = document.getElementById("cartFooter");
-
-  if (!box) return;
+  
+  // Navbar cart button elements
+  const cartToggleBtn = document.getElementById("cartToggleBtn");
+  const cartToggleCount = document.getElementById("cartToggleCount");
+  const cartToggleTotal = document.getElementById("cartToggleTotal");
+  
+  // Cart modal elements
+  const cartModalBox = document.getElementById("cartModalBox");
+  const cartModalTotal = document.getElementById("cartModalTotal");
 
   const cart = getCart();
+  const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+  const VAT_RATE = 0.21;
+  let total = 0;
+  cart.forEach(i => {
+    total += (Number(i.price) || 0) * i.qty;
+  });
+  const totalWithVat = total;
+  const totalNoVat = total / (1 + VAT_RATE);
   
-  // Update counter și footer
+  // Update navbar cart button
+  if (cartToggleBtn) {
+    cartToggleBtn.style.display = cart.length > 0 ? "flex" : "none";
+  }
+  if (cartToggleCount) {
+    cartToggleCount.textContent = totalItems;
+  }
+  if (cartToggleTotal) {
+    cartToggleTotal.textContent = totalWithVat.toFixed(2) + " RON";
+  }
+
+  // Update counter și footer (legacy cart panel)
   if (countBadge) {
-    const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
     countBadge.textContent = totalItems;
     countBadge.style.display = cart.length > 0 ? "flex" : "none";
   }
@@ -424,15 +449,21 @@ function renderCart() {
     footer.style.display = cart.length > 0 ? "block" : "none";
   }
 
+  // Render empty state
+  const emptyHtml = `
+    <div class="cart-empty">
+      <div class="cart-empty-icon">🛒</div>
+      <p>Coșul este gol</p>
+      <p style="font-size: 0.875rem;">Adaugă produse din lista de produse</p>
+    </div>
+  `;
+
   if (!cart.length) {
-    box.innerHTML = `
-      <div class="cart-empty">
-        <div class="cart-empty-icon">🛒</div>
-        <p>Coșul este gol</p>
-        <p style="font-size: 0.875rem;">Adaugă produse din lista din stânga</p>
-      </div>
-    `;
+    if (box) box.innerHTML = emptyHtml;
+    if (cartModalBox) cartModalBox.innerHTML = emptyHtml;
     if (totalBox) totalBox.textContent = "0.00 RON";
+    if (cartModalTotal) cartModalTotal.textContent = "0.00 RON";
+    updateStickyTotals();
     return;
   }
 
@@ -551,10 +582,33 @@ function renderCart() {
       }
     };
 
-    box.appendChild(itemDiv);
+    if (box) box.appendChild(itemDiv);
+    
+    // Also add to modal if exists
+    if (cartModalBox) {
+      const modalItemDiv = itemDiv.cloneNode(true);
+      // Re-attach event listeners for modal items
+      modalItemDiv.querySelector(".cart-item-remove").onclick = () => removeItemByGTIN(i.gtin);
+      modalItemDiv.querySelector(".dec").onclick = () => decQtyByGTIN(i.gtin);
+      modalItemDiv.querySelector(".inc").onclick = () => incQtyByGTIN(i.gtin);
+      modalItemDiv.querySelector(".qty-input").onchange = (e) => {
+        const val = parseInt(e.target.value);
+        if (!isNaN(val) && val > 0) {
+          const currentCart = getCart();
+          const item = currentCart.find(x => normalizeGTIN(x.gtin) === normalizeGTIN(i.gtin));
+          if (item) {
+            item.qty = val;
+            saveCart(currentCart);
+            renderCart();
+          }
+        }
+      };
+      cartModalBox.appendChild(modalItemDiv);
+    }
   });
 
   if (totalBox) totalBox.textContent = `${total.toFixed(2)} RON`;
+  if (cartModalTotal) cartModalTotal.textContent = `${total.toFixed(2)} RON`;
   updateStickyTotals();
 }
 
@@ -4857,11 +4911,16 @@ function openProductModal(product) {
     }
   }
   
-  // Setăm cantitatea default
+  // Setăm cantitatea golă și focusăm inputul
   const qtyInput = document.getElementById('modalQty');
   if (qtyInput) {
-    qtyInput.value = '1';
-    qtyInput.focus();
+    qtyInput.value = '';
+    qtyInput.placeholder = '-';
+    // Focus cu delay ca să funcționeze pe mobile
+    setTimeout(() => {
+      qtyInput.focus();
+      qtyInput.select();
+    }, 100);
   }
   
   // Calculăm prețurile inițiale
@@ -4904,14 +4963,43 @@ function closeProductModal() {
   currentModalProduct = null;
 }
 
+// ========== CART MODAL FUNCTIONS ==========
+function openCartModal() {
+  const modal = document.getElementById('cartModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    renderCart(); // Refresh cart content
+  }
+}
+
+function closeCartModal() {
+  const modal = document.getElementById('cartModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }
+}
+
+// Close cart modal when clicking outside
+if (typeof window !== 'undefined') {
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('cartModal');
+    if (modal && e.target === modal) {
+      closeCartModal();
+    }
+  });
+}
+
 function confirmAddToCart() {
   if (!currentModalProduct) return;
   
-  const qty = parseInt(document.getElementById('modalQty').value) || 0;
+  const qtyInput = document.getElementById('modalQty');
+  const qty = parseInt(qtyInput?.value) || 0;
   
-  if (qty <= 0) {
+  if (qty <= 0 || !qtyInput?.value) {
     alert("Introdu o cantitate (minim 1)");
-    document.getElementById('modalQty').focus();
+    qtyInput?.focus();
     return;
   }
   
