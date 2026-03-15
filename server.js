@@ -4439,10 +4439,8 @@ app.get("/api/vehicles/:id/last-km", async (req, res) => {
     const schemaName = req.session?.user?.schema_name || 'public';
     const vehicleId = req.params.id;
     
-    // Caută ultima foaie de parcurs pentru această mașină (cea mai mare dată + km_end existent)
     const r = await db.q(`
-      SELECT km_end 
-      FROM ${schemaName}.trip_sheets 
+      SELECT km_end FROM ${schemaName}.trip_sheets 
       WHERE vehicle_id = $1 AND km_end IS NOT NULL
       ORDER BY date DESC, created_at DESC 
       LIMIT 1
@@ -4455,52 +4453,6 @@ app.get("/api/vehicles/:id/last-km", async (req, res) => {
     }
   } catch (e) {
     console.error("Eroare la obținerea ultimului KM:", e);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-app.post("/api/trip-sheets", async (req, res) => {
-  try {
-    const { 
-      date, driver_id, vehicle_id, km_start, locations,
-      trip_number, departure_time, arrival_time, purpose,
-      tech_check_departure, tech_check_arrival 
-    } = req.body;
-    
-    // Validare: Verifică dacă există deja o foaie cu KM mai mare pentru această mașină
-    const lastKmCheck = await db.q(`
-      SELECT km_end FROM trip_sheets 
-      WHERE vehicle_id = $1 AND km_end IS NOT NULL
-      ORDER BY date DESC, created_at DESC 
-      LIMIT 1
-    `, [vehicle_id]);
-    
-    if (lastKmCheck.rows.length > 0) {
-      const lastKm = parseInt(lastKmCheck.rows[0].km_end);
-      if (km_start < lastKm) {
-        return res.status(400).json({ 
-          error: `KM Plecare (${km_start}) nu poate fi mai mic decât ultimul KM înregistrat (${lastKm})` 
-        });
-      }
-    }
-    
-    const id = crypto.randomUUID();
-    
-    await db.q(`
-      INSERT INTO trip_sheets (
-        id, date, driver_id, vehicle_id, km_start, locations,
-        trip_number, departure_time, arrival_time, purpose,
-        tech_check_departure, tech_check_arrival, created_by
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
-    `, [
-      id, date, driver_id, vehicle_id, km_start, locations || '',
-      trip_number, departure_time, arrival_time, purpose,
-      tech_check_departure || false, tech_check_arrival || false,
-      req.session.user.username
-    ]);
-    
-    res.json({ ok: true, id, trip_number });
-  } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
