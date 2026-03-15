@@ -150,12 +150,16 @@ await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
       role TEXT NOT NULL DEFAULT 'user',
       token TEXT UNIQUE NOT NULL,
       invited_by TEXT NOT NULL,
+      company_id TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       expires_at TIMESTAMPTZ NOT NULL,
       used_at TIMESTAMPTZ
     )
   `);
+  
+  // Migrație: adaug company_id dacă nu există
+  await q(`ALTER TABLE user_invites ADD COLUMN IF NOT EXISTS company_id TEXT`);
   // Migrație: adaug coloana role dacă nu există
   await q(`ALTER TABLE user_invites ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`);
   await q(`CREATE INDEX IF NOT EXISTS idx_invites_token ON user_invites(token)`);

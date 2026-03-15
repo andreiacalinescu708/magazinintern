@@ -2825,8 +2825,11 @@ app.post("/api/login", async (req, res) => {
     }
     
     const emailClean = email.toLowerCase().trim();
+    let company = null;
+    let schemaName = null;
+    let foundUser = null;
 
-    // 1. Găsim compania după email
+    // 1. Mai întâi căutăm compania după admin_email (pentru admini/superadmini)
     const companyRes = await db.q(
       `SELECT id, schema_name, status, trial_expires_at, name 
        FROM public.companies 
@@ -2834,11 +2837,50 @@ app.post("/api/login", async (req, res) => {
       [emailClean]
     );
     
-    if (companyRes.rows.length === 0) {
-      return res.status(401).json({ error: "Email sau parolă greșită" });
+    if (companyRes.rows.length > 0) {
+      // Utilizatorul este admin
+      company = companyRes.rows[0];
+      schemaName = company.schema_name;
+      console.log("🔐 LOGIN - Utilizator găsit ca ADMIN în compania:", company.name);
+    } else {
+      // 2. Dacă nu e admin, căutăm în toate schemele companiilor (pentru utilizatori invitați)
+      console.log("🔐 LOGIN - Căutăm utilizator în toate schemele...");
+      
+      const allCompaniesRes = await db.q(
+        `SELECT id, schema_name, status, trial_expires_at, name 
+         FROM public.companies 
+         WHERE status IN ('active', 'trial')`
+      );
+      
+      console.log("🔐 LOGIN - Căutăm în", allCompaniesRes.rows.length, "compani...");
+      
+      for (const comp of allCompaniesRes.rows) {
+        try {
+          const userRes = await db.q(
+            `SELECT id, email, password_hash, role, active, is_approved, 
+                    failed_attempts, unlock_at, last_failed_at, first_name, last_name
+             FROM ${comp.schema_name}.users WHERE email=$1 LIMIT 1`,
+            [emailClean]
+          );
+          
+          if (userRes.rows.length > 0) {
+            company = comp;
+            schemaName = comp.schema_name;
+            foundUser = userRes.rows[0];
+            console.log("🔐 LOGIN - Utilizator găsit în compania:", comp.name);
+            break;
+          }
+        } catch (e) {
+          // Schema poate să nu existe, continuăm
+          console.log("🔐 LOGIN - Eroare căutare în schema", comp.schema_name, ":", e.message);
+        }
+      }
+      
+      if (!company) {
+        console.log("🔐 LOGIN - Utilizator negăsit în nicio companie");
+        return res.status(401).json({ error: "Email sau parolă greșită" });
+      }
     }
-    
-    const company = companyRes.rows[0];
     
     // 2. Verificăm statusul companiei
     if (company.status === 'pending_verification') {
@@ -2874,18 +2916,26 @@ app.post("/api/login", async (req, res) => {
     }
 
     // 3. Căutăm userul în schema tenant
-    const schemaName = company.schema_name;
-    const r = await db.q(
-      `SELECT id, email, password_hash, role, active, is_approved, 
-              failed_attempts, unlock_at, last_failed_at, first_name, last_name
-       FROM ${schemaName}.users WHERE email=$1 LIMIT 1`,
-      [emailClean]
-    );
-
-    const u = r.rows[0];
+    let u = foundUser;
+    
+    if (!u) {
+      // Utilizatorul e admin, căutăm în schema companiei
+      const r = await db.q(
+        `SELECT id, email, password_hash, role, active, is_approved, 
+                failed_attempts, unlock_at, last_failed_at, first_name, last_name
+         FROM ${schemaName}.users WHERE email=$1 LIMIT 1`,
+        [emailClean]
+      );
+      u = r.rows[0];
+    }
+    
     if (!u) return res.status(401).json({ error: "Email sau parolă greșită" });
 
     const now = new Date();
+    
+    // Toți utilizatorii sunt acum în schema companiei
+    const userTable = `${schemaName}.users`;
+    console.log("🔐 LOGIN - Folosim tabelul:", userTable);
 
     // Reset counter după 30 min de inactivitate
     if (u.failed_attempts > 0 && u.last_failed_at) {
@@ -2894,7 +2944,7 @@ app.post("/api/login", async (req, res) => {
       
       if (lastFail < thirtyMinAgo) {
         await db.q(
-          `UPDATE ${schemaName}.users SET failed_attempts = 0, unlock_at = null, last_failed_at = null WHERE id = $1`,
+          `UPDATE ${userTable} SET failed_attempts = 0, unlock_at = null, last_failed_at = null WHERE id = $1`,
           [u.id]
         );
         u.failed_attempts = 0;
@@ -2914,7 +2964,7 @@ app.post("/api/login", async (req, res) => {
         });
       } else {
         await db.q(
-          `UPDATE ${schemaName}.users SET failed_attempts = 0, unlock_at = null, last_failed_at = null WHERE id = $1`,
+          `UPDATE ${userTable} SET failed_attempts = 0, unlock_at = null, last_failed_at = null WHERE id = $1`,
           [u.id]
         );
         u.failed_attempts = 0;
@@ -3016,7 +3066,7 @@ app.post("/api/register", async (req, res) => {
     let inviteData = null;
     if (inviteToken) {
       const inviteRes = await db.q(
-        `SELECT email, first_name, last_name, role, status, expires_at
+        `SELECT id, email, first_name, last_name, role, status, expires_at, company_id
          FROM user_invites
          WHERE token = $1`,
         [inviteToken]
@@ -3045,20 +3095,33 @@ app.post("/api/register", async (req, res) => {
       return res.status(403).json({ error: "Înregistrarea este permisă doar prin invitație" });
     }
 
+    // Găsim schema companiei din company_id
+    const companyRes = await db.q(
+      `SELECT schema_name FROM public.companies WHERE id = $1 LIMIT 1`,
+      [inviteData.company_id]
+    );
+    
+    if (companyRes.rows.length === 0) {
+      return res.status(404).json({ error: "Companie negăsită pentru invitație" });
+    }
+    
+    const schemaName = companyRes.rows[0].schema_name;
+
     // Hash parolă async
     console.log("🔐 REGISTER - Hash parolă:");
     console.log("  - Parola primită:", password ? "******" : "(goală)");
     const passwordHash = await bcrypt.hash(password, 10);
     console.log("  - Hash generat:", passwordHash.substring(0, 20) + "...");
 
-    // Creează userul cu datele din invitație (inclusiv rolul)
+    // Creează userul în SCHEMA companiei (NU în public.users)
     const userRole = inviteData.role || 'user';
     console.log("📧 Register - inviteData.role:", inviteData.role, "=> userRole:", userRole);
+    console.log("📧 Register - creez utilizator în schema:", schemaName);
     const r = await db.q(
-      `INSERT INTO users (username, password_hash, role, active, is_approved, failed_attempts, first_name, last_name, email)
-       VALUES ($1,$2,$3,true,false,0,$4,$5,$6)
-       RETURNING id, username, role, is_approved, first_name, last_name`,
-      [username.trim(), passwordHash, userRole, inviteData.first_name || null, inviteData.last_name || null, inviteData.email]
+      `INSERT INTO ${schemaName}.users (email, password_hash, role, active, is_approved, failed_attempts, first_name, last_name)
+       VALUES ($1,$2,$3,true,false,0,$4,$5)
+       RETURNING id, email, role, is_approved, first_name, last_name`,
+      [username.trim(), passwordHash, userRole, inviteData.first_name || null, inviteData.last_name || null]
     );
     
     // Marchează invitația ca folosită
@@ -3390,13 +3453,26 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
     console.log("📧 Normalized email:", normalizedEmail);
     
-    // Verifică dacă email-ul e deja folosit
+    // Găsim company_id și schema din sesiune
+    const companyRes = await db.q(
+      `SELECT id, schema_name FROM public.companies WHERE schema_name = $1 LIMIT 1`,
+      [req.session.user.schema_name]
+    );
+    
+    if (companyRes.rows.length === 0) {
+      return res.status(500).json({ error: "Companie negăsită pentru utilizatorul curent" });
+    }
+    
+    const companyId = companyRes.rows[0].id;
+    const schemaName = companyRes.rows[0].schema_name;
+    
+    // Verifică dacă email-ul e deja folosit în schema companiei
     const existingUser = await db.q(
-      "SELECT id FROM users WHERE email = $1",
+      `SELECT id FROM ${schemaName}.users WHERE email = $1`,
       [normalizedEmail]
     );
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ error: "Există deja un utilizator cu acest email" });
+      return res.status(400).json({ error: "Există deja un utilizator cu acest email în această companie" });
     }
     
     // Verifică dacă există deja o invitație activă
@@ -3418,9 +3494,9 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     
     const inviteId = crypto.randomUUID();
     await db.q(
-      `INSERT INTO user_invites (id, email, first_name, last_name, role, token, invited_by, expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [inviteId, normalizedEmail, first_name || null, last_name || null, inviteRole, token, req.session.user.email || req.session.user.username, expiresAt]
+      `INSERT INTO user_invites (id, email, first_name, last_name, role, token, invited_by, company_id, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [inviteId, normalizedEmail, first_name || null, last_name || null, inviteRole, token, req.session.user.email || req.session.user.username, companyId, expiresAt]
     );
     
     // Trimite email
@@ -3780,9 +3856,9 @@ app.post("/api/invites/accept", async (req, res) => {
       return res.status(400).json({ error: "Parola trebuie să aibă minim 6 caractere" });
     }
     
-    // Găsește invitația
+    // Găsește invitația (inclusiv company_id)
     const inviteRes = await db.q(
-      `SELECT id, email, first_name, last_name, role, status, expires_at 
+      `SELECT id, email, first_name, last_name, role, status, expires_at, company_id 
        FROM user_invites 
        WHERE token = $1`,
       [token]
@@ -3804,25 +3880,39 @@ app.post("/api/invites/accept", async (req, res) => {
       return res.status(400).json({ error: "Invitația a expirat" });
     }
     
-    // Verifică dacă există deja un utilizator cu acest email
+    // Găsește schema companiei din company_id
+    const companyRes = await db.q(
+      `SELECT schema_name FROM public.companies WHERE id = $1 LIMIT 1`,
+      [invite.company_id]
+    );
+    
+    if (companyRes.rows.length === 0) {
+      return res.status(404).json({ error: "Companie negăsită pentru invitație" });
+    }
+    
+    const schemaName = companyRes.rows[0].schema_name;
+    console.log("📧 Accept invite - schema companie:", schemaName);
+    
+    // Verifică dacă există deja un utilizator cu acest email în schema companiei
     const existingUser = await db.q(
-      "SELECT id FROM users WHERE email = $1",
+      `SELECT id FROM ${schemaName}.users WHERE email = $1`,
       [invite.email]
     );
     
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ error: "Există deja un cont cu acest email" });
+      return res.status(400).json({ error: "Există deja un cont cu acest email în această companie" });
     }
     
     // Hash parola async
     const passwordHash = await bcrypt.hash(password, 10);
     
-    // Creează utilizatorul cu rolul din invitație
+    // Creează utilizatorul în SCHEMA companiei (NU în public.users)
     console.log("📧 Accept invite - invite.role:", invite.role);
+    console.log("📧 Accept invite - creez utilizator în schema:", schemaName);
     const userResult = await db.q(
-      `INSERT INTO users (email, password_hash, role, first_name, last_name, 
-                          is_approved, active, created_at)
-       VALUES ($1, $2, $3, $4, $5, true, true, NOW())
+      `INSERT INTO ${schemaName}.users (email, password_hash, role, first_name, last_name, 
+                          is_approved, active, email_verified, created_at)
+       VALUES ($1, $2, $3, $4, $5, true, true, true, NOW())
        RETURNING id, email, role, first_name, last_name`,
       [invite.email, passwordHash, invite.role, invite.first_name, invite.last_name]
     );
