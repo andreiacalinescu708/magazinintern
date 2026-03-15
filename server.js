@@ -3067,7 +3067,7 @@ app.post("/api/register", async (req, res) => {
     if (inviteToken) {
       const inviteRes = await db.q(
         `SELECT id, email, first_name, last_name, role, status, expires_at, company_id
-         FROM user_invites
+         FROM public.user_invites
          WHERE token = $1`,
         [inviteToken]
       );
@@ -3126,7 +3126,7 @@ app.post("/api/register", async (req, res) => {
     
     // Marchează invitația ca folosită
     await db.q(
-      `UPDATE user_invites SET status = 'used', used_at = NOW() WHERE token = $1`,
+      `UPDATE public.user_invites SET status = 'used', used_at = NOW() WHERE token = $1`,
       [inviteToken]
     );
 
@@ -3478,7 +3478,7 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     // Verifică dacă există deja o invitație activă
     console.log("📧 Checking for existing invite...");
     const existingInvite = await db.q(
-      "SELECT id, status, expires_at FROM user_invites WHERE email = $1 AND status = 'pending' AND expires_at > NOW()",
+      "SELECT id, status, expires_at FROM public.user_invites WHERE email = $1 AND status = 'pending' AND expires_at > NOW()",
       [normalizedEmail]
     );
     console.log("📧 Existing invites found:", existingInvite.rows.length);
@@ -3494,7 +3494,7 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     
     const inviteId = crypto.randomUUID();
     await db.q(
-      `INSERT INTO user_invites (id, email, first_name, last_name, role, token, invited_by, company_id, expires_at)
+      `INSERT INTO public.user_invites (id, email, first_name, last_name, role, token, invited_by, company_id, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [inviteId, normalizedEmail, first_name || null, last_name || null, inviteRole, token, req.session.user.email || req.session.user.username, companyId, expiresAt]
     );
@@ -3678,7 +3678,7 @@ app.get("/api/invites", isAdmin, async (req, res) => {
   try {
     const r = await db.q(
       `SELECT i.*, u.email as invited_by_email, u.first_name as invited_by_first_name, u.last_name as invited_by_last_name
-       FROM user_invites i
+       FROM public.user_invites i
        LEFT JOIN users u ON i.invited_by = u.email
        ORDER BY i.created_at DESC`
     );
@@ -3695,7 +3695,7 @@ app.get("/api/invites/validate/:token", async (req, res) => {
     
     const r = await db.q(
       `SELECT email, first_name, last_name, status, expires_at
-       FROM user_invites
+       FROM public.user_invites
        WHERE token = $1`,
       [token]
     );
@@ -3725,7 +3725,7 @@ app.get("/api/invites/validate/:token", async (req, res) => {
 app.delete("/api/invites/:id", isAdmin, async (req, res) => {
   try {
     await db.q(
-      "DELETE FROM user_invites WHERE id = $1",
+      "DELETE FROM public.user_invites WHERE id = $1",
       [req.params.id]
     );
     res.json({ ok: true, message: "Invitație ștearsă" });
@@ -3746,13 +3746,13 @@ app.post("/api/invites/cleanup", isAdmin, async (req, res) => {
     
     // Vezi ce există înainte
     const before = await db.q(
-      "SELECT id, status, created_at FROM user_invites WHERE email = $1",
+      "SELECT id, status, created_at FROM public.user_invites WHERE email = $1",
       [normalizedEmail]
     );
     
     // Șterge toate invitațiile pentru acest email
     const result = await db.q(
-      "DELETE FROM user_invites WHERE email = $1 RETURNING id",
+      "DELETE FROM public.user_invites WHERE email = $1 RETURNING id",
       [normalizedEmail]
     );
     
@@ -3859,7 +3859,7 @@ app.post("/api/invites/accept", async (req, res) => {
     // Găsește invitația (inclusiv company_id)
     const inviteRes = await db.q(
       `SELECT id, email, first_name, last_name, role, status, expires_at, company_id 
-       FROM user_invites 
+       FROM public.user_invites 
        WHERE token = $1`,
       [token]
     );
@@ -3919,7 +3919,7 @@ app.post("/api/invites/accept", async (req, res) => {
     
     // Marchează invitația ca folosită
     await db.q(
-      "UPDATE user_invites SET status = 'used', used_at = NOW() WHERE id = $1",
+      "UPDATE public.user_invites SET status = 'used', used_at = NOW() WHERE id = $1",
       [invite.id]
     );
     
@@ -3960,7 +3960,7 @@ app.post("/api/invites/:id/resend", isAdmin, async (req, res) => {
   try {
     // Obține datele invitației
     const r = await db.q(
-      "SELECT * FROM user_invites WHERE id = $1",
+      "SELECT * FROM public.user_invites WHERE id = $1",
       [req.params.id]
     );
     
