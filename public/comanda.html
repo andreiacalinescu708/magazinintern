@@ -6,14 +6,25 @@
   <title>Comandă Nouă - oBill</title>
   <link rel="stylesheet" href="global.css" />
   <style>
-    /* Cart Toggle Button in Navbar */
+    /* Cart Toggle Button in Sticky Bar */
     .cart-toggle-btn {
       display: flex;
       align-items: center;
       gap: 6px;
       font-weight: 600;
-      padding: 0.5rem 0.75rem;
+      padding: 0.5rem 1rem;
       white-space: nowrap;
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+      border: none;
+      border-radius: var(--radius-lg);
+      color: white;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+      transition: all 0.2s;
+    }
+
+    .cart-toggle-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
     }
 
     .cart-toggle-btn span:first-child {
@@ -24,8 +35,8 @@
       .cart-toggle-btn {
         padding: 0.4rem 0.6rem;
         font-size: 0.8rem;
+        gap: 4px;
       }
-      .cart-toggle-btn span:nth-child(2),
       .cart-toggle-btn span:nth-child(3) {
         display: none;
       }
@@ -36,17 +47,27 @@
       max-height: 90vh;
       display: flex;
       flex-direction: column;
+      width: 90%;
+      max-width: 500px;
     }
 
     .cart-modal-body {
       flex: 1;
       overflow-y: auto;
-      max-height: 60vh;
+      max-height: 50vh;
+      min-height: 200px;
     }
 
     .cart-modal-footer {
       border-top: 1px solid var(--border-color);
       padding-top: 1rem;
+      flex-shrink: 0;
+    }
+
+    .cart-modal-footer .btn-secondary,
+    .cart-modal-footer .btn-send-order {
+      white-space: nowrap;
+      min-height: 44px;
     }
 
     @media (max-width: 640px) {
@@ -60,6 +81,21 @@
         left: 0;
         right: 0;
         max-height: 85vh;
+      }
+      
+      .cart-modal-footer {
+        padding: 1rem;
+      }
+      
+      .cart-modal-footer > div:last-child {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+      }
+      
+      .cart-modal-footer .btn-secondary,
+      .cart-modal-footer .btn-send-order {
+        width: 100%;
+        flex: none !important;
       }
     }
 
@@ -813,13 +849,6 @@
       </a>
       <div class="navbar-actions">
         <div id="userBar"></div>
-        <!-- Buton Coș Comandă -->
-        <button id="cartToggleBtn" class="btn btn-primary btn-sm cart-toggle-btn" onclick="openCartModal()" style="display: none;">
-          <span>🛒</span>
-          <span id="cartToggleCount">0</span>
-          <span style="margin: 0 4px;">|</span>
-          <span id="cartToggleTotal">0.00 RON</span>
-        </button>
         <a href="client.html" class="btn btn-ghost btn-sm">← Înapoi la client</a>
       </div>
     </div>
@@ -843,6 +872,14 @@
     <span class="totals-label">Tb (Cu TVA 21%)</span>
     <span class="totals-value" id="stickyTotalWithVat">0.00 RON</span>
   </div>
+  <div class="totals-divider"></div>
+  <!-- Buton Coș Comandă în bara sticky -->
+  <button id="cartToggleBtn" class="btn btn-primary btn-sm cart-toggle-btn" onclick="openCartModal()" style="display: none;">
+    <span>🛒</span>
+    <span id="cartToggleCount">0</span>
+    <span style="margin: 0 4px;">|</span>
+    <span id="cartToggleTotal">0.00 RON</span>
+  </button>
 </div>
 
 <main class="container">
@@ -905,7 +942,7 @@
         <span class="cart-total-value" id="cartModalTotal">0.00 RON</span>
       </div>
       <div style="display: flex; gap: 0.75rem;">
-        <button class="btn-secondary" onclick="closeCartModal()" style="flex: 1;">Continuă cumpărăturile</button>
+        <button class="btn-secondary" onclick="closeCartModal()" style="flex: 1;">Continuă comanda</button>
         <button class="btn-send-order" id="btnModalSendOrder" style="flex: 2;">
           ✅ Verifică și trimite
         </button>
