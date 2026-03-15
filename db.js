@@ -325,12 +325,21 @@ await q(`
     name TEXT NOT NULL DEFAULT 'Fast Medical Distribution',
     cui TEXT NOT NULL DEFAULT 'RO47095864',
     smartbill_series TEXT DEFAULT 'FMD',
+    smartbill_token_encrypted TEXT,
     address TEXT,
     city TEXT,
     country TEXT DEFAULT 'Romania',
     updated_at TIMESTAMPTZ DEFAULT now()
   )
 `);
+
+// Migrație: adaugă coloana smartbill_token_encrypted dacă nu există
+try {
+  await q(`ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smartbill_token_encrypted TEXT`);
+  console.log("✅ DB Migration: smartbill_token_encrypted adăugat");
+} catch (e) {
+  console.log("Note: smartbill_token_encrypted migration:", e.message);
+}
 
 await q(`
   INSERT INTO company_settings (id, name, cui, smartbill_series)
@@ -717,6 +726,7 @@ async function createTenantSchema(schemaName, companyData) {
       name TEXT NOT NULL,
       cui TEXT NOT NULL,
       smartbill_series TEXT DEFAULT 'FMD',
+      smartbill_token_encrypted TEXT,
       address TEXT,
       city TEXT,
       country TEXT DEFAULT 'Romania',
@@ -724,6 +734,13 @@ async function createTenantSchema(schemaName, companyData) {
       updated_at TIMESTAMPTZ DEFAULT now()
     )
   `);
+  
+  // Migrație: adaugă coloana smartbill_token_encrypted
+  try {
+    await q(`ALTER TABLE ${schemaName}.company_settings ADD COLUMN IF NOT EXISTS smartbill_token_encrypted TEXT`);
+  } catch (e) {
+    // Ignorăm eroarea
+  }
   
   // CLIENT_BALANCES
   await q(`
@@ -826,6 +843,51 @@ async function getSchemaByEmail(email) {
   return r.rows[0];
 }
 
+// ==================== CRIPTARE/DECRIPTARE TOKEN SMARTBILL ====================
+const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY || 'openbill-default-key-32chars-long!!';
+
+function getEncryptionKey() {
+  // Asigurăm că cheia are exact 32 de caractere pentru AES-256
+  const key = ENCRYPTION_KEY.padEnd(32, '!').slice(0, 32);
+  return Buffer.from(key);
+}
+
+function encryptToken(token) {
+  if (!token || token.trim() === '') return null;
+  try {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-cbc', getEncryptionKey(), iv);
+    let encrypted = cipher.update(token, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return iv.toString('hex') + ':' + encrypted;
+  } catch (e) {
+    console.error('Eroare criptare token:', e.message);
+    return null;
+  }
+}
+
+function decryptToken(encryptedToken) {
+  if (!encryptedToken || encryptedToken.trim() === '') return null;
+  try {
+    const parts = encryptedToken.split(':');
+    if (parts.length !== 2) return null;
+    const iv = Buffer.from(parts[0], 'hex');
+    const encrypted = parts[1];
+    const decipher = crypto.createDecipheriv('aes-256-cbc', getEncryptionKey(), iv);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch (e) {
+    console.error('Eroare decriptare token:', e.message);
+    return null;
+  }
+}
+
+function maskToken(token) {
+  if (!token || token.length < 10) return '***';
+  return '***' + token.slice(-6);
+}
+
 module.exports = { 
   q, 
   ensureTables, 
@@ -838,5 +900,9 @@ module.exports = {
   createTenantSchema,
   dropTenantSchema,
   cleanupUnverifiedCompanies,
-  getSchemaByEmail
+  getSchemaByEmail,
+  // Criptare exports
+  encryptToken,
+  decryptToken,
+  maskToken
 };

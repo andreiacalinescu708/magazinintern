@@ -270,6 +270,27 @@
           </div>
         </div>
         
+        <!-- Secțiune SmartBill Token - doar pentru SuperAdmin -->
+        <div id="smartbillTokenSection" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid #334155;">
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 0.5rem;">
+              🔐 Token SmartBill API
+              <span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">(doar Administrator Principal)</span>
+            </label>
+            <input 
+              type="password" 
+              id="compSmartbillToken" 
+              class="input" 
+              placeholder="Introdu tokenul SmartBill..."
+              autocomplete="off"
+            >
+            <small style="color: #64748b; font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+              Format: email|token sau cheia API completă. <a href="https://www.smartbill.ro/" target="_blank" style="color: #38bdf8;">Obține din SmartBill</a>
+            </small>
+            <div id="tokenStatus" style="margin-top: 0.5rem; font-size: 0.875rem; color: #10b981;"></div>
+          </div>
+        </div>
+        
         <div class="form-group">
           <label>Adresă</label>
           <input type="text" id="compAddress" class="input" placeholder="Str. Exemplu nr. 1">
@@ -330,6 +351,15 @@
     // ============ DETALII COMPANIE ============
     async function loadCompanyDetails() {
       try {
+        // Verifică dacă userul e superadmin pentru a arăta secțiunea de token
+        const authRes = await fetch('/api/auth/check');
+        const authData = await authRes.json();
+        const isSuperAdmin = authData.loggedIn && authData.user?.role === 'superadmin';
+        
+        if (isSuperAdmin) {
+          document.getElementById('smartbillTokenSection').style.display = 'block';
+        }
+        
         const res = await fetch('/api/company-settings');
         if (res.ok) {
           const data = await res.json();
@@ -340,6 +370,14 @@
           document.getElementById('compCity').value = data.city || '';
           document.getElementById('compCounty').value = data.county || '';
           document.getElementById('compPhone').value = data.phone || '';
+          
+          // Afișează status token dacă există
+          if (data.smartbill_token_masked) {
+            document.getElementById('tokenStatus').textContent = `Token configurat: ${data.smartbill_token_masked}`;
+          } else if (isSuperAdmin) {
+            document.getElementById('tokenStatus').textContent = '⚠️ Token SmartBill neconfigurat';
+            document.getElementById('tokenStatus').style.color = '#f59e0b';
+          }
         }
       } catch (e) {
         console.error('Eroare la încărcarea detaliilor companiei:', e);
@@ -353,6 +391,7 @@
         name: document.getElementById('compName').value.trim(),
         cui: document.getElementById('compCui').value.trim(),
         smartbill_series: document.getElementById('compSeries').value.trim(),
+        smartbill_token: document.getElementById('compSmartbillToken').value.trim(),
         address: document.getElementById('compAddress').value.trim(),
         city: document.getElementById('compCity').value.trim(),
         county: document.getElementById('compCounty').value.trim(),

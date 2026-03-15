@@ -291,20 +291,17 @@ async function sendEmail(to, subject, html, text) {
 const app = express();
 
 // ===== SMARTBILL CONFIG =====
-const SMARTBILL_TOKEN = process.env.SMARTBILL_TOKEN || 'cristiana_paun@yahoo.com:002|797b74e49656fba88457a0eb0854941e';
 const SMARTBILL_BASE_URL = 'https://ws.smartbill.ro/SBORO/api';
 
 // Cache per-schema pentru multi-tenant
 const companyCache = new Map();
 
-async function getCompanyDetails() {
-  // Pentru multi-tenant, folosim schema curentă ca key
-  const cacheKey = 'current_schema';
+async function getCompanyDetails(req) {
+  // Pentru multi-tenant, folosim schema din sesiune
+  const schemaName = req?.session?.user?.schema_name || 'public';
   
-  // Verificăm dacă avem deja date în cache pentru această sesiune
-  // Dar nu folosim cache în mod agresiv pentru multi-tenant
   try {
-    const r = await db.q(`SELECT * FROM company_settings WHERE id = 'default'`);
+    const r = await db.q(`SELECT * FROM ${schemaName}.company_settings WHERE id = 'default'`);
     if (r.rows.length && r.rows[0].name) {
       return r.rows[0];
     }
@@ -320,8 +317,32 @@ async function getCompanyDetails() {
   };
 }
 
-function getSmartbillAuthHeaders() {
-  const authString = Buffer.from(SMARTBILL_TOKEN).toString('base64');
+// Obține tokenul SmartBill din baza de date (decriptat)
+async function getSmartBillToken(req) {
+  try {
+    const schemaName = req?.session?.user?.schema_name || 'public';
+    const r = await db.q(`SELECT smartbill_token_encrypted FROM ${schemaName}.company_settings WHERE id = 'default'`);
+    
+    if (r.rows.length > 0 && r.rows[0].smartbill_token_encrypted) {
+      const decrypted = db.decryptToken(r.rows[0].smartbill_token_encrypted);
+      if (decrypted) {
+        return decrypted;
+      }
+    }
+  } catch (e) {
+    console.error('Eroare la citire token SmartBill:', e.message);
+  }
+  
+  // Fallback la variabila de mediu (pentru compatibilitate)
+  return process.env.SMARTBILL_TOKEN || null;
+}
+
+async function getSmartbillAuthHeaders(req) {
+  const token = await getSmartBillToken(req);
+  if (!token) {
+    throw new Error('Token SmartBill neconfigurat');
+  }
+  const authString = Buffer.from(token).toString('base64');
   return {
     'Authorization': `Basic ${authString}`,
     'Content-Type': 'application/json',
@@ -330,12 +351,14 @@ function getSmartbillAuthHeaders() {
 }
 
 
-async function sendDraftToSmartBill(order, clientCui) {
-  if (!SMARTBILL_TOKEN) {
-    throw new Error('Token SmartBill neconfigurat');
+async function sendDraftToSmartBill(order, clientCui, req) {
+  // Obține tokenul din baza de date
+  const smartbillToken = await getSmartBillToken(req);
+  if (!smartbillToken) {
+    throw new Error('Token SmartBill neconfigurat. Setează tokenul în pagina Companie.');
   }
 
-  const company = await getCompanyDetails();
+  const company = await getCompanyDetails(req);
 
   // Validare: toate produsele trebuie să aibă GTIN
   for (const item of order.items || []) {
@@ -401,7 +424,7 @@ mentions: `Punct de lucru: ${order.client?.name || 'Client'}`,
   try {
     const response = await fetch(`${SMARTBILL_BASE_URL}/invoice`, {
       method: 'POST',
-      headers: getSmartbillAuthHeaders(),
+      headers: await getSmartbillAuthHeaders(req),
       body: JSON.stringify(payload)
     });
 
@@ -1177,7 +1200,15 @@ app.get("/api/company-settings", isSuperAdmin, async (req, res) => {
     if (db.hasDb()) {
       const r = await db.q(`SELECT * FROM ${schemaName}.company_settings WHERE id = 'default'`);
       if (r.rows.length > 0) {
-        return res.json(r.rows[0]);
+        const settings = r.rows[0];
+        // Returnează tokenul mascat, nu cel criptat
+        if (settings.smartbill_token_encrypted) {
+          const decrypted = db.decryptToken(settings.smartbill_token_encrypted);
+          settings.smartbill_token_masked = db.maskToken(decrypted);
+          // Șterge câmpul criptat din răspuns
+          delete settings.smartbill_token_encrypted;
+        }
+        return res.json(settings);
       }
     }
     // fallback default
@@ -1199,9 +1230,38 @@ app.get("/api/company-settings", isSuperAdmin, async (req, res) => {
 app.put("/api/company-settings", isSuperAdmin, async (req, res) => {
   try {
     const schemaName = req.session?.user?.schema_name || 'public';
-    const { name, cui, smartbill_series, address, city, county, phone } = req.body;
+    const { name, cui, smartbill_series, smartbill_token, address, city, county, phone } = req.body;
     
     if (db.hasDb()) {
+      // Construim query-ul dinamic
+      let tokenUpdate = '';
+      let params = [name, cui, smartbill_series, address, city, county, phone];
+      
+      // Dacă s-a trimis un token nou (nu e null și nu e mascat), îl criptăm și salvăm
+      if (smartbill_token && smartbill_token.trim() !== '' && !smartbill_token.startsWith('***')) {
+        const encryptedToken = db.encryptToken(smartbill_token.trim());
+        if (encryptedToken) {
+          await db.q(
+            `INSERT INTO ${schemaName}.company_settings (id, name, cui, smartbill_series, smartbill_token_encrypted, address, city, county, phone, updated_at)
+             VALUES ('default', $1, $2, $3, $4, $5, $6, $7, $8, NOW())
+             ON CONFLICT (id) DO UPDATE SET
+               name = EXCLUDED.name,
+               cui = EXCLUDED.cui,
+               smartbill_series = EXCLUDED.smartbill_series,
+               smartbill_token_encrypted = EXCLUDED.smartbill_token_encrypted,
+               address = EXCLUDED.address,
+               city = EXCLUDED.city,
+               county = EXCLUDED.county,
+               phone = EXCLUDED.phone,
+               updated_at = NOW()`,
+            [name, cui, smartbill_series, encryptedToken, address, city, county, phone]
+          );
+          console.log(`🔐 Token SmartBill salvat pentru schema ${schemaName}`);
+          return res.json({ success: true, message: "Setări salvate" });
+        }
+      }
+      
+      // Dacă nu s-a trimis token sau e invalid, salvăm doar celelalte câmpuri
       await db.q(
         `INSERT INTO ${schemaName}.company_settings (id, name, cui, smartbill_series, address, city, county, phone, updated_at)
          VALUES ('default', $1, $2, $3, $4, $5, $6, $7, NOW())
@@ -1750,7 +1810,7 @@ app.post("/api/orders/:id/send", async (req, res) => {
     const clientRes = await db.q(`SELECT cui FROM ${schemaName}.clients WHERE id = $1`, [order.client?.id]);
     const clientCui = clientRes.rows[0]?.cui || '';
     
-    const company = await getCompanyDetails();
+    const company = await getCompanyDetails(req);
     
     const payload = {
       companyVatCode: company.cui,
@@ -1795,7 +1855,7 @@ app.post("/api/orders/:id/send", async (req, res) => {
     try {
       const response = await fetch(`${SMARTBILL_BASE_URL}/invoice`, {
         method: 'POST',
-        headers: getSmartbillAuthHeaders(),
+        headers: await getSmartbillAuthHeaders(req),
         body: JSON.stringify(payload)
       });
       
@@ -4163,8 +4223,9 @@ const SMARTBILL_CIF_TEST = 'RO12345678'; // CUI Al Shefa (completezi mâine)
 
 // Test endpoint: http://localhost:3000/test-smartbill
 app.get('/test-smartbill', async (req, res) => {
-  if (!SMARTBILL_TOKEN) {
-    return res.status(500).json({ error: 'Token SmartBill lipsă. Setează SMARTBILL_TOKEN în .env' });
+  const smartbillToken = await getSmartBillToken(req);
+  if (!smartbillToken) {
+    return res.status(500).json({ error: 'Token SmartBill lipsă. Setează tokenul în pagina Companie.' });
   }
 
   try {
@@ -4175,7 +4236,7 @@ app.get('/test-smartbill', async (req, res) => {
       `https://api.smartbill.ro/invoice?cifClient=${SMARTBILL_CIF_TEST}`, 
       {
         headers: {
-          'Authorization': SMARTBILL_TOKEN,
+          'Authorization': smartbillToken,
           'Accept': 'application/json'
         }
       }
@@ -4189,7 +4250,7 @@ app.get('/test-smartbill', async (req, res) => {
       `https://api.smartbill.ro/payment?clientCif=${SMARTBILL_CIF_TEST}`,
       {
         headers: {
-          'Authorization': SMARTBILL_TOKEN,
+          'Authorization': smartbillToken,
           'Accept': 'application/json'
         }
       }
