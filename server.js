@@ -3354,9 +3354,15 @@ app.get("/api/users", isAdmin, async (req, res) => {
 app.get("/api/me", requireAuth, async (req, res) => {
   try {
     const userId = req.session.user.id;
+    const schemaName = req.session.user.schema_name;
+    
+    if (!schemaName) {
+      return res.status(400).json({ error: "Schema companiei negăsită în sesiune" });
+    }
+    
     const r = await db.q(
       `SELECT id, email, role, first_name, last_name, phone, position, created_at 
-       FROM users 
+       FROM ${schemaName}.users 
        WHERE id = $1`,
       [userId]
     );
@@ -3383,10 +3389,15 @@ app.get("/api/me", requireAuth, async (req, res) => {
 app.put("/api/me", requireAuth, async (req, res) => {
   try {
     const userId = req.session.user.id;
+    const schemaName = req.session.user.schema_name;
     const { first_name, last_name, phone, email, position } = req.body;
     
+    if (!schemaName) {
+      return res.status(400).json({ error: "Schema companiei negăsită în sesiune" });
+    }
+    
     const r = await db.q(
-      `UPDATE users 
+      `UPDATE ${schemaName}.users 
        SET first_name = $1, last_name = $2, phone = $3, email = $4, position = $5
        WHERE id = $6
        RETURNING id, email, role, first_name, last_name, phone, position, created_at`,
