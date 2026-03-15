@@ -3482,6 +3482,12 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     const companyId = companyRes.rows[0].id;
     const schemaName = companyRes.rows[0].schema_name;
     
+    console.log("📧 Company found:", { companyId, schemaName });
+    
+    if (!companyId) {
+      return res.status(500).json({ error: "Company ID negăsit" });
+    }
+    
     // Verifică dacă email-ul e deja folosit în schema companiei
     const existingUser = await db.q(
       `SELECT id FROM ${schemaName}.users WHERE email = $1`,
@@ -3509,11 +3515,19 @@ app.post("/api/invites", isAdmin, async (req, res) => {
     expiresAt.setDate(expiresAt.getDate() + 7); // Expiră în 7 zile
     
     const inviteId = crypto.randomUUID();
-    await db.q(
-      `INSERT INTO public.user_invites (id, email, first_name, last_name, role, token, invited_by, company_id, expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [inviteId, normalizedEmail, first_name || null, last_name || null, inviteRole, token, req.session.user.email || req.session.user.username, companyId, expiresAt]
-    );
+    console.log("📧 Inserting invite:", { inviteId, normalizedEmail, inviteRole, companyId, invited_by: req.session.user.email || req.session.user.username });
+    
+    try {
+      await db.q(
+        `INSERT INTO public.user_invites (id, email, first_name, last_name, role, token, invited_by, company_id, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [inviteId, normalizedEmail, first_name || null, last_name || null, inviteRole, token, req.session.user.email || req.session.user.username, companyId, expiresAt]
+      );
+      console.log("📧 Invite saved successfully to DB");
+    } catch (insertErr) {
+      console.error("📧 ERROR saving invite:", insertErr);
+      throw insertErr;
+    }
     
     // Trimite email
     const inviteLink = `${req.protocol}://${req.get('host')}/accept-invite.html?invite=${token}`;
