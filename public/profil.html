@@ -347,10 +347,6 @@
 
         <div class="form-row" style="margin-bottom: 1rem;">
           <div class="readonly-field">
-            <label>Username</label>
-            <div class="value" id="displayUsername">-</div>
-          </div>
-          <div class="readonly-field">
             <label>Funcție</label>
             <div class="value" id="displayRole">-</div>
           </div>
@@ -418,22 +414,40 @@
         const user = await res.json();
         
         // Update display
-        document.getElementById('navUsername').textContent = user.username;
-        document.getElementById('displayUsername').textContent = user.username;
-        document.getElementById('displayRole').textContent = user.role === 'admin' ? 'Administrator' : 'Utilizator';
+        document.getElementById('navUsername').textContent = user.first_name || user.email;
+        
+        // Determinăm funcția corectă
+        let roleDisplay = 'Utilizator';
+        if (user.is_owner) {
+          roleDisplay = 'Administrator Principal';
+        } else if (user.role === 'admin') {
+          roleDisplay = 'Administrator';
+        }
+        document.getElementById('displayRole').textContent = roleDisplay;
         
         // Avatar
         const initials = user.first_name && user.last_name 
           ? (user.first_name[0] + user.last_name[0]).toUpperCase()
-          : user.username[0].toUpperCase();
+          : (user.email ? user.email[0].toUpperCase() : 'U');
         document.getElementById('profileAvatar').textContent = initials;
         
         // Full name display
         const fullName = user.first_name && user.last_name 
           ? `${user.first_name} ${user.last_name}`
-          : user.username;
+          : user.email;
         document.getElementById('profileFullName').textContent = fullName;
-        document.getElementById('profileRole').textContent = user.position || (user.role === 'admin' ? 'Administrator' : 'Utilizator');
+        // Determinăm funcția pentru header
+        let headerRole = user.position;
+        if (!headerRole) {
+          if (user.is_owner) {
+            headerRole = 'Administrator Principal';
+          } else if (user.role === 'admin') {
+            headerRole = 'Administrator';
+          } else {
+            headerRole = 'Utilizator';
+          }
+        }
+        document.getElementById('profileRole').textContent = headerRole;
         
         // Fill form
         document.getElementById('firstName').value = user.first_name || '';
@@ -480,7 +494,18 @@
           ? `${user.first_name} ${user.last_name}`
           : user.username;
         document.getElementById('profileFullName').textContent = fullName;
-        document.getElementById('profileRole').textContent = user.position || (user.role === 'admin' ? 'Administrator' : 'Utilizator');
+        // Determinăm funcția pentru header
+        let headerRole = user.position;
+        if (!headerRole) {
+          if (user.is_owner) {
+            headerRole = 'Administrator Principal';
+          } else if (user.role === 'admin') {
+            headerRole = 'Administrator';
+          } else {
+            headerRole = 'Utilizator';
+          }
+        }
+        document.getElementById('profileRole').textContent = headerRole;
         
         const initials = user.first_name && user.last_name 
           ? (user.first_name[0] + user.last_name[0]).toUpperCase()

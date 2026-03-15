@@ -3370,6 +3370,9 @@ app.get("/api/me", requireAuth, async (req, res) => {
     userData.company_name = req.session.user?.company_name;
     userData.trial_expires_at = req.session.user?.trial_expires_at;
     
+    // Determinăm dacă este owner (superadmin)
+    userData.is_owner = userData.role === 'superadmin';
+    
     res.json(userData);
   } catch (e) {
     res.status(500).json({ error: e.message });
