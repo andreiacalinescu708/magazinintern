@@ -562,6 +562,17 @@
             <button class="btnSuccess" onclick="saveCategory()">Salvează</button>
           </div>
           <div id="categoryMsg" class="msg"></div>
+          
+          <hr style="border-color: #334155; margin: 1.5rem 0;">
+          
+          <div class="detail-label">Termen de plată (zile)</div>
+          <div class="detail-value">${c.payment_terms !== undefined ? c.payment_terms : 0} zile</div>
+          
+          <div class="form-group" style="margin-top: 0.5rem;">
+            <input type="number" id="editPaymentTerms" class="input" placeholder="0" min="0" max="365" value="${c.payment_terms !== undefined ? c.payment_terms : 0}" style="width: 120px; display: inline-block;">
+            <button class="btnSuccess" onclick="savePaymentTerms()" style="display: inline-block; margin-left: 0.5rem;">Salvează</button>
+          </div>
+          <div id="paymentTermsMsg" class="msg"></div>
         </div>
         
         <hr style="border-color: #334155; margin: 1.5rem 0;">
@@ -636,6 +647,38 @@
           await loadCategories();
           setTimeout(() => {
             renderClientList(allClients);
+            renderClientDetails();
+          }, 500);
+        } else {
+          const data = await res.json();
+          msg.textContent = '❌ ' + (data.error || 'Eroare');
+          msg.className = 'msg error';
+        }
+      } catch (e) {
+        msg.textContent = '❌ Eroare de rețea';
+        msg.className = 'msg error';
+      }
+    }
+
+    // Salvează termenul de plată
+    async function savePaymentTerms() {
+      if (!selectedClient) return;
+      
+      const paymentTerms = parseInt(document.getElementById('editPaymentTerms').value) || 0;
+      const msg = document.getElementById('paymentTermsMsg');
+      
+      try {
+        const res = await fetch(`/api/clients/${selectedClient.id}/payment-terms`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_terms: paymentTerms })
+        });
+        
+        if (res.ok) {
+          msg.textContent = '✅ Termen de plată salvat!';
+          msg.className = 'msg success';
+          selectedClient.payment_terms = paymentTerms;
+          setTimeout(() => {
             renderClientDetails();
           }, 500);
         } else {
