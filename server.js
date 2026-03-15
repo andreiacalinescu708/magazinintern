@@ -1073,7 +1073,7 @@ app.get("/api/clients-flat", async (req, res) => {
     if (db.hasDb()) {
       const schemaName = req.session?.user?.schema_name || 'public';
       const r = await db.q(
-        `SELECT id, name, group_name, category, prices
+        `SELECT id, name, group_name, category, prices, payment_terms, cui
          FROM ${schemaName}.clients
          ORDER BY name ASC`
       );
@@ -1084,7 +1084,8 @@ const out = r.rows.map(row => ({
   name: row.name,
   group: row.group_name || "",
   category: row.category || "",
-  cui: row.cui || "", // Adăugat
+  cui: row.cui || "",
+  payment_terms: row.payment_terms !== undefined ? row.payment_terms : 0,
   prices: row.prices || {}
 }));
 
