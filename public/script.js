@@ -4912,8 +4912,19 @@ function openProductModal(product) {
   if (nameEl) nameEl.textContent = product?.name || 'Produs';
   if (gtinEl) gtinEl.textContent = 'GTIN: ' + displayGtin;
   
-  const unitPrice = Number(product?.price || 0);
-  if (unitPriceEl) unitPriceEl.textContent = unitPrice.toFixed(2) + ' RON / buc';
+  // ✅ Calculăm prețul corect (cu preț special dacă există)
+  const client = getSelectedClient();
+  const basePrice = Number(product?.price || 0);
+  const finalPrice = getProductPrice(product, client);
+  const hasSpecialPrice = finalPrice !== basePrice;
+  
+  if (unitPriceEl) {
+    if (hasSpecialPrice) {
+      unitPriceEl.innerHTML = `<span style="text-decoration: line-through; opacity: 0.6;">${basePrice.toFixed(2)} RON</span> <span style="color: #22c55e; font-weight: 600;">${finalPrice.toFixed(2)} RON</span> / buc`;
+    } else {
+      unitPriceEl.textContent = finalPrice.toFixed(2) + ' RON / buc';
+    }
+  }
   
   // ✅ Afișare stoc
   if (stockEl) {
@@ -4966,7 +4977,11 @@ function calculateModalPrices() {
   if (!qtyInput) return;
   
   const qty = parseInt(qtyInput.value) || 0;
-  const unitPrice = Number(currentModalProduct?.price || 0);
+  
+  // ✅ Calculăm prețul corect (cu preț special dacă există)
+  const client = getSelectedClient();
+  const unitPrice = getProductPrice(currentModalProduct, client);
+  
   const VAT_RATE = 0.21;
   
   const priceWithVat = unitPrice * qty;
