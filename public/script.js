@@ -2487,16 +2487,36 @@ if (!o.sentToSmartbill) {
       } else {
         items.forEach(i => {
           const row = document.createElement("div");
-          row.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 8px;";
-          const price = Number(i?.price || i?.unitPrice || 0);
-          const qty = Number(i?.qty || 0);
-          const total = price * qty;
+          row.style.cssText = "padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 8px;";
+          
+          // Construim HTML-ul pentru loturi
+          let lotsHtml = '';
+          const allocations = Array.isArray(i?.allocations) ? i.allocations : [];
+          
+          if (allocations.length > 0) {
+            lotsHtml = allocations.map(a => `
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.8125rem;">
+                <div><span style="color: var(--text-muted);">LOT:</span> <b>${a.lot || '-'}</b></div>
+                <div><span style="color: var(--text-muted);">EXP:</span> <b>${a.expiresAt ? a.expiresAt.slice(0,10) : '-'}</b></div>
+                <div><span style="color: var(--text-muted);">QTY:</span> <b>${a.qty || 0}</b></div>
+                <div><span style="color: var(--text-muted);">LOC:</span> <b>${a.location || 'A'}</b></div>
+              </div>
+            `).join('');
+          } else {
+            // Fallback dacă nu există allocations
+            lotsHtml = `
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; padding: 6px 0; font-size: 0.8125rem;">
+                <div><span style="color: var(--text-muted);">LOT:</span> <b>-</b></div>
+                <div><span style="color: var(--text-muted);">EXP:</span> <b>-</b></div>
+                <div><span style="color: var(--text-muted);">QTY:</span> <b>${i?.qty || 0}</b></div>
+                <div><span style="color: var(--text-muted);">LOC:</span> <b>-</b></div>
+              </div>
+            `;
+          }
+          
           row.innerHTML = `
-            <div>
-              <div style="font-weight: 600;">${i?.name || 'Produs'}</div>
-              <div style="font-size: 0.875rem; color: var(--text-muted);">${i?.gtin || '-'} | ${qty} buc × ${price.toFixed(2)} RON</div>
-            </div>
-            <div style="font-weight: 700; color: var(--primary-400);">${total.toFixed(2)} RON</div>
+            <div style="font-weight: 600; margin-bottom: 8px;">${i?.name || 'Produs'}</div>
+            ${lotsHtml}
           `;
           body.appendChild(row);
         });
