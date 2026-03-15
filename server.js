@@ -345,6 +345,15 @@ async function getSmartbillAuthHeaders(req) {
   // Înlocuim | cu : pentru compatibilitate (utilizatorii pot introduce email|token sau email:token)
   const normalizedToken = token.replace(/\|/g, ':');
   const authString = Buffer.from(normalizedToken).toString('base64');
+  
+  // DEBUG: Logăm detaliile de autentificare (fără a expune tokenul complet)
+  const [username, pass] = normalizedToken.split(':');
+  console.log('=== SMARTBILL AUTH DEBUG ===');
+  console.log('Username:', username);
+  console.log('Token present:', !!pass);
+  console.log('Token length:', pass?.length);
+  console.log('Auth string (first 20 chars):', authString.substring(0, 20) + '...');
+  
   return {
     'Authorization': `Basic ${authString}`,
     'Content-Type': 'application/json',
