@@ -317,17 +317,7 @@
       </a>
       <div class="navbar-actions">
         <button class="btn btn-ghost btn-icon" id="btnToggleTheme" title="Schimbă tema">🌙</button>
-        <div class="user-menu" id="userMenuContainer">
-          <button class="btn btn-primary btn-sm" id="btnUserDropdown">
-            <span id="navUsername">User</span> ▼
-          </button>
-          <div class="dropdown-menu" id="userDropdown">
-            <a href="profil.html" class="dropdown-item">👤 Profil</a>
-            <a href="schimba_parola.html" class="dropdown-item">🔒 Schimbă parola</a>
-            <div class="dropdown-divider"></div>
-            <button class="dropdown-item text-danger" id="btnLogout">🚪 Logout</button>
-          </div>
-        </div>
+        <a href="index.html" class="btn btn-ghost btn-sm">← Înapoi</a>
       </div>
     </div>
   </nav>
@@ -392,19 +382,6 @@
 
 
   <script>
-    // Dropdown functionality
-    const btnUserDropdown = document.getElementById('btnUserDropdown');
-    const userDropdown = document.getElementById('userDropdown');
-    
-    btnUserDropdown?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      userDropdown.classList.toggle('show');
-    });
-    
-    document.addEventListener('click', () => {
-      userDropdown?.classList.remove('show');
-    });
-
     // Load profile data
     async function loadProfile() {
       try {
@@ -523,12 +500,6 @@
       msg.className = type === 'success' ? 'text-success' : 'text-danger';
       setTimeout(() => msg.textContent = '', 5000);
     }
-
-    // Logout
-    document.getElementById('btnLogout').addEventListener('click', async () => {
-      await fetch('/logout', { method: 'POST' });
-      window.location.href = 'login.html';
-    });
 
     // Load on page load
     loadProfile();
