@@ -5410,6 +5410,8 @@ app.post("/api/superadmin/login", async (req, res) => {
   try {
     const { username, password } = req.body;
     
+    console.log("🔐 SuperAdmin login attempt:", username);
+    
     if (!username || !password) {
       return res.status(400).json({ error: "Username și parolă obligatorii" });
     }
@@ -5419,6 +5421,8 @@ app.post("/api/superadmin/login", async (req, res) => {
       `SELECT id, username, password_hash, active FROM public.superadmins WHERE username = $1 LIMIT 1`,
       [username]
     );
+    
+    console.log("🔐 SuperAdmin query result:", result.rows.length, "rows");
     
     if (result.rows.length === 0) {
       return res.status(401).json({ error: "Username sau parolă greșită" });
@@ -5453,8 +5457,9 @@ app.post("/api/superadmin/login", async (req, res) => {
     });
     
   } catch (e) {
-    console.error("Eroare login superadmin:", e);
-    res.status(500).json({ error: "Eroare server" });
+    console.error("Eroare login superadmin:", e.message);
+    console.error("Stack:", e.stack);
+    res.status(500).json({ error: "Eroare server: " + e.message });
   }
 });
 
