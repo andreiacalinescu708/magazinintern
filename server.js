@@ -5443,7 +5443,12 @@ app.get("/api/reports/top-products", requireAuth, async (req, res) => {
     
     query += ` ORDER BY total_qty DESC LIMIT 10`;
     
+    // Debug
+    const debugOrders = await db.q(`SELECT COUNT(*) as total FROM ${schemaName}.orders WHERE sent_to_smartbill = true`);
+    console.log(`📊 Debug orders - Trimise SmartBill: ${debugOrders.rows[0].total}`);
+    
     const result = await db.q(query, params);
+    console.log(`📊 Rezultate top products: ${result.rows.length} rânduri`);
     
     const products = result.rows.map(row => ({
       id: row.id,
@@ -5500,7 +5505,12 @@ app.get("/api/reports/top-clients", requireAuth, async (req, res) => {
     
     query += ` GROUP BY c.id, c.name ORDER BY total_value DESC LIMIT 10`;
     
+    // Debug
+    const debugOrders = await db.q(`SELECT COUNT(*) as total FROM ${schemaName}.orders WHERE sent_to_smartbill = true`);
+    console.log(`📊 Debug orders - Trimise SmartBill: ${debugOrders.rows[0].total}`);
+    
     const result = await db.q(query, params);
+    console.log(`📊 Rezultate top clients: ${result.rows.length} rânduri`);
     
     const clients = result.rows.map(row => ({
       id: row.id,
@@ -5541,7 +5551,14 @@ app.get("/api/reports/expiring-stock", requireAuth, async (req, res) => {
       ORDER BY expires_at ASC, product_name ASC
     `;
     
+    console.log(`📊 Query expiring stock: zile=${daysThreshold}, schema=${schemaName}`);
     const result = await db.q(query, [daysThreshold]);
+    console.log(`📊 Rezultate expiring stock: ${result.rows.length} rânduri`);
+    
+    // Debug: verificăm toate datele din stock
+    const debugRes = await db.q(`SELECT COUNT(*) as total FROM ${schemaName}.stock WHERE qty > 0`);
+    const debugRes2 = await db.q(`SELECT COUNT(*) as with_expiry FROM ${schemaName}.stock WHERE qty > 0 AND expires_at IS NOT NULL`);
+    console.log(`📊 Debug stock - Total cu qty>0: ${debugRes.rows[0].total}, Cu expires_at: ${debugRes2.rows[0].with_expiry}`);
     
     const stock = result.rows.map(row => ({
       id: row.id,
