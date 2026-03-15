@@ -459,7 +459,9 @@ async function isAdmin(req, res, next) {
   }
   
   try {
-    const r = await db.q(`SELECT role FROM users WHERE id = $1`, [req.session.user.id]);
+    // Folosim schema din sesiune pentru a căuta în schema companiei corecte
+    const schemaName = req.session.user.schema_name || 'public';
+    const r = await db.q(`SELECT role FROM ${schemaName}.users WHERE id = $1`, [req.session.user.id]);
     if (r.rows.length === 0) {
       return res.status(403).json({ error: "Utilizator negăsit." });
     }
