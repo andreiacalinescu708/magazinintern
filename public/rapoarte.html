@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>oBill - Rapoarte</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="global.css" />
+  <style>
+    /* Tab-uri */
+    .tabs-container {
+      margin-top: var(--space-6);
+    }
+    
+    .tabs-header {
+      display: flex;
+      gap: var(--space-2);
+      border-bottom: 2px solid var(--border-color);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    
+    .tabs-header::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .tab-btn {
+      padding: var(--space-3) var(--space-5);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--text-muted);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.05);
+    }
+    
+    .tab-btn.active {
+      color: var(--primary-500);
+      border-bottom-color: var(--primary-500);
+      background: rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Conținut tab */
+    .tab-content {
+      display: none;
+      padding: var(--space-6) 0;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Filtre */
+    .filters-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+      padding: var(--space-4);
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+    
+    .filter-group label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .filter-group input,
+    .filter-group select {
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      min-width: 140px;
+    }
+    
+    .filter-group input:focus,
+    .filter-group select:focus {
+      outline: none;
+      border-color: var(--primary-500);
+    }
+    
+    /* Butoane preset */
+    .preset-btns {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    
+    .preset-btn {
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    
+    .preset-btn:hover,
+    .preset-btn.active {
+      background: var(--primary-600);
+      border-color: var(--primary-500);
+      color: white;
+    }
+    
+    /* Tabel raport */
+    .report-table-container {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+    
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    
+    .report-table th,
+    .report-table td {
+      padding: var(--space-3) var(--space-4);
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .report-table th {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .report-table tr:hover {
+      background: rgba(255,255,255,0.03);
+    }
+    
+    .report-table td.number {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .report-table td.amount {
+      text-align: right;
+      font-weight: 600;
+      color: var(--success-400);
+    }
+    
+    /* Badge pentru top */
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+    
+    .rank-badge.gold {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #000;
+    }
+    
+    .rank-badge.silver {
+      background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+      color: #000;
+    }
+    
+    .rank-badge.bronze {
+      background: linear-gradient(135deg, #fdba74, #ea580c);
+      color: #000;
+    }
+    
+    .rank-badge.other {
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+    }
+    
+    /* Data expirare */
+    .expiry-warning {
+      color: var(--warning-500);
+      font-weight: 600;
+    }
+    
+    .expiry-danger {
+      color: var(--danger-500);
+      font-weight: 600;
+    }
+    
+    .expiry-ok {
+      color: var(--success-400);
+    }
+    
+    /* Loading și empty state */
+    .report-loading {
+      text-align: center;
+      padding: var(--space-10);
+      color: var(--text-muted);
+    }
+    
+    .report-empty {
+      text-align: center;
+      padding: var(--space-10);
+      color: var(--text-muted);
+    }
+    
+    .report-empty-icon {
+      font-size: 3rem;
+      margin-bottom: var(--space-4);
+    }
+    
+    /* Acțiuni */
+    .report-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+      gap: var(--space-3);
+    }
+    
+    .report-summary {
+      display: flex;
+      gap: var(--space-4);
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    
+    .report-summary span {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .tabs-header {
+        gap: var(--space-1);
+      }
+      
+      .tab-btn {
+        padding: var(--space-2) var(--space-3);
+        font-size: 0.8125rem;
+      }
+      
+      .filters-row {
+        flex-direction: column;
+      }
+      
+      .filter-group input,
+      .filter-group select {
+        width: 100%;
+      }
+      
+      .report-table th,
+      .report-table td {
+        padding: var(--space-2) var(--space-3);
+        font-size: 0.8125rem;
+      }
+      
+      .report-table-container {
+        overflow-x: auto;
+      }
+      
+      .report-table {
+        min-width: 600px;
+      }
+      
+      .report-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .report-summary {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+        <img src="favicon.svg" alt="oBill" style="height: 36px; width: auto;">
+        <span style="font-size: 1.5rem; font-weight: 700; color: var(--primary-500, #3b82f6);">openBill</span>
+      </a>
+      <div class="navbar-actions">
+        <a href="index.html" class="btn btn-ghost btn-sm">← Înapoi</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h1 style="margin-bottom: var(--space-2);">📊 Rapoarte</h1>
+    <p style="color: var(--text-muted);">Analize și statistici pentru afacerea ta</p>
+
+    <div class="tabs-container">
+      <!-- Tab Headers -->
+      <div class="tabs-header">
+        <button class="tab-btn active" data-tab="top-produse">
+          🏆 Top 10 Produse
+        </button>
+        <button class="tab-btn" data-tab="top-clienti">
+          👥 Top 10 Clienți
+        </button>
+        <button class="tab-btn" data-tab="expirare">
+          ⏰ Expirare Produse
+        </button>
+      </div>
+
+      <!-- Tab 1: Top 10 Produse -->
+      <div class="tab-content active" id="tab-top-produse">
+        <div class="filters-row">
+          <div class="filter-group">
+            <label>Categorie</label>
+            <select id="prodCategorie">
+              <option value="">Toate categoriile</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>De la</label>
+            <input type="date" id="prodDataStart" />
+          </div>
+          <div class="filter-group">
+            <label>Până la</label>
+            <input type="date" id="prodDataEnd" />
+          </div>
+          <div class="filter-group" style="justify-content: flex-end;">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="loadTopProduse()">
+              🔄 Generează
+            </button>
+          </div>
+        </div>
+
+        <div class="report-actions">
+          <div class="report-summary">
+            <div>Total produse vândute: <span id="prodTotalQty">-</span></div>
+            <div>Valoare totală: <span id="prodTotalValoare">-</span></div>
+          </div>
+          <button class="btn btn-success btn-sm" onclick="exportExcel('top-produse')">
+            📥 Export Excel
+          </button>
+        </div>
+
+        <div class="report-table-container">
+          <div class="report-loading" id="prodLoading">
+            Selectează filtrele și apasă "Generează" pentru a vedea raportul
+          </div>
+          <table class="report-table" id="prodTable" style="display: none;">
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>Produs</th>
+                <th>Categorie</th>
+                <th class="number">Cantitate Vândută</th>
+                <th class="number">Valoare Totală</th>
+              </tr>
+            </thead>
+            <tbody id="prodTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Top 10 Clienți -->
+      <div class="tab-content" id="tab-top-clienti">
+        <div class="filters-row">
+          <div class="filter-group">
+            <label>Perioadă preset</label>
+            <div class="preset-btns">
+              <button class="preset-btn active" data-preset="all" onclick="setPresetClienti('all')">All Time</button>
+              <button class="preset-btn" data-preset="luna-curenta" onclick="setPresetClienti('luna-curenta')">Luna Curentă</button>
+              <button class="preset-btn" data-preset="luna-trecuta" onclick="setPresetClienti('luna-trecuta')">Luna Trecută</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>Sau interval personalizat</label>
+            <div style="display: flex; gap: var(--space-2);">
+              <input type="date" id="clientDataStart" />
+              <input type="date" id="clientDataEnd" />
+            </div>
+          </div>
+          <div class="filter-group" style="justify-content: flex-end;">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="loadTopClienti()">
+              🔄 Generează
+            </button>
+          </div>
+        </div>
+
+        <div class="report-actions">
+          <div class="report-summary">
+            <div>Total clienți: <span id="clientTotalCount">-</span></div>
+            <div>Total comenzi: <span id="clientTotalComenzi">-</span></div>
+            <div>Valoare totală: <span id="clientTotalValoare">-</span></div>
+          </div>
+          <button class="btn btn-success btn-sm" onclick="exportExcel('top-clienti')">
+            📥 Export Excel
+          </button>
+        </div>
+
+        <div class="report-table-container">
+          <div class="report-loading" id="clientLoading">
+            Selectează filtrele și apasă "Generează" pentru a vedea raportul
+          </div>
+          <table class="report-table" id="clientTable" style="display: none;">
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>Client</th>
+                <th class="number">Nr. Comenzi</th>
+                <th class="number">Valoare Totală</th>
+                <th class="number">Valoare Medie/Comandă</th>
+              </tr>
+            </thead>
+            <tbody id="clientTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: Expirare Produse -->
+      <div class="tab-content" id="tab-expirare">
+        <div class="filters-row">
+          <div class="filter-group">
+            <label>Produse care expiră în următoarele</label>
+            <select id="expirareZile" onchange="loadExpirareProduse()">
+              <option value="30">30 zile</option>
+              <option value="60">60 zile</option>
+              <option value="90">90 zile</option>
+              <option value="180" selected>6 luni (180 zile)</option>
+              <option value="365">1 an</option>
+              <option value="">Toate</option>
+            </select>
+          </div>
+          <div class="filter-group" style="justify-content: flex-end;">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="loadExpirareProduse()">
+              🔄 Reîmprospătează
+            </button>
+          </div>
+        </div>
+
+        <div class="report-actions">
+          <div class="report-summary">
+            <div>Total loturi: <span id="expTotalCount">-</span></div>
+            <div>Total bucăți: <span id="expTotalQty">-</span></div>
+          </div>
+          <button class="btn btn-success btn-sm" onclick="exportExcel('expirare')">
+            📥 Export Excel
+          </button>
+        </div>
+
+        <div class="report-table-container">
+          <div class="report-loading" id="expLoading">
+            Se încarcă produsele...
+          </div>
+          <table class="report-table" id="expTable" style="display: none;">
+            <thead>
+              <tr>
+                <th>Produs</th>
+                <th>GTIN</th>
+                <th>Lot</th>
+                <th class="number">Cantitate</th>
+                <th>Locație</th>
+                <th>Data Expirare</th>
+                <th>Zile Rămase</th>
+              </tr>
+            </thead>
+            <tbody id="expTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // ==================== NAVIGARE TAB-URI ====================
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.dataset.tab;
+        
+        // Activează butonul
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Afișează conținutul
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+      });
+    });
+
+    // ==================== SETĂRI DATE DEFAULT ====================
+    function setDefaultDates() {
+      const today = new Date();
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      
+      document.getElementById('prodDataEnd').valueAsDate = today;
+      document.getElementById('prodDataStart').valueAsDate = new Date(today.getFullYear(), 0, 1); // 1 ian
+      
+      document.getElementById('clientDataEnd').valueAsDate = today;
+      document.getElementById('clientDataStart').valueAsDate = firstDayOfMonth;
+    }
+
+    // ==================== PRESET-URI CLIENȚI ====================
+    let currentClientPreset = 'all';
+    
+    function setPresetClienti(preset) {
+      currentClientPreset = preset;
+      
+      // Update UI
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === preset);
+      });
+      
+      const today = new Date();
+      const startInput = document.getElementById('clientDataStart');
+      const endInput = document.getElementById('clientDataEnd');
+      
+      if (preset === 'all') {
+        startInput.value = '';
+        endInput.value = '';
+      } else if (preset === 'luna-curenta') {
+        startInput.valueAsDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endInput.valueAsDate = today;
+      } else if (preset === 'luna-trecuta') {
+        startInput.valueAsDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        endInput.valueAsDate = new Date(today.getFullYear(), today.getMonth(), 0);
+      }
+    }
+
+    // ==================== ÎNCĂRCARE CATEGORII ====================
+    async function loadCategorii() {
+      try {
+        const res = await fetch('/api/products-flat');
+        const products = await res.json();
+        
+        // Extrage categorii unice
+        const categorii = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+        
+        const select = document.getElementById('prodCategorie');
+        categorii.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat;
+          option.textContent = cat;
+          select.appendChild(option);
+        });
+      } catch (e) {
+        console.error('Eroare la încărcarea categoriilor:', e);
+      }
+    }
+
+    // ==================== RAPORT 1: TOP 10 PRODUSE ====================
+    let topProduseData = [];
+    
+    async function loadTopProduse() {
+      const btn = document.querySelector('#tab-top-produse .btn-primary');
+      btn.disabled = true;
+      btn.textContent = '⏳ Se încarcă...';
+      
+      const categorie = document.getElementById('prodCategorie').value;
+      const dataStart = document.getElementById('prodDataStart').value;
+      const dataEnd = document.getElementById('prodDataEnd').value;
+      
+      try {
+        const params = new URLSearchParams();
+        if (categorie) params.append('categorie', categorie);
+        if (dataStart) params.append('dataStart', dataStart);
+        if (dataEnd) params.append('dataEnd', dataEnd);
+        
+        const res = await fetch('/api/reports/top-products?' + params);
+        const data = await res.json();
+        
+        topProduseData = data.products || [];
+        
+        // Update summary
+        const totalQty = topProduseData.reduce((sum, p) => sum + p.totalQty, 0);
+        const totalVal = topProduseData.reduce((sum, p) => sum + p.totalValue, 0);
+        document.getElementById('prodTotalQty').textContent = totalQty.toLocaleString('ro-RO');
+        document.getElementById('prodTotalValoare').textContent = totalVal.toFixed(2) + ' RON';
+        
+        // Render tabel
+        const tbody = document.getElementById('prodTbody');
+        tbody.innerHTML = '';
+        
+        if (topProduseData.length === 0) {
+          document.getElementById('prodLoading').style.display = 'block';
+          document.getElementById('prodLoading').textContent = 'Nu sunt date pentru filtrele selectate';
+          document.getElementById('prodTable').style.display = 'none';
+        } else {
+          document.getElementById('prodLoading').style.display = 'none';
+          document.getElementById('prodTable').style.display = 'table';
+          
+          topProduseData.forEach((prod, idx) => {
+            const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : 'other';
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td><span class="rank-badge ${rankClass}">${idx + 1}</span></td>
+              <td><strong>${escapeHtml(prod.name)}</strong></td>
+              <td>${escapeHtml(prod.category || '-')}</td>
+              <td class="number">${prod.totalQty.toLocaleString('ro-RO')}</td>
+              <td class="amount">${prod.totalValue.toFixed(2)} RON</td>
+            `;
+            tbody.appendChild(row);
+          });
+        }
+      } catch (e) {
+        console.error('Eroare:', e);
+        alert('Eroare la încărcarea raportului: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Generează';
+      }
+    }
+
+    // ==================== RAPORT 2: TOP 10 CLIENȚI ====================
+    let topClientiData = [];
+    
+    async function loadTopClienti() {
+      const btn = document.querySelector('#tab-top-clienti .btn-primary');
+      btn.disabled = true;
+      btn.textContent = '⏳ Se încarcă...';
+      
+      const dataStart = document.getElementById('clientDataStart').value;
+      const dataEnd = document.getElementById('clientDataEnd').value;
+      
+      try {
+        const params = new URLSearchParams();
+        if (dataStart) params.append('dataStart', dataStart);
+        if (dataEnd) params.append('dataEnd', dataEnd);
+        
+        const res = await fetch('/api/reports/top-clients?' + params);
+        const data = await res.json();
+        
+        topClientiData = data.clients || [];
+        
+        // Update summary
+        const totalComenzi = topClientiData.reduce((sum, c) => sum + c.orderCount, 0);
+        const totalVal = topClientiData.reduce((sum, c) => sum + c.totalValue, 0);
+        document.getElementById('clientTotalCount').textContent = topClientiData.length;
+        document.getElementById('clientTotalComenzi').textContent = totalComenzi;
+        document.getElementById('clientTotalValoare').textContent = totalVal.toFixed(2) + ' RON';
+        
+        // Render tabel
+        const tbody = document.getElementById('clientTbody');
+        tbody.innerHTML = '';
+        
+        if (topClientiData.length === 0) {
+          document.getElementById('clientLoading').style.display = 'block';
+          document.getElementById('clientLoading').textContent = 'Nu sunt date pentru filtrele selectate';
+          document.getElementById('clientTable').style.display = 'none';
+        } else {
+          document.getElementById('clientLoading').style.display = 'none';
+          document.getElementById('clientTable').style.display = 'table';
+          
+          topClientiData.forEach((client, idx) => {
+            const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : 'other';
+            const avgOrder = client.orderCount > 0 ? client.totalValue / client.orderCount : 0;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td><span class="rank-badge ${rankClass}">${idx + 1}</span></td>
+              <td><strong>${escapeHtml(client.name)}</strong></td>
+              <td class="number">${client.orderCount}</td>
+              <td class="amount">${client.totalValue.toFixed(2)} RON</td>
+              <td class="number">${avgOrder.toFixed(2)} RON</td>
+            `;
+            tbody.appendChild(row);
+          });
+        }
+      } catch (e) {
+        console.error('Eroare:', e);
+        alert('Eroare la încărcarea raportului: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Generează';
+      }
+    }
+
+    // ==================== RAPORT 3: EXPIRARE PRODUSE ====================
+    let expirareData = [];
+    
+    async function loadExpirareProduse() {
+      const btn = document.querySelector('#tab-expirare .btn-primary');
+      btn.disabled = true;
+      btn.textContent = '⏳ Se încarcă...';
+      
+      const zile = document.getElementById('expirareZile').value;
+      
+      try {
+        const params = new URLSearchParams();
+        if (zile) params.append('zile', zile);
+        
+        const res = await fetch('/api/reports/expiring-stock?' + params);
+        const data = await res.json();
+        
+        expirareData = data.stock || [];
+        
+        // Update summary
+        const totalQty = expirareData.reduce((sum, s) => sum + s.qty, 0);
+        document.getElementById('expTotalCount').textContent = expirareData.length;
+        document.getElementById('expTotalQty').textContent = totalQty.toLocaleString('ro-RO');
+        
+        // Render tabel
+        const tbody = document.getElementById('expTbody');
+        tbody.innerHTML = '';
+        
+        if (expirareData.length === 0) {
+          document.getElementById('expLoading').style.display = 'block';
+          document.getElementById('expLoading').textContent = 'Nu sunt produse care expiră în perioada selectată';
+          document.getElementById('expTable').style.display = 'none';
+        } else {
+          document.getElementById('expLoading').style.display = 'none';
+          document.getElementById('expTable').style.display = 'table';
+          
+          const today = new Date();
+          
+          expirareData.forEach(item => {
+            const expDate = new Date(item.expires_at);
+            const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+            
+            let expiryClass = 'expiry-ok';
+            if (daysLeft <= 30) expiryClass = 'expiry-danger';
+            else if (daysLeft <= 90) expiryClass = 'expiry-warning';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td><strong>${escapeHtml(item.product_name)}</strong></td>
+              <td><code>${escapeHtml(item.gtin)}</code></td>
+              <td>${escapeHtml(item.lot)}</td>
+              <td class="number">${item.qty}</td>
+              <td>${escapeHtml(item.location || '-')}</td>
+              <td>${new Date(item.expires_at).toLocaleDateString('ro-RO')}</td>
+              <td class="${expiryClass}">${daysLeft} zile</td>
+            `;
+            tbody.appendChild(row);
+          });
+        }
+      } catch (e) {
+        console.error('Eroare:', e);
+        alert('Eroare la încărcarea raportului: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Reîmprospătează';
+      }
+    }
+
+    // ==================== EXPORT EXCEL ====================
+    function exportExcel(raport) {
+      let data, headers, filename;
+      
+      if (raport === 'top-produse') {
+        if (topProduseData.length === 0) {
+          alert('Nu sunt date de exportat');
+          return;
+        }
+        filename = 'Top_10_Produse.xlsx';
+        headers = ['Nr.', 'Produs', 'Categorie', 'Cantitate Vanduta', 'Valoare Totala (RON)'];
+        data = topProduseData.map((p, i) => ({
+          'Nr.': i + 1,
+          'Produs': p.name,
+          'Categorie': p.category || '-',
+          'Cantitate Vanduta': p.totalQty,
+          'Valoare Totala (RON)': p.totalValue
+        }));
+      } else if (raport === 'top-clienti') {
+        if (topClientiData.length === 0) {
+          alert('Nu sunt date de exportat');
+          return;
+        }
+        filename = 'Top_10_Clienti.xlsx';
+        data = topClientiData.map((c, i) => ({
+          'Nr.': i + 1,
+          'Client': c.name,
+          'Nr. Comenzi': c.orderCount,
+          'Valoare Totala (RON)': c.totalValue,
+          'Valoare Medie/Comanda (RON)': c.orderCount > 0 ? c.totalValue / c.orderCount : 0
+        }));
+      } else if (raport === 'expirare') {
+        if (expirareData.length === 0) {
+          alert('Nu sunt date de exportat');
+          return;
+        }
+        const today = new Date();
+        data = expirareData.map(s => {
+          const expDate = new Date(s.expires_at);
+          const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+          return {
+            'Produs': s.product_name,
+            'GTIN': s.gtin,
+            'Lot': s.lot,
+            'Cantitate': s.qty,
+            'Locatie': s.location || '-',
+            'Data Expirare': new Date(s.expires_at).toLocaleDateString('ro-RO'),
+            'Zile Ramase': daysLeft
+          };
+        });
+        filename = 'Produse_Expirare.xlsx';
+      }
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Raport');
+      XLSX.writeFile(wb, filename);
+    }
+
+    // ==================== UTILITARE ====================
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ==================== INIT ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      setDefaultDates();
+      loadCategorii();
+      loadExpirareProduse(); // Auto-load pentru expirare
+    });
+  </script>
+</body>
+</html>

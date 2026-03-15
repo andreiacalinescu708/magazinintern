@@ -5391,6 +5391,174 @@ app.post("/api/auth/reset-password", async (req, res) => {
 });
 
 // ==========================================
+// RAPOARTE API
+// ==========================================
+
+// GET /api/reports/top-products - Top 10 produse vândute (comenzi trimise)
+app.get("/api/reports/top-products", requireAuth, async (req, res) => {
+  try {
+    const schemaName = req.session?.user?.schema_name || 'public';
+    const { categorie, dataStart, dataEnd } = req.query;
+    
+    // Query de bază - doar comenzi trimise (sent_to_smartbill = true)
+    let query = `
+      SELECT 
+        p.id,
+        p.name,
+        p.category,
+        p.gtin,
+        SUM((item->>'qty')::numeric) as total_qty,
+        SUM((item->>'lineTotal')::numeric) as total_value
+      FROM ${schemaName}.orders o
+      CROSS JOIN LATERAL jsonb_array_elements(o.items) as item
+      LEFT JOIN ${schemaName}.products p ON p.id = (item->>'id')::text
+      WHERE o.sent_to_smartbill = true
+    `;
+    
+    const params = [];
+    let paramIdx = 1;
+    
+    // Filtru dată
+    if (dataStart) {
+      query += ` AND o.created_at >= $${paramIdx}`;
+      params.push(dataStart);
+      paramIdx++;
+    }
+    
+    if (dataEnd) {
+      query += ` AND o.created_at <= $${paramIdx}::date + interval '1 day'`;
+      params.push(dataEnd);
+      paramIdx++;
+    }
+    
+    query += ` GROUP BY p.id, p.name, p.category, p.gtin`;
+    
+    // Filtru categorie
+    if (categorie) {
+      query += ` HAVING p.category = $${paramIdx}`;
+      params.push(categorie);
+      paramIdx++;
+    }
+    
+    query += ` ORDER BY total_qty DESC LIMIT 10`;
+    
+    const result = await db.q(query, params);
+    
+    const products = result.rows.map(row => ({
+      id: row.id,
+      name: row.name || 'Produs necunoscut',
+      category: row.category,
+      gtin: row.gtin,
+      totalQty: parseFloat(row.total_qty) || 0,
+      totalValue: parseFloat(row.total_value) || 0
+    }));
+    
+    res.json({ success: true, products });
+  } catch (e) {
+    console.error("Eroare raport top produse:", e);
+    res.status(500).json({ error: "Eroare la generarea raportului" });
+  }
+});
+
+// GET /api/reports/top-clients - Top 10 clienți (comenzi trimise)
+app.get("/api/reports/top-clients", requireAuth, async (req, res) => {
+  try {
+    const schemaName = req.session?.user?.schema_name || 'public';
+    const { dataStart, dataEnd } = req.query;
+    
+    let query = `
+      SELECT 
+        c.id,
+        c.name,
+        COUNT(o.id) as order_count,
+        COALESCE(SUM(
+          (SELECT SUM((item->>'lineTotal')::numeric) 
+           FROM jsonb_array_elements(o.items) as item)
+        ), 0) as total_value
+      FROM ${schemaName}.clients c
+      INNER JOIN ${schemaName}.orders o ON o.client->>'id' = c.id
+      WHERE o.sent_to_smartbill = true
+    `;
+    
+    const params = [];
+    let paramIdx = 1;
+    
+    // Filtru dată
+    if (dataStart) {
+      query += ` AND o.created_at >= $${paramIdx}`;
+      params.push(dataStart);
+      paramIdx++;
+    }
+    
+    if (dataEnd) {
+      query += ` AND o.created_at <= $${paramIdx}::date + interval '1 day'`;
+      params.push(dataEnd);
+      paramIdx++;
+    }
+    
+    query += ` GROUP BY c.id, c.name ORDER BY total_value DESC LIMIT 10`;
+    
+    const result = await db.q(query, params);
+    
+    const clients = result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      orderCount: parseInt(row.order_count) || 0,
+      totalValue: parseFloat(row.total_value) || 0
+    }));
+    
+    res.json({ success: true, clients });
+  } catch (e) {
+    console.error("Eroare raport top clienți:", e);
+    res.status(500).json({ error: "Eroare la generarea raportului" });
+  }
+});
+
+// GET /api/reports/expiring-stock - Produse cu expirare apropiată
+app.get("/api/reports/expiring-stock", requireAuth, async (req, res) => {
+  try {
+    const schemaName = req.session?.user?.schema_name || 'public';
+    const { zile } = req.query;
+    const daysThreshold = parseInt(zile) || 180; // Default 6 luni
+    
+    const query = `
+      SELECT 
+        id,
+        gtin,
+        product_name,
+        lot,
+        expires_at,
+        qty,
+        location,
+        warehouse
+      FROM ${schemaName}.stock
+      WHERE qty > 0
+        AND expires_at IS NOT NULL
+        AND expires_at <= CURRENT_DATE + interval '1 day' * $1
+      ORDER BY expires_at ASC, product_name ASC
+    `;
+    
+    const result = await db.q(query, [daysThreshold]);
+    
+    const stock = result.rows.map(row => ({
+      id: row.id,
+      gtin: row.gtin,
+      product_name: row.product_name,
+      lot: row.lot,
+      expires_at: row.expires_at,
+      qty: parseInt(row.qty) || 0,
+      location: row.location,
+      warehouse: row.warehouse
+    }));
+    
+    res.json({ success: true, stock });
+  } catch (e) {
+    console.error("Eroare raport expirare:", e);
+    res.status(500).json({ error: "Eroare la generarea raportului" });
+  }
+});
+
+// ==========================================
 // CRON JOB - Curățare conturi nevalidate
 // ==========================================
 
