@@ -3596,7 +3596,7 @@ app.post("/api/clients", async (req, res) => {
     const group = String(req.body.group || "").trim();
     const category = String(req.body.category || "").trim();
     const cui = String(req.body.cui || "").trim().toUpperCase(); // Nou
-    const paymentTerms = parseInt(req.body.payment_terms) || 30; // Termen de plată (default 30 zile)
+    const paymentTerms = parseInt(req.body.payment_terms) || 0; // Termen de plată (default 30 zile)
     const prices = (req.body.prices && typeof req.body.prices === "object") ? req.body.prices : {};
 
     if (!name) return res.status(400).json({ error: "Lipsește numele clientului" });
