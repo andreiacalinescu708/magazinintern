@@ -467,8 +467,10 @@ function renderCart() {
     return;
   }
 
-  box.innerHTML = "";
-  let total = 0;
+  if (box) box.innerHTML = "";
+  if (cartModalBox) cartModalBox.innerHTML = "";
+  
+  let cartTotal = 0;
 
   cart.forEach(i => {
     // ✅ COLECTĂM TOATE GTIN-URILE POSIBILE DIN PRODUS (gtin + gtins)
@@ -526,7 +528,7 @@ function renderCart() {
     const insufficient = i.qty > available;
     const price = Number(i.price) || 0;
     const lineTotal = price * i.qty;
-    total += lineTotal;
+    cartTotal += lineTotal;
 
     const itemDiv = document.createElement("div");
     itemDiv.className = "cart-item";
@@ -607,8 +609,8 @@ function renderCart() {
     }
   });
 
-  if (totalBox) totalBox.textContent = `${total.toFixed(2)} RON`;
-  if (cartModalTotal) cartModalTotal.textContent = `${total.toFixed(2)} RON`;
+  if (totalBox) totalBox.textContent = `${cartTotal.toFixed(2)} RON`;
+  if (cartModalTotal) cartModalTotal.textContent = `${cartTotal.toFixed(2)} RON`;
   updateStickyTotals();
 }
 
