@@ -159,9 +159,20 @@ await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
   `);
   
   // Migrație: adaug company_id dacă nu există
-  await q(`ALTER TABLE user_invites ADD COLUMN IF NOT EXISTS company_id TEXT`);
+  console.log("🔄 DB Migration: Adaug company_id în user_invites...");
+  try {
+    await q(`ALTER TABLE user_invites ADD COLUMN IF NOT EXISTS company_id TEXT`);
+    console.log("✅ DB Migration: company_id adăugat cu succes");
+  } catch (e) {
+    console.error("❌ DB Migration error (company_id):", e.message);
+  }
+  
   // Migrație: adaug coloana role dacă nu există
-  await q(`ALTER TABLE user_invites ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`);
+  try {
+    await q(`ALTER TABLE user_invites ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`);
+  } catch (e) {
+    console.error("❌ DB Migration error (role):", e.message);
+  }
   await q(`CREATE INDEX IF NOT EXISTS idx_invites_token ON user_invites(token)`);
   await q(`CREATE INDEX IF NOT EXISTS idx_invites_email ON user_invites(email)`);
 
