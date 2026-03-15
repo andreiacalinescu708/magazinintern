@@ -342,11 +342,23 @@ async function getSmartbillAuthHeaders(req) {
   if (!token) {
     throw new Error('Token SmartBill neconfigurat');
   }
-  // Înlocuim | cu : pentru compatibilitate (utilizatorii pot introduce email|token sau email:token)
-  const normalizedToken = token.replace(/\|/g, ':');
+  
+  // Tokenul poate conține | în interior (ex: 002|asd32dsad...)
+  // Deci înlocuim doar PRIMUL | cu : (separatorul dintre username și token)
+  let normalizedToken;
+  const firstPipeIndex = token.indexOf('|');
+  if (firstPipeIndex !== -1) {
+    const username = token.substring(0, firstPipeIndex);
+    const password = token.substring(firstPipeIndex + 1); // restul e tokenul (poate conține |)
+    normalizedToken = `${username}:${password}`;
+  } else {
+    // Deja folosește : sau alt format
+    normalizedToken = token;
+  }
+  
   const authString = Buffer.from(normalizedToken).toString('base64');
   
-  // DEBUG: Logăm detaliile de autentificare (fără a expune tokenul complet)
+  // DEBUG: Logăm detaliile de autentificare
   const [username, pass] = normalizedToken.split(':');
   console.log('=== SMARTBILL AUTH DEBUG ===');
   console.log('Username:', username);
