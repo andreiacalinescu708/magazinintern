@@ -5481,6 +5481,7 @@ app.get("/api/superadmin/check", (req, res) => {
 // GET /api/superadmin/companies - Lista toate companiile
 app.get("/api/superadmin/companies", requireSuperAdmin, async (req, res) => {
   try {
+    // 1. Luăm lista companiilor
     const result = await db.q(`
       SELECT 
         c.id,
@@ -5491,17 +5492,35 @@ app.get("/api/superadmin/companies", requireSuperAdmin, async (req, res) => {
         c.status,
         c.trial_expires_at,
         c.created_at,
-        c.schema_name,
-        (SELECT COUNT(*) FROM ${'${c.schema_name}'}.users) as user_count,
-        (SELECT COUNT(*) FROM ${'${c.schema_name}'}.clients) as client_count
+        c.schema_name
       FROM public.companies c
       ORDER BY c.created_at DESC
     `);
     
-    res.json({ success: true, companies: result.rows });
+    // 2. Pentru fiecare companie, luăm statisticile din schema respectivă
+    const companies = await Promise.all(result.rows.map(async (comp) => {
+      try {
+        const userCount = await db.q(`SELECT COUNT(*) as cnt FROM ${comp.schema_name}.users`);
+        const clientCount = await db.q(`SELECT COUNT(*) as cnt FROM ${comp.schema_name}.clients`);
+        return {
+          ...comp,
+          user_count: parseInt(userCount.rows[0].cnt) || 0,
+          client_count: parseInt(clientCount.rows[0].cnt) || 0
+        };
+      } catch (schemaErr) {
+        // Dacă schema nu există sau are erori, returnăm 0
+        return {
+          ...comp,
+          user_count: 0,
+          client_count: 0
+        };
+      }
+    }));
+    
+    res.json({ success: true, companies });
   } catch (e) {
     console.error("Eroare la listarea companiilor:", e);
-    res.status(500).json({ error: "Eroare server" });
+    res.status(500).json({ error: "Eroare server: " + e.message });
   }
 });
 
