@@ -480,7 +480,7 @@ async function ensureDefaultSuperadmin() {
       INSERT INTO public.superadmins (username, password_hash, email, active)
       VALUES ($1, $2, $3, true)
       ON CONFLICT (username) DO NOTHING
-    `, ['superadminob', passwordHash, 'superadmin@openbill.ro']);
+    `, ['superadminob', passwordHash, 'andreicalinescu@openbill.ro']);
     
     console.log("✅ Superadmin default creat/verificat");
   } catch (e) {
