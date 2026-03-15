@@ -1302,6 +1302,50 @@ app.put("/api/company-settings", isSuperAdmin, async (req, res) => {
   }
 });
 
+// ===== DELETE ALL COMPANIES (SUPERADMIN ONLY - TEMPORAR) =====
+app.post("/api/admin/delete-all-companies", isSuperAdmin, async (req, res) => {
+  try {
+    if (!db.hasDb()) {
+      return res.status(500).json({ error: "DB neconfigurat" });
+    }
+    
+    // 1. Obținem toate companiile din public.companies (excludem 'public')
+    const companies = await db.q(`SELECT id, schema_name, name FROM public.companies WHERE schema_name != 'public'`);
+    console.log(`🗑️ Găsite ${companies.rows.length} companii de șters`);
+    
+    const deleted = [];
+    const errors = [];
+    
+    // 2. Ștergem fiecare schemă și înregistrarea
+    for (const company of companies.rows) {
+      try {
+        // Ștergem schema
+        await db.dropTenantSchema(company.schema_name);
+        // Ștergem din tabela companies
+        await db.q(`DELETE FROM public.companies WHERE id = $1`, [company.id]);
+        deleted.push(company.schema_name);
+        console.log(`✅ Ștersă: ${company.schema_name}`);
+      } catch (err) {
+        console.error(`❌ Eroare la ștergerea ${company.schema_name}:`, err.message);
+        errors.push({ schema: company.schema_name, error: err.message });
+      }
+    }
+    
+    // 3. Curățăm și superadminii custom (opțional - doar dacă vrei să ștergi și superadminii)
+    // await db.q(`DELETE FROM public.superadmins WHERE email != 'superadminob@gmail.com'`);
+    
+    res.json({ 
+      success: true, 
+      deleted: deleted.length,
+      schemas: deleted,
+      errors: errors
+    });
+  } catch (e) {
+    console.error("DELETE ALL COMPANIES error:", e);
+    res.status(500).json({ error: "Eroare server: " + e.message });
+  }
+});
+
 // ===== COMPANY INFO (PUBLIC - pentru toți utilizatorii logați) =====
 // Returnează doar numele și CUI-ul companiei pentru afișare în navbar
 app.get("/api/company-info", requireAuth, async (req, res) => {
