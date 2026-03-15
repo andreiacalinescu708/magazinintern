@@ -48,7 +48,37 @@
       display: flex;
       flex-direction: column;
       width: 90%;
-      max-width: 500px;
+      max-width: 450px;
+    }
+
+    /* Compact cart items in modal */
+    .cart-modal-body .cart-item {
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .cart-modal-body .cart-item-name {
+      font-size: 0.9375rem;
+    }
+
+    .cart-modal-body .cart-item-details {
+      font-size: 0.8125rem;
+    }
+
+    .cart-modal-body .cart-item-controls {
+      margin-top: 0.5rem;
+    }
+
+    .cart-modal-body .qty-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 1rem;
+    }
+
+    .cart-modal-body .qty-input {
+      width: 45px;
+      height: 28px;
+      font-size: 0.9375rem;
     }
 
     .cart-modal-body {
@@ -60,14 +90,25 @@
 
     .cart-modal-footer {
       border-top: 1px solid var(--border-color);
-      padding-top: 1rem;
+      padding: 0.75rem 1rem;
       flex-shrink: 0;
+    }
+
+    .cart-modal-footer .cart-total-row {
+      margin-bottom: 0.75rem;
+      font-size: 0.9375rem;
+    }
+
+    .cart-modal-footer .cart-total-value {
+      font-size: 1rem;
     }
 
     .cart-modal-footer .btn-secondary,
     .cart-modal-footer .btn-send-order {
       white-space: nowrap;
-      min-height: 44px;
+      min-height: 36px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
     }
 
     @media (max-width: 640px) {
@@ -84,18 +125,20 @@
       }
       
       .cart-modal-footer {
-        padding: 1rem;
+        padding: 0.75rem;
       }
       
       .cart-modal-footer > div:last-child {
-        flex-direction: column !important;
-        gap: 0.75rem !important;
+        flex-direction: row !important;
+        gap: 0.5rem !important;
       }
       
       .cart-modal-footer .btn-secondary,
       .cart-modal-footer .btn-send-order {
-        width: 100%;
-        flex: none !important;
+        flex: 1 !important;
+        font-size: 0.8rem;
+        padding: 0.5rem;
+        min-height: 36px;
       }
     }
 
