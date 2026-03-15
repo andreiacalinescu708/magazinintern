@@ -206,16 +206,6 @@
           <a href="clienti.html" class="btn btn-warning">⚙️ Administrare clienți</a>
           <a href="companie.html" class="btn btn-warning">🏢 Companie</a>
           <a href="rapoarte.html" class="btn btn-warning">📈 Rapoarte</a>
-          
-          <!-- Secțiune Solduri Clienți -->
-          <input type="file" id="raportSold" accept=".xlsx" style="display: none;">
-          <button class="btn btn-warning" onclick="document.getElementById('raportSold').click()" style="width: 100%; margin-bottom: 8px;">
-            📁 Încarcă Sold Clienți
-          </button>
-            
-            <div id="statusRaport" style="font-size: 0.875rem; margin-bottom: 4px;"></div>
-            <div id="lastUploadInfo" style="font-size: 0.75rem; color: var(--text-muted);"></div>
-          </div>
         </div>
       </div>
   </main>
@@ -317,110 +307,5 @@
     })();
     
   </script>
-
-  <script>
-(function() {
-  const input = document.getElementById('raportSold');
-  if (!input) return;
-  
-  input.onchange = async function() {
-    const file = this.files[0];
-    if (!file) return;
-    
-    const statusEl = document.getElementById('statusRaport');
-    const infoEl = document.getElementById('lastUploadInfo');
-    
-    statusEl.textContent = "⏳ Se procesează...";
-    
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-        
-        // Detectare header (rândul cu "Client")
-        let headerIndex = -1;
-        for (let i = 0; i < Math.min(rows.length, 20); i++) {
-          if (String(rows[i][0] || '').toLowerCase().trim() === 'client') {
-            headerIndex = i;
-            break;
-          }
-        }
-        if (headerIndex === -1) throw new Error("Nu am găsit coloana 'Client' în Excel");
-        
-        const invoices = [];
-        const seen = new Set(); // Previne duplicate în același fișier
-        
-        for (let i = headerIndex + 1; i < rows.length; i++) {
-          const row = rows[i];
-          if (!row || row.length < 7) continue;
-          
-          const clientName = String(row[0] || '').trim();
-          if (!clientName || clientName.toLowerCase().includes('total')) continue;
-          
-          // Cheie unică pentru detectare duplicat
-          const key = `${clientName}|${row[3]}|${row[6]}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          
-          const parseSum = (val) => {
-            if (!val) return 0;
-            if (typeof val === 'number') return val;
-            return parseFloat(String(val).replace(/,/g, '')) || 0;
-          };
-          
-          const parseDate = (val) => {
-            if (!val || val === '' || val === '-') return null;
-            if (val instanceof Date) return isNaN(val.getTime()) ? null : val.toISOString().split('T')[0];
-            const str = String(val).trim();
-            const parts = str.split(/[\/\-\.]/);
-            if (parts.length === 3) {
-              const day = parts[0].padStart(2, '0');
-              const month = parts[1].padStart(2, '0');
-              const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-              return `${year}-${month}-${day}`;
-            }
-            return null;
-          };
-          
-          invoices.push({
-            client_name: clientName,
-            cui: String(row[1] || ''),
-            invoice_date: parseDate(row[2]),
-            invoice_number: String(row[3] || ''),
-            currency: String(row[4] || 'RON'),
-            total_value: parseSum(row[5]),
-            balance_due: parseSum(row[6]),
-            due_date: parseDate(row[7]),
-            days_overdue: parseInt(row[8]) || 0,
-            status: String(row[9] || '')
-          });
-        }
-        
-        const res = await fetch('/api/balances/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ invoices })
-        });
-        
-        const result = await res.json();
-        
-        if (result.success) {
-          statusEl.innerHTML = `✅ ${result.inserted} facturi încărcate`;
-          infoEl.textContent = `Ultima încărcare: ${new Date().toLocaleString('ro-RO')}`;
-        } else {
-          statusEl.innerHTML = `❌ Eroare: ${result.error || 'Necunoscută'}`;
-        }
-        
-      } catch (err) {
-        console.error(err);
-        statusEl.innerHTML = `❌ ${err.message}`;
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  };
-})();
-</script>
 </body>
 </html>
