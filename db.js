@@ -142,7 +142,7 @@ await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
 
   // Tabel pentru invitații utilizatori
   await q(`
-    CREATE TABLE IF NOT EXISTS user_invites (
+    CREATE TABLE IF NOT EXISTS public.user_invites (
       id TEXT PRIMARY KEY,
       email TEXT NOT NULL,
       first_name TEXT,
@@ -161,7 +161,7 @@ await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
   // Migrație: adaug company_id dacă nu există
   console.log("🔄 DB Migration: Adaug company_id în user_invites...");
   try {
-    await q(`ALTER TABLE user_invites ADD COLUMN IF NOT EXISTS company_id TEXT`);
+    await q(`ALTER TABLE public.user_invites ADD COLUMN IF NOT EXISTS company_id TEXT`);
     console.log("✅ DB Migration: company_id adăugat cu succes");
   } catch (e) {
     console.error("❌ DB Migration error (company_id):", e.message);
@@ -169,12 +169,12 @@ await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS unlock_at TIMESTAMPTZ`);
   
   // Migrație: adaug coloana role dacă nu există
   try {
-    await q(`ALTER TABLE user_invites ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`);
+    await q(`ALTER TABLE public.user_invites ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`);
   } catch (e) {
     console.error("❌ DB Migration error (role):", e.message);
   }
-  await q(`CREATE INDEX IF NOT EXISTS idx_invites_token ON user_invites(token)`);
-  await q(`CREATE INDEX IF NOT EXISTS idx_invites_email ON user_invites(email)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_invites_token ON public.user_invites(token)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_invites_email ON public.user_invites(email)`);
 
   // Migrație: utilizatorii cu role='admin' devin 'superadmin' (Administrator principal)
   await q(`UPDATE users SET role = 'superadmin' WHERE role = 'admin'`);
