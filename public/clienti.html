@@ -368,6 +368,12 @@
             <input type="text" id="newCategoryText" class="input" placeholder="Sau introdu categorie nouă..." style="margin-top: 0.5rem;">
           </div>
           
+          <div class="form-group">
+            <label>Termen de plată (zile)</label>
+            <input type="number" id="newPaymentTerms" class="input" placeholder="30" min="0" max="365" value="30">
+            <small style="color: #64748b; font-size: 0.8rem;">Număr de zile pentru scadența facturilor</small>
+          </div>
+          
           <hr style="border-color: #334155; margin: 1.5rem 0;">
           
           <div class="form-group">
@@ -684,6 +690,7 @@
       const cui = document.getElementById('newCui').value.trim();
       const categorySelect = document.getElementById('newCategory').value;
       const categoryText = document.getElementById('newCategoryText').value.trim();
+      const paymentTerms = parseInt(document.getElementById('newPaymentTerms').value) || 30;
       
       let category = categorySelect === '__new__' ? categoryText : (categorySelect || categoryText);
       
@@ -708,7 +715,7 @@
         const res = await fetch('/api/clients', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, cui, category, prices })
+          body: JSON.stringify({ name, cui, category, prices, payment_terms: paymentTerms })
         });
         
         if (res.ok) {

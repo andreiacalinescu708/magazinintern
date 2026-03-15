@@ -342,30 +342,7 @@ async function getSmartbillAuthHeaders(req) {
   if (!token) {
     throw new Error('Token SmartBill neconfigurat');
   }
-  
-  // Tokenul poate conține | în interior (ex: 002|asd32dsad...)
-  // Deci înlocuim doar PRIMUL | cu : (separatorul dintre username și token)
-  let normalizedToken;
-  const firstPipeIndex = token.indexOf('|');
-  if (firstPipeIndex !== -1) {
-    const username = token.substring(0, firstPipeIndex);
-    const password = token.substring(firstPipeIndex + 1); // restul e tokenul (poate conține |)
-    normalizedToken = `${username}:${password}`;
-  } else {
-    // Deja folosește : sau alt format
-    normalizedToken = token;
-  }
-  
-  const authString = Buffer.from(normalizedToken).toString('base64');
-  
-  // DEBUG: Logăm detaliile de autentificare
-  const [username, pass] = normalizedToken.split(':');
-  console.log('=== SMARTBILL AUTH DEBUG ===');
-  console.log('Username:', username);
-  console.log('Token present:', !!pass);
-  console.log('Token length:', pass?.length);
-  console.log('Auth string (first 20 chars):', authString.substring(0, 20) + '...');
-  
+  const authString = Buffer.from(token).toString('base64');
   return {
     'Authorization': `Basic ${authString}`,
     'Content-Type': 'application/json',
@@ -3619,6 +3596,7 @@ app.post("/api/clients", async (req, res) => {
     const group = String(req.body.group || "").trim();
     const category = String(req.body.category || "").trim();
     const cui = String(req.body.cui || "").trim().toUpperCase(); // Nou
+    const paymentTerms = parseInt(req.body.payment_terms) || 30; // Termen de plată (default 30 zile)
     const prices = (req.body.prices && typeof req.body.prices === "object") ? req.body.prices : {};
 
     if (!name) return res.status(400).json({ error: "Lipsește numele clientului" });
@@ -3627,20 +3605,20 @@ app.post("/api/clients", async (req, res) => {
     if (db.hasDb()) {
       const id = Date.now().toString();
       await db.q(
-        `INSERT INTO ${schemaName}.clients (id, name, group_name, category, cui, prices)
-         VALUES ($1,$2,$3,$4,$5,$6::jsonb)`,
-        [id, name, group, category, cui || null, JSON.stringify(prices)]
+        `INSERT INTO ${schemaName}.clients (id, name, group_name, category, cui, payment_terms, prices)
+         VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb)`,
+        [id, name, group, category, cui || null, paymentTerms, JSON.stringify(prices)]
       );
 
-      return res.json({ ok: true, id, cui });
+      return res.json({ ok: true, id, cui, payment_terms: paymentTerms });
     }
 
     // fallback local file
     const clients = readJson(CLIENTS_FILE, []);
     const id = Date.now().toString();
-    clients.push({ id, name, group, category, cui, prices });
+    clients.push({ id, name, group, category, cui, payment_terms: paymentTerms, prices });
     writeJson(CLIENTS_FILE, clients);
-    return res.json({ ok: true, id });
+    return res.json({ ok: true, id, payment_terms: paymentTerms });
 
   } catch (e) {
     console.error("POST /api/clients error:", e);
