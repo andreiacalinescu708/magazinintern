@@ -480,6 +480,84 @@
           const stockExpire = document.getElementById('stockExpire');
           if (stockLot) stockLot.value = 'N/A';
           if (stockExpire) stockExpire.value = '31.12.2099';
+          
+          // Suprascrie validarea butonului de adăugare pentru Starter
+          // Așteaptă ca script.js să se încarce și să atașeze event listener
+          setTimeout(() => {
+            const btnAddStock = document.getElementById('btnAddStock');
+            if (btnAddStock) {
+              // Elimină event listener-ele existente și adaugă unul nou
+              const newBtn = btnAddStock.cloneNode(true);
+              btnAddStock.parentNode.replaceChild(newBtn, btnAddStock);
+              
+              newBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const hiddenInput = document.getElementById('stockProduct');
+                const qtyInput = document.getElementById('stockQty');
+                const locationSelect = document.getElementById('locationDepozit');
+                const warehouseSelect = document.getElementById('warehouseSelect');
+                
+                if (!hiddenInput?.value) {
+                  alert('Selectează un produs');
+                  return;
+                }
+                
+                if (!qtyInput?.value || qtyInput.value <= 0) {
+                  alert('Completează cantitatea');
+                  return;
+                }
+                
+                try {
+                  const productRes = await fetch('/api/products-flat');
+                  const products = await productRes.json();
+                  const selectedProduct = products.find(p => p.id === hiddenInput.value);
+                  
+                  if (!selectedProduct) {
+                    alert('Produs negăsit');
+                    return;
+                  }
+                  
+                  const warehouse = warehouseSelect ? warehouseSelect.value : 'depozit';
+                  const location = warehouse === 'magazin' ? 'MAGAZIN' : (locationSelect ? locationSelect.value : 'A');
+                  const gtins = selectedProduct.gtins || [];
+                  const gtin = gtins[0] || selectedProduct.gtin || '';
+                  
+                  const res = await fetch('/api/stock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      gtin,
+                      productName: selectedProduct.name,
+                      lot: 'N/A',
+                      expiresAt: '2099-12-31',
+                      qty: Number(qtyInput.value),
+                      location,
+                      warehouse
+                    })
+                  });
+                  
+                  if (res.ok) {
+                    qtyInput.value = '';
+                    hiddenInput.value = '';
+                    document.getElementById('selectedProductDisplay').style.display = 'none';
+                    document.getElementById('productSearch').value = '';
+                    
+                    // Reîncarcă lista de stoc
+                    if (typeof loadStock === 'function') {
+                      loadStock();
+                    }
+                  } else {
+                    alert('Eroare la adăugare');
+                  }
+                } catch (err) {
+                  console.error('Eroare:', err);
+                  alert('Eroare de conexiune');
+                }
+              });
+            }
+          }, 500); // Așteaptă 500ms ca script.js să se încarce
         }
       } catch (e) {
         console.error('Eroare verificare plan:', e);
