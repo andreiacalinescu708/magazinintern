@@ -1296,8 +1296,9 @@ app.put("/api/company-settings", isSuperAdmin, async (req, res) => {
     
     res.json({ success: true, message: "Setări salvate (fallback)" });
   } catch (e) {
-    console.error("PUT /api/company-settings error:", e);
-    res.status(500).json({ error: "Eroare server" });
+    console.error("PUT /api/company-settings error:", e.message);
+    console.error("Stack:", e.stack);
+    res.status(500).json({ error: "Eroare server: " + e.message });
   }
 });
 
