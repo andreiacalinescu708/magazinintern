@@ -359,6 +359,21 @@ async function sendDraftToSmartBill(order, clientCui, req) {
   }
 
   const company = await getCompanyDetails(req);
+  const schemaName = req?.session?.user?.schema_name || 'public';
+
+  // Obține payment_terms din DB pentru client
+  let paymentTerms = 30; // default
+  try {
+    const clientRes = await db.q(
+      `SELECT payment_terms FROM ${schemaName}.clients WHERE id = $1 LIMIT 1`,
+      [order.client?.id]
+    );
+    if (clientRes.rows.length > 0) {
+      paymentTerms = clientRes.rows[0].payment_terms || 30;
+    }
+  } catch (e) {
+    console.log('Eroare la citire payment_terms:', e.message);
+  }
 
   // Validare: toate produsele trebuie să aibă GTIN
   for (const item of order.items || []) {
@@ -369,7 +384,7 @@ async function sendDraftToSmartBill(order, clientCui, req) {
   // Calculează data scadenței
 const today = new Date();
 const dueDate = new Date(today);
-dueDate.setDate(today.getDate() + (client.payment_terms || 30)); // default 30 zile
+dueDate.setDate(today.getDate() + paymentTerms); // default 30 zile
 
 // Formatează pentru SmartBill: AAAA-LL-ZZ
 const dueDateFormatted = dueDate.toISOString().split('T')[0];
@@ -5926,6 +5941,7 @@ console.log("⏰ Cron job curățare: fiecare 60 secunde");
 
   app.listen(PORT, () => console.log("Server pornit pe port", PORT));
 })();
+
 
 
 
