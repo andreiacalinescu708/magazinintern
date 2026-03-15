@@ -1303,8 +1303,13 @@ app.put("/api/company-settings", isSuperAdmin, async (req, res) => {
 });
 
 // ===== DELETE ALL COMPANIES (SUPERADMIN ONLY - TEMPORAR) =====
-app.post("/api/admin/delete-all-companies", isSuperAdmin, async (req, res) => {
+app.post("/api/admin/delete-all-companies", async (req, res) => {
   try {
+    // Verificare superadmin - folosește session.superadmin
+    if (!req.session?.superadmin?.id) {
+      return res.status(403).json({ error: "Nu ești autentificat ca SuperAdmin." });
+    }
+    
     if (!db.hasDb()) {
       return res.status(500).json({ error: "DB neconfigurat" });
     }
