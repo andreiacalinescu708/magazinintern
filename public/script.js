@@ -4986,6 +4986,42 @@ function closeCartModal() {
   }
 }
 
+// Submit order from cart modal
+async function submitOrderFromModal() {
+  const client = getSelectedClient();
+  const items = getCart();
+
+  if (!client) {
+    alert("Client nesetat");
+    return;
+  }
+
+  if (!items.length) {
+    alert("Coșul este gol");
+    return;
+  }
+
+  const res = await fetch("/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ client, items })
+  });
+
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {}
+
+  if (!res.ok || data.error) {
+    alert("Stoc insuficient pentru cel puțin un produs.\n\nVerifică cantitățile din coș.");
+    return;
+  }
+
+  clearCart();
+  alert("Comandă trimisă!");
+  location.href = "index.html";
+}
+
 // Close cart modal when clicking outside
 if (typeof window !== 'undefined') {
   document.addEventListener('click', function(e) {
