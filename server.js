@@ -5532,9 +5532,12 @@ app.get("/api/reports/expiring-stock", requireAuth, async (req, res) => {
     const schemaName = req.session?.user?.schema_name || 'public';
     console.log(`📊 RAPORT Expiring Stock - Schema: ${schemaName}, User: ${req.session?.user?.email}`);
     const { zile } = req.query;
-    const daysThreshold = parseInt(zile) || 180; // Default 6 luni
     
-    const query = `
+    // Dacă zile este gol ("Toate"), nu aplicăm filtru de dată
+    const toateProdusele = !zile || zile === '';
+    const daysThreshold = toateProdusele ? null : (parseInt(zile) || 180);
+    
+    let query = `
       SELECT 
         id,
         gtin,
@@ -5547,12 +5550,20 @@ app.get("/api/reports/expiring-stock", requireAuth, async (req, res) => {
       FROM ${schemaName}.stock
       WHERE qty > 0
         AND expires_at IS NOT NULL
-        AND expires_at <= CURRENT_DATE + interval '1 day' * $1
-      ORDER BY expires_at ASC, product_name ASC
     `;
     
-    console.log(`📊 Query expiring stock: zile=${daysThreshold}, schema=${schemaName}`);
-    const result = await db.q(query, [daysThreshold]);
+    const params = [];
+    
+    // Adăugăm filtrul de dată doar dacă nu e "Toate"
+    if (!toateProdusele) {
+      query += ` AND expires_at <= CURRENT_DATE + interval '1 day' * $1`;
+      params.push(daysThreshold);
+    }
+    
+    query += ` ORDER BY expires_at ASC, product_name ASC`;
+    
+    console.log(`📊 Query expiring stock: zile=${toateProdusele ? 'TOATE' : daysThreshold}, schema=${schemaName}`);
+    const result = await db.q(query, params);
     console.log(`📊 Rezultate expiring stock: ${result.rows.length} rânduri`);
     
     // Debug: verificăm toate datele din stock
