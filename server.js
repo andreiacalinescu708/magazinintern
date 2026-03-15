@@ -1417,10 +1417,12 @@ app.post("/api/admin/cleanup-public-schema", async (req, res) => {
     }
     
     // Tabele care ar trebui șterse din public (date de business, nu management)
+    // ATENȚIE: user_invites, password_resets trebuie să rămână în public!
     const tablesToDrop = [
       'orders', 'stock', 'audit', 'users', 'clients', 'products',
       'company_settings', 'client_balances', 'drivers', 'vehicles',
-      'trip_sheets', 'fuel_receipts', 'stock_transfers', 'user_invites'
+      'trip_sheets', 'fuel_receipts', 'stock_transfers'
+      // NU șterge: user_invites, password_resets, companies_verify
     ];
     
     const dropped = [];
@@ -1453,6 +1455,105 @@ app.post("/api/admin/cleanup-public-schema", async (req, res) => {
     });
   } catch (e) {
     console.error("CLEANUP PUBLIC SCHEMA error:", e);
+    res.status(500).json({ error: "Eroare server: " + e.message });
+  }
+});
+
+// ===== FIX PUBLIC SCHEMA (SUPERADMIN ONLY - TEMPORAR) =====
+// Recreează tabelele lipsă din public (user_invites, password_resets, companies_verify)
+app.post("/api/admin/fix-public-schema", async (req, res) => {
+  try {
+    // Verificare superadmin
+    if (!req.session?.superadmin?.id) {
+      return res.status(403).json({ error: "Nu ești autentificat ca SuperAdmin." });
+    }
+    
+    if (!db.hasDb()) {
+      return res.status(500).json({ error: "DB neconfigurat" });
+    }
+    
+    const created = [];
+    const errors = [];
+    
+    // 1. Recreează user_invites dacă nu există
+    try {
+      await db.q(`
+        CREATE TABLE IF NOT EXISTS public.user_invites (
+          id TEXT PRIMARY KEY,
+          email TEXT NOT NULL,
+          first_name TEXT,
+          last_name TEXT,
+          role TEXT NOT NULL DEFAULT 'user',
+          token TEXT UNIQUE NOT NULL,
+          invited_by TEXT NOT NULL,
+          company_id TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          expires_at TIMESTAMPTZ NOT NULL,
+          accepted_at TIMESTAMPTZ
+        )
+      `);
+      await db.q(`CREATE INDEX IF NOT EXISTS idx_invites_token ON public.user_invites(token)`);
+      await db.q(`CREATE INDEX IF NOT EXISTS idx_invites_email ON public.user_invites(email)`);
+      created.push('user_invites');
+      console.log(`✅ Recreată tabela public.user_invites`);
+    } catch (err) {
+      console.error(`❌ Eroare la crearea user_invites:`, err.message);
+      errors.push({ table: 'user_invites', error: err.message });
+    }
+    
+    // 2. Recreează password_resets dacă nu există
+    try {
+      await db.q(`
+        CREATE TABLE IF NOT EXISTS public.password_resets (
+          id SERIAL PRIMARY KEY,
+          email TEXT NOT NULL,
+          token TEXT UNIQUE NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          expires_at TIMESTAMPTZ NOT NULL,
+          used BOOLEAN NOT NULL DEFAULT false
+        )
+      `);
+      await db.q(`CREATE INDEX IF NOT EXISTS idx_password_resets_token ON public.password_resets(token)`);
+      await db.q(`CREATE INDEX IF NOT EXISTS idx_password_resets_email ON public.password_resets(email)`);
+      created.push('password_resets');
+      console.log(`✅ Recreată tabela public.password_resets`);
+    } catch (err) {
+      console.error(`❌ Eroare la crearea password_resets:`, err.message);
+      errors.push({ table: 'password_resets', error: err.message });
+    }
+    
+    // 3. Recreează companies_verify dacă nu există
+    try {
+      await db.q(`
+        CREATE TABLE IF NOT EXISTS public.companies_verify (
+          id SERIAL PRIMARY KEY,
+          email TEXT NOT NULL,
+          company_name TEXT NOT NULL,
+          token TEXT UNIQUE NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          expires_at TIMESTAMPTZ NOT NULL,
+          verified BOOLEAN NOT NULL DEFAULT false,
+          verified_at TIMESTAMPTZ
+        )
+      `);
+      await db.q(`CREATE INDEX IF NOT EXISTS idx_companies_verify_token ON public.companies_verify(token)`);
+      await db.q(`CREATE INDEX IF NOT EXISTS idx_companies_verify_email ON public.companies_verify(email)`);
+      created.push('companies_verify');
+      console.log(`✅ Recreată tabela public.companies_verify`);
+    } catch (err) {
+      console.error(`❌ Eroare la crearea companies_verify:`, err.message);
+      errors.push({ table: 'companies_verify', error: err.message });
+    }
+    
+    res.json({ 
+      success: true, 
+      created: created.length,
+      tables: created,
+      errors: errors
+    });
+  } catch (e) {
+    console.error("FIX PUBLIC SCHEMA error:", e);
     res.status(500).json({ error: "Eroare server: " + e.message });
   }
 });
