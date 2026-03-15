@@ -641,11 +641,11 @@ const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const STOCK_FILE = path.join(DATA_DIR, "stock.json");
 
-async function seedClientsFromFileIfEmpty() {
+async function seedClientsFromFileIfEmpty(schemaName = 'public') {
   if (!db.hasDb()) return;
 
   // există tabelă, dar e goală? -  > seed din clients.json
-  const r = await db.q("SELECT COUNT(*)::int AS n FROM clients");
+  const r = await db.q(`SELECT COUNT(*)::int AS n FROM ${schemaName}.clients`);
   if ((r.rows?.[0]?.n ?? 0) > 0) return;
 
   const fileClients = readJson(CLIENTS_FILE, []);
@@ -660,20 +660,20 @@ async function seedClientsFromFileIfEmpty() {
     const prices = c.prices && typeof c.prices === "object" ? c.prices : {};
 
     await db.q(
-      `INSERT INTO clients (id, name, group_name, category, prices)
+      `INSERT INTO ${schemaName}.clients (id, name, group_name, category, prices)
        VALUES ($1,$2,$3,$4,$5::jsonb)
        ON CONFLICT (id) DO NOTHING`,
       [id, name, group, category, JSON.stringify(prices)]
     );
   }
 
-  console.log("✅ Clients seeded into DB from clients.json");
+  console.log(`✅ Clients seeded into DB for schema ${schemaName} from clients.json`);
 }
 
-async function seedProductsFromFileIfEmpty() {
+async function seedProductsFromFileIfEmpty(schemaName = 'public') {
   if (!db.hasDb()) return;
 
-  const r = await db.q("SELECT COUNT(*)::int AS n FROM products");
+  const r = await db.q(`SELECT COUNT(*)::int AS n FROM ${schemaName}.products`);
   if ((r.rows?.[0]?.n ?? 0) > 0) return;
 
   const list = readProductsAsList();
@@ -698,7 +698,7 @@ async function seedProductsFromFileIfEmpty() {
    const idFinal = id && String(id).trim() ? String(id) : crypto.randomUUID();
 
 await db.q(
-  `INSERT INTO products (id, name, gtin, gtins, category, price, active)
+  `INSERT INTO ${schemaName}.products (id, name, gtin, gtins, category, price, active)
    VALUES ($1,$2,$3,$4::jsonb,$5,$6,true)
    ON CONFLICT (gtin) DO UPDATE SET
      name = EXCLUDED.name,
@@ -717,7 +717,7 @@ await db.q(
 );
   }
 
-  console.log("✅ Products seeded into DB from products.json");
+  console.log(`✅ Products seeded into DB for schema ${schemaName} from products.json`);
 }
 
 
@@ -756,8 +756,9 @@ async function logAudit(req, action, entity, entityId, details = {}) {
   // ✅ dacă avem DB -> scriem în Postgres
   if (db.hasDb()) {
     try {
+      const schemaName = req?.session?.user?.schema_name || 'public';
       await db.q(
-        `INSERT INTO audit (id, action, entity, entity_id, user_json, details, created_at)
+        `INSERT INTO ${schemaName}.audit (id, action, entity, entity_id, user_json, details, created_at)
          VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::timestamptz)`,
         [
           row.id,
@@ -1001,10 +1002,12 @@ function allocateFromSpecificLot(stock, gtin, lot, neededQty) {
 app.get("/api/clients-tree", async (req, res) => {
   try {
     if (db.hasDb()) {
+      // Folosim schema companiei din sesiune
+      const schemaName = req.session?.user?.schema_name || 'public';
       // Citește din PostgreSQL
       const r = await db.q(
         `SELECT name, group_name as "group", category 
-         FROM clients 
+         FROM ${schemaName}.clients 
          ORDER BY name ASC`
       );
       
@@ -1030,9 +1033,10 @@ app.get("/api/clients-tree", async (req, res) => {
 app.get("/api/clients-flat", async (req, res) => {
   try {
     if (db.hasDb()) {
+      const schemaName = req.session?.user?.schema_name || 'public';
       const r = await db.q(
         `SELECT id, name, group_name, category, prices
-         FROM clients
+         FROM ${schemaName}.clients
          ORDER BY name ASC`
       );
 
@@ -1066,10 +1070,11 @@ const out = r.rows.map(row => ({
 app.get("/api/clients/:id", async (req, res) => {
   try {
     const id = String(req.params.id);
+    const schemaName = req.session?.user?.schema_name || 'public';
 
     const r = await db.q(
       `SELECT id, name, group_name AS "group", category, prices, cui, payment_terms
-       FROM clients
+       FROM ${schemaName}.clients
        WHERE id = $1`,
       [id]
     );
@@ -1092,13 +1097,14 @@ app.put("/api/clients/:id/prices", async (req, res) => {
   try {
     const id = String(req.params.id);
     const prices = req.body?.prices;
+    const schemaName = req.session?.user?.schema_name || 'public';
 
     if (!prices || typeof prices !== "object" || Array.isArray(prices)) {
       return res.status(400).json({ error: "Body invalid. Trimite { prices: {...} }" });
     }
 
     await db.q(
-      `UPDATE clients SET prices = $1::jsonb WHERE id = $2`,
+      `UPDATE ${schemaName}.clients SET prices = $1::jsonb WHERE id = $2`,
       [JSON.stringify(prices), id]
     );
 
@@ -1113,8 +1119,9 @@ app.put("/api/clients/:id/prices", async (req, res) => {
 app.get("/api/client-categories", async (req, res) => {
   try {
     if (db.hasDb()) {
+      const schemaName = req.session?.user?.schema_name || 'public';
       const r = await db.q(
-        `SELECT DISTINCT category FROM clients WHERE category IS NOT NULL AND category != '' ORDER BY category ASC`
+        `SELECT DISTINCT category FROM ${schemaName}.clients WHERE category IS NOT NULL AND category != '' ORDER BY category ASC`
       );
       return res.json(r.rows.map(row => row.category));
     }
@@ -1131,6 +1138,7 @@ app.get("/api/client-categories", async (req, res) => {
 // ===== API: Update categorie client =====
 app.put("/api/clients/:id/category", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { id } = req.params;
     const { category } = req.body;
     
@@ -1140,7 +1148,7 @@ app.put("/api/clients/:id/category", async (req, res) => {
     
     if (db.hasDb()) {
       await db.q(
-        `UPDATE clients SET category = $1 WHERE id = $2`,
+        `UPDATE ${schemaName}.clients SET category = $1 WHERE id = $2`,
         [category.trim(), id]
       );
       return res.json({ success: true, message: "Categorie actualizată" });
@@ -1165,8 +1173,9 @@ app.put("/api/clients/:id/category", async (req, res) => {
 // Doar SuperAdmin poate vedea/modifica setările companiei
 app.get("/api/company-settings", isSuperAdmin, async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     if (db.hasDb()) {
-      const r = await db.q(`SELECT * FROM company_settings WHERE id = 'default'`);
+      const r = await db.q(`SELECT * FROM ${schemaName}.company_settings WHERE id = 'default'`);
       if (r.rows.length > 0) {
         return res.json(r.rows[0]);
       }
@@ -1189,11 +1198,12 @@ app.get("/api/company-settings", isSuperAdmin, async (req, res) => {
 
 app.put("/api/company-settings", isSuperAdmin, async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { name, cui, smartbill_series, address, city, county, phone } = req.body;
     
     if (db.hasDb()) {
       await db.q(
-        `INSERT INTO company_settings (id, name, cui, smartbill_series, address, city, county, phone, updated_at)
+        `INSERT INTO ${schemaName}.company_settings (id, name, cui, smartbill_series, address, city, county, phone, updated_at)
          VALUES ('default', $1, $2, $3, $4, $5, $6, $7, NOW())
          ON CONFLICT (id) DO UPDATE SET
            name = EXCLUDED.name,
@@ -1220,13 +1230,14 @@ app.put("/api/company-settings", isSuperAdmin, async (req, res) => {
 // Returnează doar numele și CUI-ul companiei pentru afișare în navbar
 app.get("/api/company-info", requireAuth, async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     // Luăm numele companiei din sesiune (setat la login)
     const sessionCompanyName = req.session.user?.company_name;
     
     if (db.hasDb()) {
-      // Încercăm să citim din company_settings din schema curentă (setată de middleware)
+      // Încercăm să citim din company_settings din schema curentă
       try {
-        const r = await db.q(`SELECT name, cui FROM company_settings WHERE id = 'default'`);
+        const r = await db.q(`SELECT name, cui FROM ${schemaName}.company_settings WHERE id = 'default'`);
         if (r.rows.length > 0 && r.rows[0].name) {
           return res.json({
             name: r.rows[0].name,
@@ -1254,6 +1265,7 @@ app.get("/api/company-info", requireAuth, async (req, res) => {
 // Adaugă categorie nouă
 app.post("/api/client-categories", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { name } = req.body;
     if (!name || !String(name).trim()) {
       return res.status(400).json({ error: "Numele categoriei este obligatoriu" });
@@ -1263,7 +1275,7 @@ app.post("/api/client-categories", async (req, res) => {
     
     // Verifică dacă există deja
     if (db.hasDb()) {
-      const check = await db.q(`SELECT 1 FROM clients WHERE category = $1 LIMIT 1`, [trimmedName]);
+      const check = await db.q(`SELECT 1 FROM ${schemaName}.clients WHERE category = $1 LIMIT 1`, [trimmedName]);
       if (check.rows.length > 0) {
         return res.status(400).json({ error: "Categoria există deja" });
       }
@@ -1281,6 +1293,7 @@ app.post("/api/client-categories", async (req, res) => {
 // Redenumește categorie
 app.put("/api/client-categories/rename", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { oldName, newName } = req.body;
     if (!oldName || !newName || !String(newName).trim()) {
       return res.status(400).json({ error: "Numele vechi și nou sunt obligatorii" });
@@ -1290,7 +1303,7 @@ app.put("/api/client-categories/rename", async (req, res) => {
     
     if (db.hasDb()) {
       await db.q(
-        `UPDATE clients SET category = $1 WHERE category = $2`,
+        `UPDATE ${schemaName}.clients SET category = $1 WHERE category = $2`,
         [trimmedNew, oldName]
       );
       return res.json({ success: true, message: "Categorie redenumită" });
@@ -1317,6 +1330,7 @@ app.put("/api/client-categories/rename", async (req, res) => {
 // Șterge categorie (setează clienții la null)
 app.delete("/api/client-categories", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { name } = req.body;
     if (!name) {
       return res.status(400).json({ error: "Numele categoriei este obligatoriu" });
@@ -1324,7 +1338,7 @@ app.delete("/api/client-categories", async (req, res) => {
     
     if (db.hasDb()) {
       await db.q(
-        `UPDATE clients SET category = NULL WHERE category = $1`,
+        `UPDATE ${schemaName}.clients SET category = NULL WHERE category = $1`,
         [name]
       );
       return res.json({ success: true, message: "Categorie ștearsă" });
@@ -1397,12 +1411,13 @@ function readProductsAsList() {
 // ----- API PRODUCTS -----
 app.get("/api/products-tree", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     let list = [];
 
     if (db.hasDb()) {
     const r = await db.q(`
   SELECT id, name, category
-  FROM products
+  FROM ${schemaName}.products
   WHERE COALESCE(active, true) = true
   ORDER BY name ASC
 `);
@@ -1438,6 +1453,7 @@ app.get("/api/products-tree", async (req, res) => {
 
 app.put("/api/products/:id", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     if (!db.hasDb()) return res.status(500).json({ error: "DB neconfigurat" });
 
     const id = String(req.params.id);
@@ -1455,7 +1471,7 @@ app.put("/api/products/:id", async (req, res) => {
     const pr = (price != null && price !== "") ? Number(price) : null;
 
     await db.q(
-      `UPDATE products
+      `UPDATE ${schemaName}.products
        SET name=$1, gtin=$2, gtins=$3::jsonb, category=$4, price=$5
        WHERE id=$6`,
       [String(name || "").trim(), gtinClean, JSON.stringify(gtinsArr), cat, (Number.isFinite(pr) ? pr : null), id]
@@ -1470,11 +1486,12 @@ app.put("/api/products/:id", async (req, res) => {
 
 app.delete("/api/products/:id", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     if (!db.hasDb()) return res.status(500).json({ error: "DB neconfigurat" });
 
     const id = String(req.params.id);
 
-    await db.q(`UPDATE products SET active=false WHERE id=$1`, [id]);
+    await db.q(`UPDATE ${schemaName}.products SET active=false WHERE id=$1`, [id]);
 
     return res.json({ ok: true });
   } catch (e) {
@@ -1486,10 +1503,11 @@ app.delete("/api/products/:id", async (req, res) => {
 
 app.get("/api/products-flat", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     if (db.hasDb()) {
      const r = await db.q(
   `SELECT id, name, gtin, gtins, category, price
-   FROM products
+   FROM ${schemaName}.products
    WHERE COALESCE(active, true) = true
    ORDER BY name ASC`
 );
@@ -1526,6 +1544,7 @@ res.status(500).json({ error: "Eroare la produse", detail: e.message, code: e.co
 // ----- API ORDERS -----
 app.get("/api/orders", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     if (!db.hasDb()) {
       const orders = readJson(ORDERS_FILE, []);
       return res.json(orders);
@@ -1534,7 +1553,7 @@ app.get("/api/orders", async (req, res) => {
     const r = await db.q(
       `SELECT id, client, items, status, created_at, sent_to_smartbill, 
               smartbill_series, smartbill_number, due_date, smartbill_error
-       FROM orders
+       FROM ${schemaName}.orders
        ORDER BY created_at DESC`
     );
 
@@ -1565,6 +1584,7 @@ app.get("/api/orders", async (req, res) => {
 
 app.post("/api/orders", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { client, items } = req.body;
     
     if (!items || !items.length) {
@@ -1592,7 +1612,7 @@ app.post("/api/orders", async (req, res) => {
       let allocations = [];
       try {
         if (db.hasDb()) {
-          allocations = await allocateStockFromDB(item.gtin, qty);
+          allocations = await allocateStockFromDB(item.gtin, qty, 'depozit', req);
         } else {
           const stock = readJson(STOCK_FILE, []);
           allocations = allocateStockByLocation(stock, item.gtin, qty);
@@ -1621,7 +1641,7 @@ app.post("/api/orders", async (req, res) => {
     
     if (db.hasDb() && client.id) {
       const clientRes = await db.q(
-        `SELECT payment_terms FROM clients WHERE id = $1`,
+        `SELECT payment_terms FROM ${schemaName}.clients WHERE id = $1`,
         [client.id]
       );
       if (clientRes.rows.length > 0) {
@@ -1660,7 +1680,7 @@ app.post("/api/orders", async (req, res) => {
     }
 
     await db.q(
-      `INSERT INTO orders (id, client, items, status, created_at, sent_to_smartbill, 
+      `INSERT INTO ${schemaName}.orders (id, client, items, status, created_at, sent_to_smartbill, 
        smartbill_draft_sent, smartbill_error, due_date, payment_terms)
        VALUES ($1, $2::jsonb, $3::jsonb, $4, $5::timestamptz, $6, $7, $8, $9, $10)`,
       [
@@ -1698,6 +1718,7 @@ app.post("/api/orders", async (req, res) => {
 // TRIMITE COMANDA LA SMARTBILL (doar când userul confirmă manual)
 app.post("/api/orders/:id/send", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const orderId = String(req.params.id);
     
     if (!db.hasDb()) {
@@ -1706,7 +1727,7 @@ app.post("/api/orders/:id/send", async (req, res) => {
     
     // 1. Ia comanda din DB
     const orderRes = await db.q(
-      `SELECT * FROM orders WHERE id = $1`,
+      `SELECT * FROM ${schemaName}.orders WHERE id = $1`,
       [orderId]
     );
     
@@ -1726,7 +1747,7 @@ app.post("/api/orders/:id/send", async (req, res) => {
     }
     
     // 3. Pregătește datele pentru SmartBill
-    const clientRes = await db.q(`SELECT cui FROM clients WHERE id = $1`, [order.client?.id]);
+    const clientRes = await db.q(`SELECT cui FROM ${schemaName}.clients WHERE id = $1`, [order.client?.id]);
     const clientCui = clientRes.rows[0]?.cui || '';
     
     const company = await getCompanyDetails();
@@ -1786,7 +1807,7 @@ app.post("/api/orders/:id/send", async (req, res) => {
       
       // 5. Update DB - marchează ca trimis
       await db.q(
-        `UPDATE orders SET 
+        `UPDATE ${schemaName}.orders SET 
           sent_to_smartbill = true,
           smartbill_draft_sent = true,
           smartbill_response = $1,
@@ -1819,7 +1840,7 @@ app.post("/api/orders/:id/send", async (req, res) => {
       
     } catch (smartbillErr) {
       await db.q(
-        `UPDATE orders SET 
+        `UPDATE ${schemaName}.orders SET 
           smartbill_error = $1,
           smartbill_response = $2
          WHERE id = $3`,
@@ -1845,6 +1866,7 @@ app.post("/api/orders/:id/send", async (req, res) => {
 // UPDATE order (pentru editorder.html)
 app.put("/api/orders/:id", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const orderId = String(req.params.id);
     const { items } = req.body;
 
@@ -1858,7 +1880,7 @@ app.put("/api/orders/:id", async (req, res) => {
 
     // 1) Verifică dacă comanda există și nu e trimisă deja
     const checkRes = await db.q(
-      `SELECT sent_to_smartbill, items FROM orders WHERE id=$1`,
+      `SELECT sent_to_smartbill, items FROM ${schemaName}.orders WHERE id=$1`,
       [orderId]
     );
 
@@ -1879,7 +1901,7 @@ app.put("/api/orders/:id", async (req, res) => {
       for (const alloc of allocs) {
         if (alloc.stockId && alloc.qty) {
           await db.q(
-            `UPDATE stock SET qty = qty + $1 WHERE id=$2`,
+            `UPDATE ${schemaName}.stock SET qty = qty + $1 WHERE id=$2`,
             [Number(alloc.qty), alloc.stockId]
           );
         }
@@ -1894,7 +1916,7 @@ app.put("/api/orders/:id", async (req, res) => {
       if (qty <= 0) continue;
 
       const unitPrice = Number(it.price || 0);
-      const allocations = await allocateStockFromDB(it.gtin, qty);
+      const allocations = await allocateStockFromDB(it.gtin, qty, 'depozit', req);
       
       newItems.push({
         id: it.id,
@@ -1909,7 +1931,7 @@ app.put("/api/orders/:id", async (req, res) => {
 
     // 4) Salvează
     await db.q(
-      `UPDATE orders SET items=$1::jsonb WHERE id=$2`,
+      `UPDATE ${schemaName}.orders SET items=$1::jsonb WHERE id=$2`,
       [JSON.stringify(newItems), orderId]
     );
 
@@ -1927,13 +1949,16 @@ app.put("/api/orders/:id", async (req, res) => {
 // Funcție nouă pentru alocare stoc din DB
 // Funcție modificată pentru alocare cu fallback pe locații
 // Funcție modificată pentru alocare cu suport multiple GTIN-uri
-async function allocateStockFromDB(gtin, neededQty, preferredWarehouse = 'depozit') {
+async function allocateStockFromDB(gtin, neededQty, preferredWarehouse = 'depozit', req) {
   const g = normalizeGTIN(gtin);
   if (!g) throw new Error("GTIN invalid");
+  
+  // Obținem schemaName din context (trebuie pasată de endpoint)
+  const schemaName = (req && req.session?.user?.schema_name) || 'public';
 
   // 1. Găsim produsul după GTIN
   const productRes = await db.q(
-    `SELECT id, gtin, gtins FROM products 
+    `SELECT id, gtin, gtins FROM ${schemaName}.products 
      WHERE gtin = $1 OR gtins::jsonb @> to_jsonb($1) 
      LIMIT 1`,
     [g]
@@ -1979,7 +2004,7 @@ async function allocateStockFromDB(gtin, neededQty, preferredWarehouse = 'depozi
     
     let r = await db.q(
       `SELECT id, gtin, lot, expires_at, qty, location, warehouse
-       FROM stock
+       FROM ${schemaName}.stock
        WHERE gtin=$1 AND warehouse=$2 AND qty > 0
        ORDER BY ${locCase} ASC, expires_at ASC
        FOR UPDATE`,
@@ -1994,7 +2019,7 @@ async function allocateStockFromDB(gtin, neededQty, preferredWarehouse = 'depozi
 
       const take = Math.min(avail, remaining);
 
-      await db.q(`UPDATE stock SET qty = qty - $1 WHERE id=$2`, [take, s.id]);
+      await db.q(`UPDATE ${schemaName}.stock SET qty = qty - $1 WHERE id=$2`, [take, s.id]);
 
       allocated.push({
         stockId: s.id,
@@ -2019,7 +2044,7 @@ async function allocateStockFromDB(gtin, neededQty, preferredWarehouse = 'depozi
       
       let r = await db.q(
         `SELECT id, gtin, lot, expires_at, qty, location, warehouse
-         FROM stock
+         FROM ${schemaName}.stock
          WHERE gtin=$1 AND warehouse='magazin' AND qty > 0
          ORDER BY expires_at ASC
          FOR UPDATE`,
@@ -2062,6 +2087,7 @@ async function allocateStockFromDB(gtin, neededQty, preferredWarehouse = 'depozi
 
 app.post("/api/orders/:id/status", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const allowed = new Set(["in_procesare", "facturata", "gata_de_livrare", "livrata"]);
     if (!allowed.has(req.body.status)) {
       return res.status(400).json({ error: "Status invalid" });
@@ -2086,7 +2112,7 @@ app.post("/api/orders/:id/status", async (req, res) => {
       return res.json({ ok: true });
     }
 
-    const r = await db.q(`UPDATE orders SET status=$1 WHERE id=$2 RETURNING id, client`, [newStatus, id]);
+    const r = await db.q(`UPDATE ${schemaName}.orders SET status=$1 WHERE id=$2 RETURNING id, client`, [newStatus, id]);
     if (!r.rows.length) return res.status(404).json({ error: "Comandă inexistentă" });
 
    await logAudit(req, "ORDER_STATUS", "order", id, {
@@ -2103,6 +2129,7 @@ app.post("/api/orders/:id/status", async (req, res) => {
 
 app.delete("/api/orders/:id", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const orderId = String(req.params.id);
     
     if (!db.hasDb()) {
@@ -2111,7 +2138,7 @@ app.delete("/api/orders/:id", async (req, res) => {
     
     // Verifică mai întâi dacă e trimisă
     const checkRes = await db.q(
-      `SELECT sent_to_smartbill, items FROM orders WHERE id = $1`,
+      `SELECT sent_to_smartbill, items FROM ${schemaName}.orders WHERE id = $1`,
       [orderId]
     );
     
@@ -2132,12 +2159,12 @@ app.delete("/api/orders/:id", async (req, res) => {
     for (const item of items) {
       for (const alloc of item.allocations || []) {
         if (alloc.stockId && alloc.qty) {
-          await db.q(`UPDATE stock SET qty = qty + $1 WHERE id=$2`, [alloc.qty, alloc.stockId]);
+          await db.q(`UPDATE ${schemaName}.stock SET qty = qty + $1 WHERE id=$2`, [alloc.qty, alloc.stockId]);
         }
       }
     }
     
-    await db.q(`DELETE FROM orders WHERE id = $1`, [orderId]);
+    await db.q(`DELETE FROM ${schemaName}.orders WHERE id = $1`, [orderId]);
     await logAudit(req, "ORDER_DELETE", "order", orderId, {});
     
     res.json({ ok: true, message: "Comandă ștearsă" });
@@ -2150,6 +2177,7 @@ app.delete("/api/orders/:id", async (req, res) => {
 
 
 app.post("/api/orders/:id/replace-lot", async (req, res) => {
+  const schemaName = req.session?.user?.schema_name || 'public';
   const orderId = String(req.params.id);
 
   const gtin = normalizeGTIN(req.body.gtin);
@@ -2228,7 +2256,7 @@ app.post("/api/orders/:id/replace-lot", async (req, res) => {
     // 1) luăm comanda (lock)
     const rOrder = await db.q(
       `SELECT id, client, items, status, created_at
-       FROM orders
+       FROM ${schemaName}.orders
        WHERE id=$1
        FOR UPDATE`,
       [orderId]
@@ -2270,7 +2298,7 @@ app.post("/api/orders/:id/replace-lot", async (req, res) => {
 
       const takeBack = Math.min(Number(a.qty || 0), remainingReturn);
       if (a.stockId) {
-        await db.q(`UPDATE stock SET qty = qty + $1 WHERE id=$2`, [takeBack, String(a.stockId)]);
+        await db.q(`UPDATE ${schemaName}.stock SET qty = qty + $1 WHERE id=$2`, [takeBack, String(a.stockId)]);
       }
       a.qty = Number(a.qty || 0) - takeBack;
       remainingReturn -= takeBack;
@@ -2283,7 +2311,7 @@ app.post("/api/orders/:id/replace-lot", async (req, res) => {
     const locCase = sqlLocOrderCase("location");
     const rStock = await db.q(
       `SELECT id, gtin, lot, expires_at, qty, location
-       FROM stock
+       FROM ${schemaName}.stock
        WHERE gtin=$1 AND lot=$2 AND qty > 0
        ORDER BY ${locCase} ASC, expires_at ASC
        FOR UPDATE`,
@@ -2302,7 +2330,7 @@ app.post("/api/orders/:id/replace-lot", async (req, res) => {
       const take = Math.min(avail, remainingNeed);
 
       // scădem din stock
-      await db.q(`UPDATE stock SET qty = qty - $1 WHERE id=$2`, [take, s.id]);
+      await db.q(`UPDATE ${schemaName}.stock SET qty = qty - $1 WHERE id=$2`, [take, s.id]);
 
       newAllocs.push({
         stockId: s.id,
@@ -2331,7 +2359,7 @@ app.post("/api/orders/:id/replace-lot", async (req, res) => {
     });
 
     // 6) salvăm items în DB
-    await db.q(`UPDATE orders SET items=$1::jsonb WHERE id=$2`, [JSON.stringify(items), orderId]);
+    await db.q(`UPDATE ${schemaName}.orders SET items=$1::jsonb WHERE id=$2`, [JSON.stringify(items), orderId]);
 
     await db.q("COMMIT");
 
@@ -2372,12 +2400,13 @@ app.post("/api/orders/:id/replace-lot", async (req, res) => {
 
 app.get("/api/debug-db", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     if (!db.hasDb()) return res.json({ hasDb: false });
 
     const r = await db.q("select current_database() as db, inet_server_addr() as host");
-    const c1 = await db.q("select count(*)::int as n from orders");
+    const c1 = await db.q(`select count(*)::int as n from ${schemaName}.orders`);
     let c2 = { rows: [{ n: null }] };
-    try { c2 = await db.q("select count(*)::int as n from stock"); } catch {}
+    try { c2 = await db.q(`select count(*)::int as n from ${schemaName}.stock`); } catch {}
 
     res.json({
       hasDb: true,
@@ -2392,6 +2421,7 @@ app.get("/api/debug-db", async (req, res) => {
 
 app.get("/api/stock", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const warehouse = req.query.warehouse || 'depozit';
     
     if (!db.hasDb()) {
@@ -2401,7 +2431,7 @@ app.get("/api/stock", async (req, res) => {
 
     const r = await db.q(
       `SELECT id, gtin, product_name, lot, expires_at, qty, location, warehouse, created_at
-       FROM stock 
+       FROM ${schemaName}.stock 
        WHERE warehouse = $1
        ORDER BY created_at DESC`,
       [warehouse]
@@ -2429,6 +2459,7 @@ app.get("/api/stock", async (req, res) => {
 // POST transfer
 app.post("/api/stock/transfer", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { gtin, productName, lot, expiresAt, qty, fromWarehouse, toWarehouse, fromLocation, toLocation } = req.body;
     
     if (!gtin || !lot || !qty || !fromWarehouse || !toWarehouse) {
@@ -2454,7 +2485,7 @@ app.post("/api/stock/transfer", async (req, res) => {
     // 1. Verifică și scade din sursă
     // Căutăm după GTIN normalizat, lot exact, warehouse și locație
     const r1 = await db.q(
-      `UPDATE stock SET qty = qty - $1 
+      `UPDATE ${schemaName}.stock SET qty = qty - $1 
        WHERE gtin=$2 AND lot=$3 AND warehouse=$4 AND location=$5 AND qty >= $1
        RETURNING id, qty as remaining`,
       [transferQty, g, lot, fromWarehouse, sourceLoc]
@@ -2470,21 +2501,21 @@ app.post("/api/stock/transfer", async (req, res) => {
 
     // 2. Verifică dacă există în destinație
     const r2 = await db.q(
-      `SELECT id, qty FROM stock WHERE gtin=$1 AND lot=$2 AND warehouse=$3 AND location=$4`,
+      `SELECT id, qty FROM ${schemaName}.stock WHERE gtin=$1 AND lot=$2 AND warehouse=$3 AND location=$4`,
       [g, lot, toWarehouse, destLoc]
     );
 
     if (r2.rows.length > 0) {
       // Există, incrementăm
       await db.q(
-        `UPDATE stock SET qty = qty + $1 WHERE id=$2`,
+        `UPDATE ${schemaName}.stock SET qty = qty + $1 WHERE id=$2`,
         [transferQty, r2.rows[0].id]
       );
     } else {
       // Nu există, creăm intrare nouă
       const newId = crypto.randomUUID();
       await db.q(
-        `INSERT INTO stock (id, gtin, product_name, lot, expires_at, qty, location, warehouse)
+        `INSERT INTO ${schemaName}.stock (id, gtin, product_name, lot, expires_at, qty, location, warehouse)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
         [newId, g, productName, lot, expiresAt, transferQty, destLoc, toWarehouse]
       );
@@ -2492,7 +2523,7 @@ app.post("/api/stock/transfer", async (req, res) => {
 
     // 3. Log transfer
     await db.q(
-      `INSERT INTO stock_transfers (id, gtin, product_name, lot, expires_at, qty, from_warehouse, to_warehouse, from_location, to_location, created_by, created_at)
+      `INSERT INTO ${schemaName}.stock_transfers (id, gtin, product_name, lot, expires_at, qty, from_warehouse, to_warehouse, from_location, to_location, created_by, created_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`,
       [crypto.randomUUID(), g, productName, lot, expiresAt, transferQty, fromWarehouse, toWarehouse, sourceLoc, destLoc, req.session?.user?.username || 'system']
     );
@@ -2509,10 +2540,11 @@ app.post("/api/stock/transfer", async (req, res) => {
 
 app.get("/api/audit", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     if (!db.hasDb()) return res.json(readJson(AUDIT_FILE, []));
     const r = await db.q(
       `SELECT id, action, entity, entity_id, user_json, details, created_at
-       FROM audit
+       FROM ${schemaName}.audit
        ORDER BY created_at DESC
        LIMIT 200`
     );
@@ -2534,6 +2566,7 @@ app.get("/api/audit", async (req, res) => {
 // ADD stock
 app.post("/api/stock", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const warehouse = req.body.warehouse || 'depozit';
     const location = warehouse === 'magazin' ? 'MAGAZIN' : (req.body.location || 'A');
     
@@ -2559,7 +2592,7 @@ app.post("/api/stock", async (req, res) => {
     }
 
     await db.q(
-      `INSERT INTO stock (id, gtin, product_name, lot, expires_at, qty, location, warehouse, created_at)
+      `INSERT INTO ${schemaName}.stock (id, gtin, product_name, lot, expires_at, qty, location, warehouse, created_at)
        VALUES ($1,$2,$3,$4,$5::date,$6,$7,$8,$9::timestamptz)`,
       [entry.id, entry.gtin, entry.productName, entry.lot, entry.expiresAt, entry.qty, entry.location, entry.warehouse, entry.createdAt]
     );
@@ -2583,6 +2616,7 @@ app.post("/api/stock", async (req, res) => {
 // UPDATE stock lot
 app.put("/api/stock/:id", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const id = String(req.params.id);
 
     if (!db.hasDb()) {
@@ -2611,14 +2645,14 @@ await logAudit(req, "STOCK_EDIT", "stock", item.id, {
       return res.json({ ok: true, item });
     }
 
-    const r0 = await db.q(`SELECT * FROM stock WHERE id=$1`, [id]);
+    const r0 = await db.q(`SELECT * FROM ${schemaName}.stock WHERE id=$1`, [id]);
     if (!r0.rows.length) return res.status(404).json({ error: "Intrare stoc inexistentă" });
 
     const before = r0.rows[0];
     const newQty = req.body.qty != null ? Number(req.body.qty) : Number(before.qty);
     const newLoc = req.body.location != null ? String(req.body.location) : String(before.location || "A");
 
-    await db.q(`UPDATE stock SET qty=$1, location=$2 WHERE id=$3`, [newQty, newLoc, id]);
+    await db.q(`UPDATE ${schemaName}.stock SET qty=$1, location=$2 WHERE id=$3`, [newQty, newLoc, id]);
 
    await logAudit(req, "STOCK_EDIT", "stock", id, {
       gtin: before.gtin,
@@ -2640,6 +2674,7 @@ await logAudit(req, "STOCK_EDIT", "stock", item.id, {
 // DELETE stock lot
 app.delete("/api/stock/:id", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const id = String(req.params.id);
 
     if (!db.hasDb()) {
@@ -2661,12 +2696,12 @@ app.delete("/api/stock/:id", async (req, res) => {
       return res.json({ ok: true });
     }
 
-    const r0 = await db.q(`SELECT * FROM stock WHERE id=$1`, [id]);
+    const r0 = await db.q(`SELECT * FROM ${schemaName}.stock WHERE id=$1`, [id]);
     if (!r0.rows.length) return res.status(404).json({ error: "Intrare stoc inexistentă" });
 
     const item = r0.rows[0];
 
-    await db.q(`DELETE FROM stock WHERE id=$1`, [id]);
+    await db.q(`DELETE FROM ${schemaName}.stock WHERE id=$1`, [id]);
 
    await logAudit(req, "STOCK_DELETE", "stock", id, {
       productName: item.product_name,
@@ -3164,6 +3199,7 @@ app.post("/api/logout", (req, res) => {
 
 app.post("/api/products", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { name, gtin, category, price, gtins } = req.body;
 
     if (!name) return res.status(400).json({ error: "Lipsește numele" });
@@ -3186,7 +3222,7 @@ app.post("/api/products", async (req, res) => {
     const primaryGtin = gtinClean || (gtinsArr[0] || null);
 
     const r = await db.q(
-      `INSERT INTO products (id, name, gtin, gtins, category, price, active)
+      `INSERT INTO ${schemaName}.products (id, name, gtin, gtins, category, price, active)
        VALUES ($1,$2,$3,$4::jsonb,$5,$6,true)
        RETURNING id`,
       [
@@ -3223,6 +3259,7 @@ app.post("/api/products", async (req, res) => {
 
 app.post("/api/clients", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const name = String(req.body.name || "").trim();
     const group = String(req.body.group || "").trim();
     const category = String(req.body.category || "").trim();
@@ -3235,7 +3272,7 @@ app.post("/api/clients", async (req, res) => {
     if (db.hasDb()) {
       const id = Date.now().toString();
       await db.q(
-        `INSERT INTO clients (id, name, group_name, category, cui, prices)
+        `INSERT INTO ${schemaName}.clients (id, name, group_name, category, cui, prices)
          VALUES ($1,$2,$3,$4,$5,$6::jsonb)`,
         [id, name, group, category, cui || null, JSON.stringify(prices)]
       );
@@ -3264,9 +3301,10 @@ app.post("/api/clients", async (req, res) => {
 // Lista utilizatori în așteptare
 app.get("/api/users/pending", isAdmin, async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const r = await db.q(
       `SELECT id, email, first_name, last_name, created_at, failed_attempts 
-       FROM users 
+       FROM ${schemaName}.users 
        WHERE is_approved = false AND role = 'user'
        ORDER BY 
          CASE WHEN failed_attempts >= 3 THEN 0 ELSE 1 END,
@@ -3280,8 +3318,9 @@ app.get("/api/users/pending", isAdmin, async (req, res) => {
 
 app.post("/api/users/unlock/:id", isAdmin, async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     await db.q(
-      `UPDATE users 
+      `UPDATE ${schemaName}.users 
        SET failed_attempts = 0, 
            unlock_at = null,
            last_failed_at = null
@@ -3297,8 +3336,9 @@ app.post("/api/users/unlock/:id", isAdmin, async (req, res) => {
 // Aprobare utilizator
 app.post("/api/users/approve/:id", isAdmin, async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     await db.q(
-      `UPDATE users SET is_approved = true, failed_attempts = 0 WHERE id = $1 AND role = 'user'`,
+      `UPDATE ${schemaName}.users SET is_approved = true, failed_attempts = 0 WHERE id = $1 AND role = 'user'`,
       [req.params.id]
     );
     res.json({ ok: true, message: "Utilizator aprobat și deblocat" });
@@ -3310,13 +3350,14 @@ app.post("/api/users/approve/:id", isAdmin, async (req, res) => {
 // Lista utilizatori blocați (failed_attempts >= 3 sau unlock_at există)
 app.get("/api/users/locked", isAdmin, async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const r = await db.q(
       `SELECT id, email, first_name, last_name, failed_attempts, unlock_at, 
               CASE 
                 WHEN unlock_at > NOW() THEN EXTRACT(EPOCH FROM (unlock_at - NOW()))/60
                 ELSE 0 
               END as minutes_left
-       FROM users 
+       FROM ${schemaName}.users 
        WHERE failed_attempts >= 3 OR unlock_at IS NOT NULL
        ORDER BY unlock_at DESC`
     );
@@ -3329,7 +3370,8 @@ app.get("/api/users/locked", isAdmin, async (req, res) => {
 // Respingere utilizator
 app.post("/api/users/reject/:id", isAdmin, async (req, res) => {
   try {
-    await db.q(`DELETE FROM users WHERE id = $1`, [req.params.id]);
+    const schemaName = req.session?.user?.schema_name || 'public';
+    await db.q(`DELETE FROM ${schemaName}.users WHERE id = $1`, [req.params.id]);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -3339,9 +3381,10 @@ app.post("/api/users/reject/:id", isAdmin, async (req, res) => {
 // Lista toți utilizatorii
 app.get("/api/users", isAdmin, async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const r = await db.q(
       `SELECT id, email, first_name, last_name, role, is_approved, active, created_at 
-       FROM users 
+       FROM ${schemaName}.users 
        ORDER BY created_at DESC`
     );
     res.json(r.rows);
@@ -4170,11 +4213,11 @@ app.get('/test-smartbill', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 // Creează un admin implicit (doar dacă tabela users e goală)
-async function ensureDefaultAdmin() {
+async function ensureDefaultAdmin(schemaName = 'public') {
   if (!db.hasDb()) return;
 
   // Dacă nu există niciun user, creăm adminul implicit
-  const r = await db.q("SELECT COUNT(*)::int AS n FROM users");
+  const r = await db.q(`SELECT COUNT(*)::int AS n FROM ${schemaName}.users`);
   const n = r.rows?.[0]?.n ?? 0;
   
   if (n > 0) return; // Există deja useri, nu creăm nimic automat
@@ -4189,14 +4232,14 @@ async function ensureDefaultAdmin() {
 
   const hash = await bcrypt.hash(password, 10);
   await db.q(
-    "INSERT INTO users (username, password_hash, role, is_approved, active) VALUES ($1, $2, $3, true, true)",
+    `INSERT INTO ${schemaName}.users (username, password_hash, role, is_approved, active) VALUES ($1, $2, $3, true, true)`,
     [username, hash, "admin"]
   );
 
-  console.log(`✅ Admin implicit creat: ${username} (aprobat automat)`);
+  console.log(`✅ Admin implicit creat: ${username} (aprobat automat) în schema ${schemaName}`);
 }
 
-async function seedInitialData() {
+async function seedInitialData(schemaName = 'public') {
   if (!db.hasDb()) return;
 
   try {
@@ -4210,14 +4253,14 @@ async function seedInitialData() {
     for (const nume of soferi) {
       // Verifică dacă există deja
       const check = await db.q(
-        `SELECT id FROM drivers WHERE name = $1`,
+        `SELECT id FROM ${schemaName}.drivers WHERE name = $1`,
         [nume]
       );
       
       if (check.rows.length === 0) {
         const id = crypto.randomUUID();
         await db.q(
-          `INSERT INTO drivers (id, name, active) VALUES ($1, $2, true)`,
+          `INSERT INTO ${schemaName}.drivers (id, name, active) VALUES ($1, $2, true)`,
           [id, nume]
         );
         console.log(`✅ Șofer adăugat: ${nume}`);
@@ -4232,14 +4275,14 @@ async function seedInitialData() {
     for (const numar of masini) {
       // Verifică dacă există deja
       const check = await db.q(
-        `SELECT id FROM vehicles WHERE plate_number = $1`,
+        `SELECT id FROM ${schemaName}.vehicles WHERE plate_number = $1`,
         [numar]
       );
       
       if (check.rows.length === 0) {
         const id = crypto.randomUUID();
         await db.q(
-          `INSERT INTO vehicles (id, plate_number, active) VALUES ($1, $2, true)`,
+          `INSERT INTO ${schemaName}.vehicles (id, plate_number, active) VALUES ($1, $2, true)`,
           [id, numar]
         );
         console.log(`✅ Mașină adăugată: ${numar}`);
@@ -4248,7 +4291,7 @@ async function seedInitialData() {
       }
     }
     
-    console.log("✅ Date inițiale verificate/adăugate cu succes!");
+    console.log(`✅ Date inițiale verificate/adăugate cu succes în schema ${schemaName}!`);
   } catch (e) {
     console.error("❌ Eroare la adăugarea datelor inițiale:", e.message);
   }
@@ -4259,7 +4302,8 @@ async function seedInitialData() {
 // ==========================================
 app.get("/api/drivers", async (req, res) => {
   try {
-    const r = await db.q(`SELECT id, name, active FROM drivers WHERE active=true ORDER BY name`);
+    const schemaName = req.session?.user?.schema_name || 'public';
+    const r = await db.q(`SELECT id, name, active FROM ${schemaName}.drivers WHERE active=true ORDER BY name`);
     res.json(r.rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -4268,9 +4312,10 @@ app.get("/api/drivers", async (req, res) => {
 
 app.post("/api/drivers", isAdmin, async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { name } = req.body;
     const id = crypto.randomUUID();
-    await db.q(`INSERT INTO drivers (id, name) VALUES ($1,$2)`, [id, name]);
+    await db.q(`INSERT INTO ${schemaName}.drivers (id, name) VALUES ($1,$2)`, [id, name]);
     res.json({ ok: true, id });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -4282,7 +4327,8 @@ app.post("/api/drivers", isAdmin, async (req, res) => {
 // ==========================================
 app.get("/api/vehicles", async (req, res) => {
   try {
-    const r = await db.q(`SELECT id, plate_number, active FROM vehicles WHERE active=true ORDER BY plate_number`);
+    const schemaName = req.session?.user?.schema_name || 'public';
+    const r = await db.q(`SELECT id, plate_number, active FROM ${schemaName}.vehicles WHERE active=true ORDER BY plate_number`);
     res.json(r.rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -4291,9 +4337,10 @@ app.get("/api/vehicles", async (req, res) => {
 
 app.post("/api/vehicles", isAdmin, async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { plate_number } = req.body;
     const id = crypto.randomUUID();
-    await db.q(`INSERT INTO vehicles (id, plate_number) VALUES ($1,$2)`, [id, plate_number.toUpperCase()]);
+    await db.q(`INSERT INTO ${schemaName}.vehicles (id, plate_number) VALUES ($1,$2)`, [id, plate_number.toUpperCase()]);
     res.json({ ok: true, id });
   } catch (e) {
     if (e.message.includes("unique")) return res.status(400).json({ error: "Numărul există deja" });
@@ -4306,6 +4353,7 @@ app.post("/api/vehicles", isAdmin, async (req, res) => {
 // ==========================================
 app.get("/api/trip-sheets", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const r = await db.q(`
       SELECT 
         t.id, t.date, t.km_start, t.km_end, t.locations, 
@@ -4314,9 +4362,9 @@ app.get("/api/trip-sheets", async (req, res) => {
         t.created_at,
         d.name as driver_name,
         v.plate_number
-      FROM trip_sheets t
-      JOIN drivers d ON t.driver_id = d.id
-      JOIN vehicles v ON t.vehicle_id = v.id
+      FROM ${schemaName}.trip_sheets t
+      JOIN ${schemaName}.drivers d ON t.driver_id = d.id
+      JOIN ${schemaName}.vehicles v ON t.vehicle_id = v.id
       ORDER BY t.date DESC
     `);
     res.json(r.rows);
@@ -4327,6 +4375,7 @@ app.get("/api/trip-sheets", async (req, res) => {
 
 app.post("/api/trip-sheets", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { 
       date, driver_id, vehicle_id, km_start, locations,
       trip_number, departure_time, arrival_time, purpose,
@@ -4336,7 +4385,7 @@ app.post("/api/trip-sheets", async (req, res) => {
     const id = crypto.randomUUID();
     
     await db.q(`
-      INSERT INTO trip_sheets (
+      INSERT INTO ${schemaName}.trip_sheets (
         id, date, driver_id, vehicle_id, km_start, locations,
         trip_number, departure_time, arrival_time, purpose,
         tech_check_departure, tech_check_arrival, created_by
@@ -4356,9 +4405,10 @@ app.post("/api/trip-sheets", async (req, res) => {
 
 app.put("/api/trip-sheets/:id", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { km_end, locations, arrival_time, tech_check_arrival } = req.body;
     const r = await db.q(`
-      UPDATE trip_sheets 
+      UPDATE ${schemaName}.trip_sheets 
       SET km_end = $1, locations = $2, arrival_time = $3, tech_check_arrival = $4
       WHERE id = $5
       RETURNING km_start, km_end
@@ -4375,7 +4425,8 @@ app.put("/api/trip-sheets/:id", async (req, res) => {
 
 app.delete("/api/trip-sheets/:id", async (req, res) => {
   try {
-    await db.q(`DELETE FROM trip_sheets WHERE id = $1`, [req.params.id]);
+    const schemaName = req.session?.user?.schema_name || 'public';
+    await db.q(`DELETE FROM ${schemaName}.trip_sheets WHERE id = $1`, [req.params.id]);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -4385,12 +4436,13 @@ app.delete("/api/trip-sheets/:id", async (req, res) => {
 // GET ultimul KM pentru o mașină
 app.get("/api/vehicles/:id/last-km", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const vehicleId = req.params.id;
     
     // Caută ultima foaie de parcurs pentru această mașină (cea mai mare dată + km_end existent)
     const r = await db.q(`
       SELECT km_end 
-      FROM trip_sheets 
+      FROM ${schemaName}.trip_sheets 
       WHERE vehicle_id = $1 AND km_end IS NOT NULL
       ORDER BY date DESC, created_at DESC 
       LIMIT 1
@@ -4458,9 +4510,10 @@ app.post("/api/trip-sheets", async (req, res) => {
 // ==========================================
 app.get("/api/trip-sheets/:id/fuel-receipts", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const r = await db.q(`
       SELECT id, type, receipt_number, liters, km_at_refuel 
-      FROM fuel_receipts 
+      FROM ${schemaName}.fuel_receipts 
       WHERE trip_sheet_id = $1 
       ORDER BY km_at_refuel
     `, [req.params.id]);
@@ -4472,11 +4525,12 @@ app.get("/api/trip-sheets/:id/fuel-receipts", async (req, res) => {
 
 app.post("/api/trip-sheets/:id/fuel-receipts", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { type, receipt_number, liters, km_at_refuel } = req.body;
     const id = crypto.randomUUID();
     
     await db.q(`
-      INSERT INTO fuel_receipts (id, trip_sheet_id, type, receipt_number, liters, km_at_refuel)
+      INSERT INTO ${schemaName}.fuel_receipts (id, trip_sheet_id, type, receipt_number, liters, km_at_refuel)
       VALUES ($1,$2,$3,$4,$5,$6)
     `, [id, req.params.id, type, receipt_number, liters, km_at_refuel]);
     
@@ -4488,7 +4542,8 @@ app.post("/api/trip-sheets/:id/fuel-receipts", async (req, res) => {
 
 app.delete("/api/fuel-receipts/:id", async (req, res) => {
   try {
-    await db.q(`DELETE FROM fuel_receipts WHERE id = $1`, [req.params.id]);
+    const schemaName = req.session?.user?.schema_name || 'public';
+    await db.q(`DELETE FROM ${schemaName}.fuel_receipts WHERE id = $1`, [req.params.id]);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -4509,6 +4564,7 @@ app.get("/api/test", (req, res) => {
 
 app.post("/api/balances/upload", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { invoices } = req.body;
     
     if (!invoices || !Array.isArray(invoices)) {
@@ -4516,10 +4572,10 @@ app.post("/api/balances/upload", async (req, res) => {
     }
     
     // ȘTERGE TOATE datele vechi (nu doar cele de 24h) - curăță complet
-    await db.q(`DELETE FROM client_balances`);
+    await db.q(`DELETE FROM ${schemaName}.client_balances`);
     
     // Găsim clienții după CUI pentru matching
-    const clientsRes = await db.q(`SELECT id, cui FROM clients WHERE cui IS NOT NULL`);
+    const clientsRes = await db.q(`SELECT id, cui FROM ${schemaName}.clients WHERE cui IS NOT NULL`);
     const clientsByCui = {};
     clientsRes.rows.forEach(c => {
       const cuiCurat = String(c.cui).replace(/^RO/i, '').replace(/\s/g, '').trim();
@@ -4534,13 +4590,13 @@ app.post("/api/balances/upload", async (req, res) => {
       
       // Verificăm dacă factura există deja pentru acest client (extra safety)
       const check = await db.q(
-        `SELECT 1 FROM client_balances WHERE client_id = $1 AND invoice_number = $2 LIMIT 1`,
+        `SELECT 1 FROM ${schemaName}.client_balances WHERE client_id = $1 AND invoice_number = $2 LIMIT 1`,
         [clientId, inv.invoice_number]
       );
       
       if (check.rows.length === 0) {
         await db.q(`
-          INSERT INTO client_balances 
+          INSERT INTO ${schemaName}.client_balances 
           (client_id, cui, invoice_number, invoice_date, due_date, currency, total_value, balance_due, days_overdue, status)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         `, [
@@ -4560,11 +4616,12 @@ app.post("/api/balances/upload", async (req, res) => {
 
 app.get("/api/clients/:id/balances", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const clientId = String(req.params.id);
     
     // Luăm facturile pentru clientul specific
     const result = await db.q(`
-      SELECT * FROM client_balances 
+      SELECT * FROM ${schemaName}.client_balances 
       WHERE client_id = $1 
       ORDER BY due_date ASC
     `, [clientId]);
@@ -4572,7 +4629,7 @@ app.get("/api/clients/:id/balances", async (req, res) => {
     // Luăm data ultimei încărcări din TOT tabelul (global pentru toți clienții)
     const lastUploadRes = await db.q(`
       SELECT MAX(uploaded_at) as last_upload 
-      FROM client_balances
+      FROM ${schemaName}.client_balances
     `);
     
     const lastUpload = lastUploadRes.rows[0]?.last_upload || new Date().toISOString();
@@ -4605,6 +4662,7 @@ app.get("/api/clients/:id/balances", async (req, res) => {
 // POST adaugă preț special (folosește JSONB)
 app.post("/api/clients/:id/prices", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { id } = req.params;
     const { product_id, special_price } = req.body;
     
@@ -4629,7 +4687,7 @@ app.post("/api/clients/:id/prices", async (req, res) => {
     
     // Ia prețurile curente
     const r = await db.q(
-      `SELECT prices FROM clients WHERE id = $1`,
+      `SELECT prices FROM ${schemaName}.clients WHERE id = $1`,
       [id]
     );
     
@@ -4640,7 +4698,7 @@ app.post("/api/clients/:id/prices", async (req, res) => {
     
     // Salvează
     await db.q(
-      `UPDATE clients SET prices = $1::jsonb WHERE id = $2`,
+      `UPDATE ${schemaName}.clients SET prices = $1::jsonb WHERE id = $2`,
       [JSON.stringify(prices), id]
     );
     
@@ -4654,10 +4712,11 @@ app.post("/api/clients/:id/prices", async (req, res) => {
 // GET prețuri speciale pentru client
 app.get("/api/clients/:id/prices", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const id = String(req.params.id);
     
     // Ia prețurile din client
-    const r = await db.q(`SELECT prices FROM clients WHERE id = $1`, [id]);
+    const r = await db.q(`SELECT prices FROM ${schemaName}.clients WHERE id = $1`, [id]);
     if (!r.rows.length) return res.status(404).json({ error: "Client negăsit" });
     
     const prices = r.rows[0].prices || {};
@@ -4668,7 +4727,7 @@ app.get("/api/clients/:id/prices", async (req, res) => {
     // Ia detaliile produselor din tabela products
     const productsRes = await db.q(
       `SELECT id, name, gtin, price as standard_price 
-       FROM products 
+       FROM ${schemaName}.products 
        WHERE id = ANY($1::text[])`,
       [productIds]
     );
@@ -4698,11 +4757,12 @@ app.get("/api/clients/:id/prices", async (req, res) => {
 // DELETE preț special
 app.delete("/api/clients/:id/prices/:productId", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { id, productId } = req.params;
     
     // Ia prețurile curente
     const r = await db.q(
-      `SELECT prices FROM clients WHERE id = $1`,
+      `SELECT prices FROM ${schemaName}.clients WHERE id = $1`,
       [id]
     );
     
@@ -4713,7 +4773,7 @@ app.delete("/api/clients/:id/prices/:productId", async (req, res) => {
     
     // Salvează
     await db.q(
-      `UPDATE clients SET prices = $1::jsonb WHERE id = $2`,
+      `UPDATE ${schemaName}.clients SET prices = $1::jsonb WHERE id = $2`,
       [JSON.stringify(prices), id]
     );
     
@@ -4727,6 +4787,7 @@ app.delete("/api/clients/:id/prices/:productId", async (req, res) => {
 // POST import produse din JSON
 app.post("/api/import-products", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     if (!db.hasDb()) {
       return res.status(500).json({ error: "Baza de date nu este configurată" });
     }
@@ -4752,11 +4813,11 @@ app.post("/api/import-products", async (req, res) => {
       const price = (p.price != null && p.price !== "") ? Number(p.price) : null;
       
       // Verifică dacă produsul există deja
-      const checkRes = await db.q(`SELECT id FROM products WHERE id = $1`, [id]);
+      const checkRes = await db.q(`SELECT id FROM ${schemaName}.products WHERE id = $1`, [id]);
       const exists = checkRes.rows.length > 0;
       
       await db.q(
-        `INSERT INTO products (id, name, gtin, gtins, category, price, active)
+        `INSERT INTO ${schemaName}.products (id, name, gtin, gtins, category, price, active)
          VALUES ($1,$2,$3,$4::jsonb,$5,$6,true)
          ON CONFLICT (id) DO UPDATE SET
            name = EXCLUDED.name,
@@ -4788,12 +4849,13 @@ app.post("/api/import-products", async (req, res) => {
 // GET căutare produse
 app.get("/api/products/search", async (req, res) => {
   try {
+    const schemaName = req.session?.user?.schema_name || 'public';
     const { q } = req.query;
     if (!q || q.length < 2) return res.json([]);
     
     const r = await db.q(
       `SELECT id, name, gtin, price 
-       FROM products 
+       FROM ${schemaName}.products 
        WHERE (name ILIKE $1 OR gtin ILIKE $1) AND active = true
        LIMIT 10`,
       [`%${q}%`]
