@@ -416,6 +416,7 @@ async function auditLog({ action, entity, entity_id = null, user = null, details
 async function ensureCompaniesTable() {
   if (!pool) return;
   
+  // 1. Creăm tabela de bază (fără coloana plan inițial)
   await q(`
     CREATE TABLE IF NOT EXISTS public.companies (
       id TEXT PRIMARY KEY,
@@ -426,7 +427,6 @@ async function ensureCompaniesTable() {
       address TEXT,
       city TEXT,
       phone TEXT,
-      plan TEXT NOT NULL DEFAULT 'starter',
       status TEXT NOT NULL DEFAULT 'pending_verification',
       trial_expires_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -434,19 +434,26 @@ async function ensureCompaniesTable() {
     )
   `);
   
-  // Indexuri pentru căutare rapidă
-  await q(`CREATE INDEX IF NOT EXISTS idx_companies_status ON public.companies(status)`);
-  await q(`CREATE INDEX IF NOT EXISTS idx_companies_admin_email ON public.companies(admin_email)`);
-  await q(`CREATE INDEX IF NOT EXISTS idx_companies_created_at ON public.companies(created_at)`);
-  await q(`CREATE INDEX IF NOT EXISTS idx_companies_plan ON public.companies(plan)`);
-  
-  // Migrație: adaugă coloana plan dacă nu există
+  // 2. Migrație: adaugă coloana plan dacă nu există
   try {
-    await q(`ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'starter'`);
+    await q(`ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'starter'`);
     console.log("✅ DB Migration: plan adăugat în companies");
   } catch (e) {
     console.log("Note: plan migration:", e.message);
   }
+  
+  // 3. Setăm DEFAULT pentru coloana plan
+  try {
+    await q(`ALTER TABLE public.companies ALTER COLUMN plan SET DEFAULT 'starter'`);
+  } catch (e) {
+    // Ignorăm eroarea
+  }
+  
+  // 4. Indexuri pentru căutare rapidă
+  await q(`CREATE INDEX IF NOT EXISTS idx_companies_status ON public.companies(status)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_companies_admin_email ON public.companies(admin_email)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_companies_created_at ON public.companies(created_at)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_companies_plan ON public.companies(plan)`);
 }
 
 // Tabel pentru superadmini
