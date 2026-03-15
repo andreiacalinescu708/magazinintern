@@ -4353,7 +4353,10 @@ app.post("/api/vehicles", isAdmin, async (req, res) => {
 // ==========================================
 app.get("/api/trip-sheets", async (req, res) => {
   try {
+    console.log("🚗 GET /api/trip-sheets - session:", req.session?.user);
     const schemaName = req.session?.user?.schema_name || 'public';
+    console.log("🚗 Using schema:", schemaName);
+    
     const r = await db.q(`
       SELECT 
         t.id, t.date, t.km_start, t.km_end, t.locations, 
@@ -4367,8 +4370,10 @@ app.get("/api/trip-sheets", async (req, res) => {
       JOIN ${schemaName}.vehicles v ON t.vehicle_id = v.id
       ORDER BY t.date DESC
     `);
+    console.log("🚗 Found trip sheets:", r.rows.length);
     res.json(r.rows);
   } catch (e) {
+    console.error("🚗 ERROR GET /api/trip-sheets:", e);
     res.status(500).json({ error: e.message });
   }
 });
