@@ -3749,14 +3749,29 @@ https://openbill.ro
 // GET /api/invites - Lista invitații (doar admin)
 app.get("/api/invites", isAdmin, async (req, res) => {
   try {
+    // Obținem company_id din sesiune
+    const companyRes = await db.q(
+      `SELECT id FROM public.companies WHERE schema_name = $1 LIMIT 1`,
+      [req.session.user.schema_name]
+    );
+    
+    if (companyRes.rows.length === 0) {
+      return res.status(500).json({ error: "Companie negăsită" });
+    }
+    
+    const companyId = companyRes.rows[0].id;
+    
     const r = await db.q(
       `SELECT i.*, u.email as invited_by_email, u.first_name as invited_by_first_name, u.last_name as invited_by_last_name
        FROM public.user_invites i
-       LEFT JOIN users u ON i.invited_by = u.email
-       ORDER BY i.created_at DESC`
+       LEFT JOIN ${req.session.user.schema_name}.users u ON i.invited_by = u.email
+       WHERE i.company_id = $1
+       ORDER BY i.created_at DESC`,
+      [companyId]
     );
     res.json(r.rows);
   } catch (e) {
+    console.error("🚨 ERROR GET /api/invites:", e);
     res.status(500).json({ error: e.message });
   }
 });
