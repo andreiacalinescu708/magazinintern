@@ -390,9 +390,6 @@
         
         const user = await res.json();
         
-        // Update display
-        document.getElementById('navUsername').textContent = user.first_name || user.email;
-        
         // Determinăm funcția corectă
         let roleDisplay = 'Utilizator';
         if (user.is_owner) {
