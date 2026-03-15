@@ -342,7 +342,9 @@ async function getSmartbillAuthHeaders(req) {
   if (!token) {
     throw new Error('Token SmartBill neconfigurat');
   }
-  const authString = Buffer.from(token).toString('base64');
+  // Înlocuim | cu : pentru compatibilitate (utilizatorii pot introduce email|token sau email:token)
+  const normalizedToken = token.replace(/\|/g, ':');
+  const authString = Buffer.from(normalizedToken).toString('base64');
   return {
     'Authorization': `Basic ${authString}`,
     'Content-Type': 'application/json',
