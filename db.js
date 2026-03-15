@@ -742,6 +742,14 @@ async function createTenantSchema(schemaName, companyData) {
     // Ignorăm eroarea
   }
   
+  // Migrație: adaugă coloanele county și email
+  try {
+    await q(`ALTER TABLE ${schemaName}.company_settings ADD COLUMN IF NOT EXISTS county TEXT`);
+  } catch (e) {}
+  try {
+    await q(`ALTER TABLE ${schemaName}.company_settings ADD COLUMN IF NOT EXISTS email TEXT`);
+  } catch (e) {}
+  
   // CLIENT_BALANCES
   await q(`
     CREATE TABLE IF NOT EXISTS ${schemaName}.client_balances (
