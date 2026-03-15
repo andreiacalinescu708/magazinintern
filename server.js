@@ -5398,6 +5398,7 @@ app.post("/api/auth/reset-password", async (req, res) => {
 app.get("/api/reports/top-products", requireAuth, async (req, res) => {
   try {
     const schemaName = req.session?.user?.schema_name || 'public';
+    console.log(`📊 RAPORT Top Products - Schema: ${schemaName}, User: ${req.session?.user?.email}`);
     const { categorie, dataStart, dataEnd } = req.query;
     
     // Query de bază - doar comenzi trimise (sent_to_smartbill = true)
@@ -5464,6 +5465,7 @@ app.get("/api/reports/top-products", requireAuth, async (req, res) => {
 app.get("/api/reports/top-clients", requireAuth, async (req, res) => {
   try {
     const schemaName = req.session?.user?.schema_name || 'public';
+    console.log(`📊 RAPORT Top Clients - Schema: ${schemaName}, User: ${req.session?.user?.email}`);
     const { dataStart, dataEnd } = req.query;
     
     let query = `
@@ -5518,6 +5520,7 @@ app.get("/api/reports/top-clients", requireAuth, async (req, res) => {
 app.get("/api/reports/expiring-stock", requireAuth, async (req, res) => {
   try {
     const schemaName = req.session?.user?.schema_name || 'public';
+    console.log(`📊 RAPORT Expiring Stock - Schema: ${schemaName}, User: ${req.session?.user?.email}`);
     const { zile } = req.query;
     const daysThreshold = parseInt(zile) || 180; // Default 6 luni
     
