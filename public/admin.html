@@ -307,7 +307,7 @@
         
         container.innerHTML = '';
         data.forEach(user => {
-          const roleText = user.role === 'superadmin' ? 'Administrator' : 
+          const roleText = user.role === 'superadmin' ? 'Administrator Principal' : 
                           user.role === 'admin' ? 'Admin' : 'Utilizator';
           const div = document.createElement('div');
           div.className = 'user-card';
@@ -398,7 +398,7 @@
         }
         
         tbody.innerHTML = data.map(user => {
-          const roleText = user.role === 'superadmin' ? 'Administrator' : 
+          const roleText = user.role === 'superadmin' ? 'Administrator Principal' : 
                           user.role === 'admin' ? 'Admin' : 'Utilizator';
           const roleClass = user.role === 'superadmin' ? 'badge-danger' : 
                            user.role === 'admin' ? 'badge-approved' : 'badge-pending';
