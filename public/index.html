@@ -120,6 +120,36 @@
       font-weight: 700;
       color: white;
     }
+    
+    .trial-countdown {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: white;
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    
+    .plan-badge {
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .plan-starter { background: #10b981; color: #000; }
+    .plan-pro { background: #3b82f6; color: #fff; }
+    .plan-enterprise { background: #8b5cf6; color: #fff; }
   </style>
 </head>
 <body>
@@ -130,7 +160,9 @@
         <img src="favicon.svg" alt="oBill" style="height: 36px; width: auto;">
         <span style="font-size: 1.5rem; font-weight: 700; color: var(--primary-500, #3b82f6);">openBill</span>
       </a>
-      <div class="navbar-actions">
+      <div class="navbar-actions" style="display: flex; align-items: center; gap: var(--space-4);">
+        <div id="trialCountdown" style="display: none;"></div>
+        <span id="planBadge" class="plan-badge" style="display: none;"></span>
       </div>
     </div>
   </nav>
@@ -219,6 +251,68 @@
         // SuperAdmin: vede tot (nu ascundem nimic)
       } catch (e) {
         console.error('Eroare verificare rol:', e);
+      }
+    })();
+    
+    // Verifică planul companiei și aplică restricții
+    (async function checkPlanAndApplyRestrictions() {
+      try {
+        const res = await fetch('/api/company/plan');
+        const planData = await res.json();
+        
+        console.log('Plan companie:', planData);
+        
+        const plan = planData.plan || 'starter';
+        const trialExpires = planData.trial_expires_at;
+        const status = planData.status;
+        
+        // Afișează badge plan
+        const planBadge = document.getElementById('planBadge');
+        if (planBadge) {
+          planBadge.textContent = plan;
+          planBadge.className = `plan-badge plan-${plan}`;
+          planBadge.style.display = 'inline-block';
+        }
+        
+        // Countdown trial
+        const trialCountdown = document.getElementById('trialCountdown');
+        if (trialCountdown && trialExpires && status === 'trial') {
+          const updateCountdown = () => {
+            const now = new Date();
+            const expiry = new Date(trialExpires);
+            const diff = expiry - now;
+            
+            if (diff <= 0) {
+              trialCountdown.innerHTML = '⏰ Trial expirat';
+              return;
+            }
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            
+            trialCountdown.innerHTML = `⏰ ${days}z ${hours}h trial`;
+            trialCountdown.className = 'trial-countdown';
+            trialCountdown.style.display = 'flex';
+          };
+          
+          updateCountdown();
+          setInterval(updateCountdown, 60000); // Update every minute
+        }
+        
+        // Aplică restricții în funcție de plan
+        // STARTER: ascunde Foi de parcurs și Rapoarte
+        if (plan === 'starter') {
+          // Ascunde butonul Foi de parcurs din Teren
+          const foiParcursBtn = document.querySelector('a[href="foi_parcurs.html"]');
+          if (foiParcursBtn) foiParcursBtn.style.display = 'none';
+          
+          // Ascunde butonul Rapoarte din Birou
+          const rapoarteBtn = document.querySelector('a[href="rapoarte.html"]');
+          if (rapoarteBtn) rapoarteBtn.style.display = 'none';
+        }
+        
+      } catch (e) {
+        console.error('Eroare verificare plan:', e);
       }
     })();
     

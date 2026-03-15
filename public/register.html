@@ -265,6 +265,41 @@
           </div>
         </div>
 
+        <!-- Selectare Plan -->
+        <div class="form-section">
+          <div class="section-title">Selectează Planul</div>
+          
+          <div class="form-group">
+            <label class="form-label">Plan <span class="required">*</span></label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-3);">
+              <label style="display: flex; flex-direction: column; padding: var(--space-4); background: var(--bg-input); border: 2px solid var(--border-color); border-radius: var(--radius-lg); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--success-500)'" onmouseout="if(!document.getElementById('planStarter').checked) this.style.borderColor='var(--border-color)'">
+                <input type="radio" name="plan" id="planStarter" value="starter" style="margin-bottom: var(--space-2);" checked>
+                <strong style="color: #10b981;">Starter</strong>
+                <span style="font-size: 0.875rem; color: var(--text-muted);">29.99€/lună</span>
+                <small style="font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-1);">Fără lot/expirare</small>
+              </label>
+              
+              <label style="display: flex; flex-direction: column; padding: var(--space-4); background: var(--bg-input); border: 2px solid var(--border-color); border-radius: var(--radius-lg); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--primary-500)'" onmouseout="if(!document.getElementById('planPro').checked) this.style.borderColor='var(--border-color)'">
+                <input type="radio" name="plan" id="planPro" value="pro" style="margin-bottom: var(--space-2);">
+                <strong style="color: var(--primary-500);">Pro</strong>
+                <span style="font-size: 0.875rem; color: var(--text-muted);">39.99€/lună</span>
+                <small style="font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-1);">Popular</small>
+              </label>
+              
+              <label style="display: flex; flex-direction: column; padding: var(--space-4); background: var(--bg-input); border: 2px solid var(--border-color); border-radius: var(--radius-lg); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#8b5cf6'" onmouseout="if(!document.getElementById('planEnterprise').checked) this.style.borderColor='var(--border-color)'">
+                <input type="radio" name="plan" id="planEnterprise" value="enterprise" style="margin-bottom: var(--space-2);">
+                <strong style="color: #8b5cf6;">Enterprise</strong>
+                <span style="font-size: 0.875rem; color: var(--text-muted);">59.99€/lună</span>
+                <small style="font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-1);">Custom</small>
+              </label>
+            </div>
+          </div>
+          
+          <p style="font-size: 0.875rem; color: var(--text-muted); text-align: center; margin-top: var(--space-3);">
+            🎁 14 zile trial gratuit pentru toate planurile. Anulează oricând.
+          </p>
+        </div>
+
         <!-- Date Administrator -->
         <div class="form-section">
           <div class="section-title">Date Administrator</div>
@@ -327,6 +362,9 @@
       e.preventDefault();
       hideMessage();
 
+      // Obține planul selectat
+      const planSelected = document.querySelector('input[name="plan"]:checked')?.value || 'starter';
+      
       const data = {
         companyName: document.getElementById('companyName').value.trim(),
         cui: document.getElementById('cui').value.trim(),
@@ -336,7 +374,8 @@
         lastName: document.getElementById('lastName').value.trim(),
         email: document.getElementById('email').value.trim(),
         phone: document.getElementById('phone').value.trim(),
-        password: document.getElementById('password').value
+        password: document.getElementById('password').value,
+        plan: planSelected
       };
 
       // Validare

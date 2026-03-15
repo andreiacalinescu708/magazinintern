@@ -4863,7 +4863,7 @@ function generateSchemaName(companyName) {
 // POST /api/auth/register - Înregistrare nouă companie
 app.post("/api/auth/register", async (req, res) => {
   try {
-    const { companyName, cui, email, password, firstName, lastName, phone, address, city } = req.body;
+    const { companyName, cui, email, password, firstName, lastName, phone, address, city, plan } = req.body;
     
     // Validare
     if (!companyName || !email || !password) {
@@ -4873,6 +4873,9 @@ app.post("/api/auth/register", async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({ error: "Parola trebuie să aibă minim 6 caractere" });
     }
+    
+    // Validare plan
+    const selectedPlan = ['starter', 'pro', 'enterprise'].includes(plan) ? plan : 'starter';
     
     const emailClean = email.toLowerCase().trim();
     
@@ -4899,9 +4902,9 @@ app.post("/api/auth/register", async (req, res) => {
     
     // 1. Inserăm în public.companies
     await db.q(`
-      INSERT INTO public.companies (id, schema_name, admin_email, name, cui, address, city, phone, status, trial_expires_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending_verification', $9)
-    `, [companyId, schemaName, emailClean, companyName, cui || '', address || '', city || '', phone || '', trialExpiresAt]);
+      INSERT INTO public.companies (id, schema_name, admin_email, name, cui, address, city, phone, plan, status, trial_expires_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending_verification', $10)
+    `, [companyId, schemaName, emailClean, companyName, cui || '', address || '', city || '', phone || '', selectedPlan, trialExpiresAt]);
     
     // 2. Creăm schema și tabelele
     await db.createTenantSchema(schemaName, {
@@ -5391,6 +5394,212 @@ app.post("/api/auth/reset-password", async (req, res) => {
 });
 
 // ==========================================
+// SUPERADMIN API
+// ==========================================
+
+// Middleware pentru verificare superadmin
+function requireSuperAdmin(req, res, next) {
+  if (!req.session?.superadmin) {
+    return res.status(403).json({ error: "Acces interzis. Doar pentru superadmin." });
+  }
+  next();
+}
+
+// POST /api/superadmin/login - Login superadmin
+app.post("/api/superadmin/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username și parolă obligatorii" });
+    }
+    
+    // Caută superadmin
+    const result = await db.q(
+      `SELECT id, username, password_hash, active FROM public.superadmins WHERE username = $1 LIMIT 1`,
+      [username]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Username sau parolă greșită" });
+    }
+    
+    const superadmin = result.rows[0];
+    
+    if (!superadmin.active) {
+      return res.status(403).json({ error: "Cont dezactivat" });
+    }
+    
+    // Verifică parola
+    const bcrypt = require('bcrypt');
+    const ok = await bcrypt.compare(password, superadmin.password_hash);
+    
+    if (!ok) {
+      return res.status(401).json({ error: "Username sau parolă greșită" });
+    }
+    
+    // Setează sesiunea superadmin
+    req.session.superadmin = {
+      id: superadmin.id,
+      username: superadmin.username
+    };
+    
+    res.json({ 
+      success: true, 
+      superadmin: {
+        id: superadmin.id,
+        username: superadmin.username
+      }
+    });
+    
+  } catch (e) {
+    console.error("Eroare login superadmin:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// POST /api/superadmin/logout - Logout superadmin
+app.post("/api/superadmin/logout", (req, res) => {
+  delete req.session.superadmin;
+  res.json({ success: true });
+});
+
+// GET /api/superadmin/check - Verifică dacă e logat superadmin
+app.get("/api/superadmin/check", (req, res) => {
+  if (req.session?.superadmin) {
+    res.json({ loggedIn: true, superadmin: req.session.superadmin });
+  } else {
+    res.json({ loggedIn: false });
+  }
+});
+
+// GET /api/superadmin/companies - Lista toate companiile
+app.get("/api/superadmin/companies", requireSuperAdmin, async (req, res) => {
+  try {
+    const result = await db.q(`
+      SELECT 
+        c.id,
+        c.name,
+        c.admin_email,
+        c.cui,
+        c.plan,
+        c.status,
+        c.trial_expires_at,
+        c.created_at,
+        c.schema_name,
+        (SELECT COUNT(*) FROM ${'${c.schema_name}'}.users) as user_count,
+        (SELECT COUNT(*) FROM ${'${c.schema_name}'}.clients) as client_count
+      FROM public.companies c
+      ORDER BY c.created_at DESC
+    `);
+    
+    res.json({ success: true, companies: result.rows });
+  } catch (e) {
+    console.error("Eroare la listarea companiilor:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// PUT /api/superadmin/companies/:id/plan - Setează planul
+app.put("/api/superadmin/companies/:id/plan", requireSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { plan } = req.body;
+    
+    if (!['starter', 'pro', 'enterprise'].includes(plan)) {
+      return res.status(400).json({ error: "Plan invalid" });
+    }
+    
+    await db.q(
+      `UPDATE public.companies SET plan = $1, updated_at = NOW() WHERE id = $2`,
+      [plan, id]
+    );
+    
+    res.json({ success: true, message: `Plan actualizat la ${plan}` });
+  } catch (e) {
+    console.error("Eroare la setarea planului:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// PUT /api/superadmin/companies/:id/status - Setează statusul (active/trial/suspended)
+app.put("/api/superadmin/companies/:id/status", requireSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, trial_expires_at } = req.body;
+    
+    if (!['active', 'trial', 'suspended', 'pending_verification'].includes(status)) {
+      return res.status(400).json({ error: "Status invalid" });
+    }
+    
+    let query = `UPDATE public.companies SET status = $1, updated_at = NOW()`;
+    let params = [status, id];
+    
+    if (trial_expires_at) {
+      query += `, trial_expires_at = $3`;
+      params.push(trial_expires_at);
+    }
+    
+    query += ` WHERE id = $2`;
+    
+    await db.q(query, params);
+    
+    res.json({ success: true, message: `Status actualizat la ${status}` });
+  } catch (e) {
+    console.error("Eroare la setarea statusului:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// DELETE /api/superadmin/companies/:id - Șterge companie
+app.delete("/api/superadmin/companies/:id", requireSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Obține schema_name înainte de ștergere
+    const compRes = await db.q(`SELECT schema_name FROM public.companies WHERE id = $1`, [id]);
+    
+    if (compRes.rows.length === 0) {
+      return res.status(404).json({ error: "Companie negăsită" });
+    }
+    
+    const schemaName = compRes.rows[0].schema_name;
+    
+    // Șterge schema
+    await db.dropTenantSchema(schemaName);
+    
+    // Șterge din companies
+    await db.q(`DELETE FROM public.companies WHERE id = $1`, [id]);
+    
+    res.json({ success: true, message: "Companie ștearsă" });
+  } catch (e) {
+    console.error("Eroare la ștergerea companiei:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// GET /api/company/plan - Obține planul companiei curente (pentru utilizatori normali)
+app.get("/api/company/plan", requireAuth, async (req, res) => {
+  try {
+    const schemaName = req.session?.user?.schema_name || 'public';
+    
+    const result = await db.q(
+      `SELECT plan, status, trial_expires_at FROM public.companies WHERE schema_name = $1 LIMIT 1`,
+      [schemaName]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.json({ plan: 'starter', status: 'active', trial_expires_at: null });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (e) {
+    console.error("Eroare la obținerea planului:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// ==========================================
 // RAPOARTE API
 // ==========================================
 
@@ -5618,6 +5827,8 @@ console.log("⏰ Cron job curățare: fiecare 60 secunde");
   try {
     await db.ensureTables();
     await db.ensureCompaniesTable();
+    await db.ensureSuperadminsTable();
+    await db.ensureDefaultSuperadmin();
     console.log("✅ DB ready (multi-tenant)");
     // Configurare seed: Admin + Produse (fara clienti)
     // await seedClientsFromFileIfEmpty();  // Dezactivat - clienti goi

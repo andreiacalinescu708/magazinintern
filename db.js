@@ -426,6 +426,7 @@ async function ensureCompaniesTable() {
       address TEXT,
       city TEXT,
       phone TEXT,
+      plan TEXT NOT NULL DEFAULT 'starter',
       status TEXT NOT NULL DEFAULT 'pending_verification',
       trial_expires_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -437,6 +438,54 @@ async function ensureCompaniesTable() {
   await q(`CREATE INDEX IF NOT EXISTS idx_companies_status ON public.companies(status)`);
   await q(`CREATE INDEX IF NOT EXISTS idx_companies_admin_email ON public.companies(admin_email)`);
   await q(`CREATE INDEX IF NOT EXISTS idx_companies_created_at ON public.companies(created_at)`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_companies_plan ON public.companies(plan)`);
+  
+  // Migrație: adaugă coloana plan dacă nu există
+  try {
+    await q(`ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'starter'`);
+    console.log("✅ DB Migration: plan adăugat în companies");
+  } catch (e) {
+    console.log("Note: plan migration:", e.message);
+  }
+}
+
+// Tabel pentru superadmini
+async function ensureSuperadminsTable() {
+  if (!pool) return;
+  
+  await q(`
+    CREATE TABLE IF NOT EXISTS public.superadmins (
+      id SERIAL PRIMARY KEY,
+      username TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      email TEXT UNIQUE,
+      active BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  
+  // Index
+  await q(`CREATE INDEX IF NOT EXISTS idx_superadmins_username ON public.superadmins(username)`);
+}
+
+// Creează superadmin default dacă nu există
+async function ensureDefaultSuperadmin() {
+  if (!pool) return;
+  
+  try {
+    const bcrypt = require('bcrypt');
+    const passwordHash = await bcrypt.hash('Nouamartie123', 10);
+    
+    await q(`
+      INSERT INTO public.superadmins (username, password_hash, email, active)
+      VALUES ($1, $2, $3, true)
+      ON CONFLICT (username) DO NOTHING
+    `, ['superadminob', passwordHash, 'superadmin@openbill.ro']);
+    
+    console.log("✅ Superadmin default creat/verificat");
+  } catch (e) {
+    console.error("Eroare la crearea superadmin:", e.message);
+  }
 }
 
 // Creare schema nouă pentru tenant cu toate tabelele
@@ -777,6 +826,8 @@ module.exports = {
   auditLog,
   // Multi-tenant exports
   ensureCompaniesTable,
+  ensureSuperadminsTable,
+  ensureDefaultSuperadmin,
   createTenantSchema,
   dropTenantSchema,
   cleanupUnverifiedCompanies,

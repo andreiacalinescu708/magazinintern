@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SuperAdmin - openBill</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="global.css" />
+  <style>
+    .superadmin-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: var(--space-6);
+    }
+    
+    .login-box {
+      max-width: 400px;
+      margin: 100px auto;
+      background: var(--bg-card);
+      padding: var(--space-8);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+    }
+    
+    .login-box h2 {
+      text-align: center;
+      margin-bottom: var(--space-6);
+      color: var(--primary-500);
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    
+    .stat-card {
+      background: var(--bg-card);
+      padding: var(--space-5);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary-500);
+    }
+    
+    .stat-label {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-top: var(--space-1);
+    }
+    
+    .companies-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    
+    .companies-table th,
+    .companies-table td {
+      padding: var(--space-3) var(--space-4);
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .companies-table th {
+      background: var(--bg-tertiary);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    
+    .companies-table tr:hover {
+      background: rgba(255,255,255,0.03);
+    }
+    
+    .badge {
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-md);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .badge-starter {
+      background: #10b981;
+      color: #000;
+    }
+    
+    .badge-pro {
+      background: #3b82f6;
+      color: #fff;
+    }
+    
+    .badge-enterprise {
+      background: #8b5cf6;
+      color: #fff;
+    }
+    
+    .badge-active {
+      background: #10b981;
+      color: #000;
+    }
+    
+    .badge-trial {
+      background: #f59e0b;
+      color: #000;
+    }
+    
+    .badge-suspended {
+      background: #ef4444;
+      color: #fff;
+    }
+    
+    .badge-pending {
+      background: #6b7280;
+      color: #fff;
+    }
+    
+    .actions {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    
+    .btn-sm {
+      padding: var(--space-1) var(--space-2);
+      font-size: 0.75rem;
+    }
+    
+    .filters-row {
+      display: flex;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+    
+    .filter-group label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    
+    .filter-group select {
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+    }
+    
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal-overlay.active {
+      display: flex;
+    }
+    
+    .modal {
+      background: var(--bg-card);
+      padding: var(--space-6);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+      max-width: 500px;
+      width: 90%;
+    }
+    
+    .modal h3 {
+      margin-bottom: var(--space-4);
+    }
+    
+    .form-group {
+      margin-bottom: var(--space-4);
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: var(--space-2);
+      font-size: 0.875rem;
+    }
+    
+    .form-group select,
+    .form-group input {
+      width: 100%;
+      padding: var(--space-3);
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+    }
+    
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-3);
+      margin-top: var(--space-4);
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    @media (max-width: 768px) {
+      .companies-table {
+        font-size: 0.75rem;
+      }
+      
+      .companies-table th,
+      .companies-table td {
+        padding: var(--space-2);
+      }
+      
+      .actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="loginScreen" class="superadmin-container">
+    <div class="login-box">
+      <h2>🔐 SuperAdmin Login</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="username" required placeholder="superadminob">
+        </div>
+        <div class="form-group">
+          <label>Parolă</label>
+          <input type="password" id="password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Autentificare
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboardScreen" class="hidden">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="navbar-inner">
+        <a href="superadmin.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+          <img src="favicon.svg" alt="oBill" style="height: 36px; width: auto;">
+          <span style="font-size: 1.5rem; font-weight: 700; color: var(--primary-500, #3b82f6);">openBill SuperAdmin</span>
+        </a>
+        <div class="navbar-actions">
+          <span id="superadminName" style="color: var(--text-muted); margin-right: var(--space-4);"></span>
+          <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="superadmin-container">
+      <h1 style="margin-bottom: var(--space-2);">Dashboard</h1>
+      <p style="color: var(--text-muted); margin-bottom: var(--space-6);">Gestionare companii și planuri</p>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalCompanies">-</div>
+          <div class="stat-label">Total Companii</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="activeCompanies">-</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="trialCompanies">-</div>
+          <div class="stat-label">În Trial</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="suspendedCompanies">-</div>
+          <div class="stat-label">Suspendate</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>Filtru Plan</label>
+          <select id="filterPlan" onchange="loadCompanies()">
+            <option value="">Toate</option>
+            <option value="starter">Starter</option>
+            <option value="pro">Pro</option>
+            <option value="enterprise">Enterprise</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Filtru Status</label>
+          <select id="filterStatus" onchange="loadCompanies()">
+            <option value="">Toate</option>
+            <option value="active">Active</option>
+            <option value="trial">Trial</option>
+            <option value="suspended">Suspendate</option>
+            <option value="pending_verification">Pending</option>
+          </select>
+        </div>
+        <div class="filter-group" style="margin-left: auto;">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" onclick="loadCompanies()">🔄 Reîmprospătează</button>
+        </div>
+      </div>
+
+      <!-- Companies Table -->
+      <div style="overflow-x: auto;">
+        <table class="companies-table">
+          <thead>
+            <tr>
+              <th>Companie</th>
+              <th>Admin</th>
+              <th>Plan</th>
+              <th>Status</th>
+              <th>Trial Expiră</th>
+              <th>Utilizatori</th>
+              <th>Clienți</th>
+              <th>Acțiuni</th>
+            </tr>
+          </thead>
+          <tbody id="companiesTableBody">
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Set Plan -->
+  <div id="planModal" class="modal-overlay">
+    <div class="modal">
+      <h3>Setează Plan</h3>
+      <div class="form-group">
+        <label>Plan</label>
+        <select id="modalPlan">
+          <option value="starter">Starter (29.99€)</option>
+          <option value="pro">Pro (39.99€)</option>
+          <option value="enterprise">Enterprise (59.99€)</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('planModal')">Anulează</button>
+        <button class="btn btn-primary" onclick="savePlan()">Salvează</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Set Status -->
+  <div id="statusModal" class="modal-overlay">
+    <div class="modal">
+      <h3>Setează Status</h3>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="modalStatus">
+          <option value="active">Active</option>
+          <option value="trial">Trial</option>
+          <option value="suspended">Suspended</option>
+          <option value="pending_verification">Pending Verification</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Data expirare trial (opțional)</label>
+        <input type="datetime-local" id="modalTrialDate">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('statusModal')">Anulează</button>
+        <button class="btn btn-primary" onclick="saveStatus()">Salvează</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let companies = [];
+    let selectedCompanyId = null;
+
+    // Check if logged in
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/superadmin/check');
+        const data = await res.json();
+        
+        if (data.loggedIn) {
+          showDashboard(data.superadmin);
+        } else {
+          showLogin();
+        }
+      } catch (e) {
+        showLogin();
+      }
+    }
+
+    function showLogin() {
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('dashboardScreen').classList.add('hidden');
+    }
+
+    function showDashboard(superadmin) {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('dashboardScreen').classList.remove('hidden');
+      document.getElementById('superadminName').textContent = superadmin.username;
+      loadCompanies();
+    }
+
+    // Login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const res = await fetch('/api/superadmin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showDashboard(data.superadmin);
+        } else {
+          alert(data.error || 'Eroare la autentificare');
+        }
+      } catch (e) {
+        alert('Eroare de conexiune');
+      }
+    });
+
+    // Logout
+    async function logout() {
+      try {
+        await fetch('/api/superadmin/logout', { method: 'POST' });
+        showLogin();
+      } catch (e) {
+        console.error('Eroare la logout:', e);
+      }
+    }
+
+    // Load companies
+    async function loadCompanies() {
+      try {
+        const res = await fetch('/api/superadmin/companies');
+        const data = await res.json();
+        
+        if (!data.success) {
+          alert('Eroare la încărcarea companiilor');
+          return;
+        }
+        
+        companies = data.companies;
+        renderCompanies();
+        updateStats();
+      } catch (e) {
+        console.error('Eroare:', e);
+        alert('Eroare la încărcarea companiilor');
+      }
+    }
+
+    function renderCompanies() {
+      const filterPlan = document.getElementById('filterPlan').value;
+      const filterStatus = document.getElementById('filterStatus').value;
+      
+      let filtered = companies;
+      if (filterPlan) filtered = filtered.filter(c => c.plan === filterPlan);
+      if (filterStatus) filtered = filtered.filter(c => c.status === filterStatus);
+      
+      const tbody = document.getElementById('companiesTableBody');
+      tbody.innerHTML = '';
+      
+      filtered.forEach(company => {
+        const trialDate = company.trial_expires_at 
+          ? new Date(company.trial_expires_at).toLocaleDateString('ro-RO')
+          : '-';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>
+            <strong>${escapeHtml(company.name)}</strong><br>
+            <small style="color: var(--text-muted);">${escapeHtml(company.schema_name)}</small>
+          </td>
+          <td>${escapeHtml(company.admin_email)}</td>
+          <td><span class="badge badge-${company.plan}">${company.plan}</span></td>
+          <td><span class="badge badge-${company.status}">${company.status}</span></td>
+          <td>${trialDate}</td>
+          <td>${company.user_count}</td>
+          <td>${company.client_count}</td>
+          <td>
+            <div class="actions">
+              <button class="btn btn-sm btn-primary" onclick="openPlanModal('${company.id}', '${company.plan}')">
+                Set Plan
+              </button>
+              <button class="btn btn-sm btn-warning" onclick="openStatusModal('${company.id}', '${company.status}', '${company.trial_expires_at || ''}')">
+                Set Status
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="deleteCompany('${company.id}', '${escapeHtml(company.name)}')">
+                Șterge
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function updateStats() {
+      document.getElementById('totalCompanies').textContent = companies.length;
+      document.getElementById('activeCompanies').textContent = companies.filter(c => c.status === 'active').length;
+      document.getElementById('trialCompanies').textContent = companies.filter(c => c.status === 'trial').length;
+      document.getElementById('suspendedCompanies').textContent = companies.filter(c => c.status === 'suspended').length;
+    }
+
+    // Modal functions
+    function openPlanModal(companyId, currentPlan) {
+      selectedCompanyId = companyId;
+      document.getElementById('modalPlan').value = currentPlan;
+      document.getElementById('planModal').classList.add('active');
+    }
+
+    function openStatusModal(companyId, currentStatus, trialDate) {
+      selectedCompanyId = companyId;
+      document.getElementById('modalStatus').value = currentStatus;
+      if (trialDate) {
+        // Format for datetime-local input
+        const d = new Date(trialDate);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        document.getElementById('modalTrialDate').value = d.toISOString().slice(0, 16);
+      } else {
+        document.getElementById('modalTrialDate').value = '';
+      }
+      document.getElementById('statusModal').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+      selectedCompanyId = null;
+    }
+
+    async function savePlan() {
+      if (!selectedCompanyId) return;
+      
+      const plan = document.getElementById('modalPlan').value;
+      
+      try {
+        const res = await fetch(`/api/superadmin/companies/${selectedCompanyId}/plan`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          closeModal('planModal');
+          loadCompanies();
+        } else {
+          alert(data.error || 'Eroare');
+        }
+      } catch (e) {
+        alert('Eroare de conexiune');
+      }
+    }
+
+    async function saveStatus() {
+      if (!selectedCompanyId) return;
+      
+      const status = document.getElementById('modalStatus').value;
+      const trialDate = document.getElementById('modalTrialDate').value;
+      
+      try {
+        const res = await fetch(`/api/superadmin/companies/${selectedCompanyId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            status, 
+            trial_expires_at: trialDate || null 
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          closeModal('statusModal');
+          loadCompanies();
+        } else {
+          alert(data.error || 'Eroare');
+        }
+      } catch (e) {
+        alert('Eroare de conexiune');
+      }
+    }
+
+    async function deleteCompany(companyId, companyName) {
+      if (!confirm(`Ești sigur că vrei să ștergi compania "${companyName}"?\n\nAceastă acțiune este ireversibilă!`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/superadmin/companies/${companyId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          loadCompanies();
+        } else {
+          alert(data.error || 'Eroare');
+        }
+      } catch (e) {
+        alert('Eroare de conexiune');
+      }
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Init
+    checkAuth();
+  </script>
+</body>
+</html>
