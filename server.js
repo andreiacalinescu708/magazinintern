@@ -4399,7 +4399,7 @@ app.post("/api/trip-sheets", async (req, res) => {
       id, date, driver_id, vehicle_id, km_start, locations || '',
       trip_number, departure_time, arrival_time, purpose,
       tech_check_departure || false, tech_check_arrival || false,
-      req.session.user.username
+      req.session.user.email || req.session.user.username || 'system'
     ]);
     
     res.json({ ok: true, id, trip_number });
