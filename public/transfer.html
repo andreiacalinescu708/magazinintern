@@ -116,7 +116,7 @@
         
         <div>
           <label class="form-label">În Gestiune</label>
-          <select id="toWarehouse" class="form-select">
+          <select id="toWarehouse" class="form-select" onchange="onToChange()">
             <option value="magazin">🏪 Magazin</option>
             <option value="depozit">🏭 Depozit</option>
           </select>
@@ -146,18 +146,9 @@
           </div>
           
           <div>
-            <label class="form-label">📍 Locație Destinație (Depozit)</label>
+            <label class="form-label" id="toLocationLabel">📍 Locație Destinație</label>
             <select id="toLocation" class="form-select">
-              <option value="D1">📦 D1</option>
-              <option value="D2">📦 D2</option>
-              <option value="D3">📦 D3</option>
-              <option value="D4">📦 D4</option>
-              <option value="D5">📦 D5</option>
-              <option value="D6">📦 D6</option>
-              <option value="D7">📦 D7</option>
-              <option value="D8">📦 D8</option>
-              <option value="D9">📦 D9</option>
-              <option value="D10">📦 D10</option>
+              <!-- Populat dinamic -->
             </select>
           </div>
         </div>
@@ -199,18 +190,68 @@
       products = await res.json();
       
       // Setează destinația implicită opusă sursei
+      document.getElementById('fromWarehouse').value = 'depozit';
       document.getElementById('toWarehouse').value = 'magazin';
+      
+      // Inițializează locațiile destinație
+      updateToLocationOptions();
     }
 
     function onFromChange() {
       const from = document.getElementById('fromWarehouse').value;
       const toSelect = document.getElementById('toWarehouse');
       
-      // Setează destinația opusă
+      // Setează destinația opusă (doar Depozit ↔ Magazin)
       toSelect.value = from === 'depozit' ? 'magazin' : 'depozit';
+      
+      // Actualizează locațiile destinație
+      updateToLocationOptions();
       
       // Resetează tot formularul
       resetTransferForm();
+    }
+    
+    function onToChange() {
+      const from = document.getElementById('fromWarehouse').value;
+      const to = document.getElementById('toWarehouse').value;
+      
+      // Blochează transferul în aceeași gestiune
+      if (from === to) {
+        alert('Nu poți transfera în aceeași gestiune! Selectează o gestiune diferită.');
+        document.getElementById('toWarehouse').value = from === 'depozit' ? 'magazin' : 'depozit';
+      }
+      
+      updateToLocationOptions();
+    }
+    
+    function updateToLocationOptions() {
+      const to = document.getElementById('toWarehouse').value;
+      const toSelect = document.getElementById('toLocation');
+      const toLabel = document.getElementById('toLocationLabel');
+      
+      if (to === 'magazin') {
+        // Locații Magazin: M1, M2, M3
+        toLabel.textContent = '🏪 Locație Destinație (Magazin)';
+        toSelect.innerHTML = `
+          <option value="M1">📦 M1</option>
+          <option value="M2">📦 M2</option>
+          <option value="M3">📦 M3</option>
+        `;
+      } else {
+        // Locații Depozit: D1-D6, R1-R3
+        toLabel.textContent = '🏭 Locație Destinație (Depozit)';
+        toSelect.innerHTML = `
+          <option value="D1">📦 D1</option>
+          <option value="D2">📦 D2</option>
+          <option value="D3">📦 D3</option>
+          <option value="D4">📦 D4</option>
+          <option value="D5">📦 D5</option>
+          <option value="D6">📦 D6</option>
+          <option value="R1">📦 R1</option>
+          <option value="R2">📦 R2</option>
+          <option value="R3">📦 R3</option>
+        `;
+      }
     }
     
     function resetTransferForm() {
