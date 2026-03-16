@@ -123,36 +123,8 @@
         </div>
       </div>
 
-      <div id="locationSection">
-        <div class="transfer-grid">
-          <div>
-            <label class="form-label">Locație Sursă (Depozit)</label>
-            <select id="fromLocation" class="form-select">
-              <option value="A">📍 A</option>
-              <option value="B">📍 B</option>
-              <option value="C">📍 C</option>
-              <option value="R1">📦 R1</option>
-              <option value="R2">📦 R2</option>
-              <option value="R3">📦 R3</option>
-            </select>
-          </div>
-          
-          <div>
-            <label class="form-label">Locație Destinație (Depozit)</label>
-            <select id="toLocation" class="form-select">
-              <option value="A">📍 A</option>
-              <option value="B">📍 B</option>
-              <option value="C">📍 C</option>
-              <option value="R1">📦 R1</option>
-              <option value="R2">📦 R2</option>
-              <option value="R3">📦 R3</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
       <div class="form-group" style="margin-top: var(--space-4);">
-        <label class="form-label">Scanare Cod / Caută Produs</label>
+        <label class="form-label">🔍 Scanare Cod / Caută Produs</label>
         <input type="text" id="searchInput" class="form-input" placeholder="Scanare QR sau tastează nume..." oninput="searchProduct(this.value)">
         <div id="searchResults" class="product-search-results" style="display: none;"></div>
       </div>
@@ -162,16 +134,46 @@
         <div id="selProdStock"></div>
       </div>
 
-      <div class="transfer-grid" style="margin-top: var(--space-4);">
+      <!-- PASUL 1: Selectare Locație Sursă (apare după selectarea produsului) -->
+      <div id="locationSection" style="margin-top: var(--space-4); display: none;">
+        <div class="transfer-grid">
+          <div>
+            <label class="form-label">📍 Locație Sursă (Depozit)</label>
+            <select id="fromLocation" class="form-select" onchange="onLocationSelect()">
+              <option value="">-- Selectează locația --</option>
+            </select>
+            <small id="fromLocationInfo" style="color: #64748b; display: block; margin-top: 4px;"></small>
+          </div>
+          
+          <div>
+            <label class="form-label">📍 Locație Destinație (Depozit)</label>
+            <select id="toLocation" class="form-select">
+              <option value="D1">📦 D1</option>
+              <option value="D2">📦 D2</option>
+              <option value="D3">📦 D3</option>
+              <option value="D4">📦 D4</option>
+              <option value="D5">📦 D5</option>
+              <option value="D6">📦 D6</option>
+              <option value="D7">📦 D7</option>
+              <option value="D8">📦 D8</option>
+              <option value="D9">📦 D9</option>
+              <option value="D10">📦 D10</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASUL 2: Selectare LOT (apare după selectarea locației) -->
+      <div id="lotSection" class="transfer-grid" style="margin-top: var(--space-4); display: none;">
         <div>
-          <label class="form-label">LOT</label>
+          <label class="form-label">📦 LOT</label>
           <select id="lotSelect" class="form-select" onchange="updateMaxQty()">
-            <option value="">Selectează LOT</option>
+            <option value="">-- Selectează LOT --</option>
           </select>
         </div>
         
         <div>
-          <label class="form-label">Cantitate (max: <span id="maxQty">0</span>)</label>
+          <label class="form-label">🔢 Cantitate (max: <span id="maxQty">0</span>)</label>
           <input type="number" id="qtyInput" class="form-input" min="1" value="1">
         </div>
       </div>
@@ -203,18 +205,26 @@
     function onFromChange() {
       const from = document.getElementById('fromWarehouse').value;
       const toSelect = document.getElementById('toWarehouse');
-      const locSection = document.getElementById('locationSection');
       
       // Setează destinația opusă
       toSelect.value = from === 'depozit' ? 'magazin' : 'depozit';
       
-      // Arată/ascunde locațiile
-      locSection.style.display = from === 'magazin' ? 'none' : 'block';
-      
-      // Resetează
+      // Resetează tot formularul
+      resetTransferForm();
+    }
+    
+    function resetTransferForm() {
       selectedProduct = null;
+      availableLots = [];
       document.getElementById('selectedProductBox').style.display = 'none';
       document.getElementById('searchInput').value = '';
+      document.getElementById('locationSection').style.display = 'none';
+      document.getElementById('lotSection').style.display = 'none';
+      document.getElementById('fromLocation').innerHTML = '<option value="">-- Selectează locația --</option>';
+      document.getElementById('lotSelect').innerHTML = '<option value="">-- Selectează LOT --</option>';
+      document.getElementById('qtyInput').value = '1';
+      document.getElementById('maxQty').textContent = '0';
+      document.getElementById('resultBox').innerHTML = '';
     }
 
     async function searchProduct(query) {
@@ -251,37 +261,78 @@
       document.getElementById('searchInput').value = name;
       document.getElementById('searchResults').style.display = 'none';
       
-      // Încarcă stoc disponibil pentru acest produs în gestiunea sursă
       const fromWh = document.getElementById('fromWarehouse').value;
-      const fromLoc = document.getElementById('fromLocation')?.value;
       
       try {
+        // Încarcă tot stocul din gestiunea sursă pentru acest produs
         const stockRes = await fetch(`/api/stock?warehouse=${fromWh}`);
         const allStock = await stockRes.json();
         
-        // Filtrează după GTIN și locație (dacă e depozit)
-        availableLots = allStock.filter(s => {
-          const matchGtin = normalizeGTIN(s.gtin) === normalizeGTIN(gtin);
-          if (fromWh === 'magazin') return matchGtin;
-          return matchGtin && s.location === fromLoc;
-        });
+        // Filtrează doar după GTIN (pentru toate locațiile)
+        availableLots = allStock.filter(s => 
+          normalizeGTIN(s.gtin) === normalizeGTIN(gtin)
+        );
         
-        // Afișează info
+        // Afișează info produs
         document.getElementById('selProdName').textContent = name;
         const totalAvailable = availableLots.reduce((a, s) => a + Number(s.qty), 0);
         document.getElementById('selProdStock').innerHTML = `
-          <div class="stock-row"><span>Disponibil ${fromWh}:</span><strong>${totalAvailable} buc</strong></div>
+          <div class="stock-row"><span>Total disponibil în ${fromWh}:</span><strong>${totalAvailable} buc</strong></div>
         `;
         document.getElementById('selectedProductBox').style.display = 'block';
         
-        // Populează dropdown LOT
-        const lotSelect = document.getElementById('lotSelect');
-        lotSelect.innerHTML = '<option value="">Selectează LOT</option>' + 
-          availableLots.map(l => `<option value="${l.lot}" data-qty="${l.qty}" data-exp="${l.expiresAt}">${l.lot} (${l.qty} buc)</option>`).join('');
+        // PASUL 1: Grupează stocul pe locații și populează dropdown locații
+        const locationMap = new Map();
+        availableLots.forEach(lot => {
+          const loc = lot.location || 'Nedefinită';
+          if (!locationMap.has(loc)) {
+            locationMap.set(loc, { qty: 0, lots: [] });
+          }
+          locationMap.get(loc).qty += Number(lot.qty);
+          locationMap.get(loc).lots.push(lot);
+        });
+        
+        // Populează dropdown locații sursă
+        const locSelect = document.getElementById('fromLocation');
+        locSelect.innerHTML = '<option value="">-- Selectează locația --</option>' + 
+          Array.from(locationMap.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([loc, data]) => `<option value="${loc}" data-lots='${JSON.stringify(data.lots)}'>📍 ${loc} (${data.qty} buc)</option>`)
+            .join('');
+        
+        document.getElementById('locationSection').style.display = 'block';
+        document.getElementById('lotSection').style.display = 'none';
+        document.getElementById('fromLocationInfo').textContent = `${locationMap.size} locații cu stoc disponibil`;
         
       } catch (e) {
         console.error(e);
       }
+    }
+    
+    // PASUL 2: Când selectează locația, afișează LOTurile disponibile
+    function onLocationSelect() {
+      const locSelect = document.getElementById('fromLocation');
+      const selectedOption = locSelect.selectedOptions[0];
+      
+      if (!selectedOption || !selectedOption.value) {
+        document.getElementById('lotSection').style.display = 'none';
+        return;
+      }
+      
+      // Extrage loturile din data attribute
+      const lots = JSON.parse(selectedOption.dataset.lots || '[]');
+      
+      // Populează dropdown LOT
+      const lotSelect = document.getElementById('lotSelect');
+      lotSelect.innerHTML = '<option value="">-- Selectează LOT --</option>' + 
+        lots.map(l => {
+          const expDate = l.expiresAt ? new Date(l.expiresAt).toLocaleDateString('ro-RO') : 'N/A';
+          return `<option value="${l.lot}" data-qty="${l.qty}" data-exp="${l.expiresAt}">${l.lot} - ${l.qty} buc (exp: ${expDate})</option>`;
+        }).join('');
+      
+      document.getElementById('lotSection').style.display = 'grid';
+      document.getElementById('maxQty').textContent = '0';
+      document.getElementById('qtyInput').value = '1';
     }
 
     function updateMaxQty() {
@@ -299,6 +350,11 @@
       const toLoc = toWh === 'depozit' ? document.getElementById('toLocation').value : 'MAGAZIN';
       const lot = document.getElementById('lotSelect').value;
       const qty = Number(document.getElementById('qtyInput').value);
+      
+      if (!fromLoc && fromWh === 'depozit') {
+        showResult('Selectează o locație sursă!', 'error');
+        return;
+      }
       
       if (!selectedProduct) {
         showResult('Selectează un produs!', 'error');
@@ -339,13 +395,9 @@
         const data = await res.json();
         
         if (res.ok) {
-          showResult(`✅ Transfer realizat! ${qty} buc din ${fromWh} în ${toWh}`, 'success');
-          // Reset
-          selectedProduct = null;
-          document.getElementById('selectedProductBox').style.display = 'none';
-          document.getElementById('searchInput').value = '';
-          document.getElementById('lotSelect').innerHTML = '<option value="">Selectează LOT</option>';
-          document.getElementById('qtyInput').value = '1';
+          showResult(`✅ Transfer realizat! ${qty} buc din ${fromLoc} în ${toLoc}`, 'success');
+          // Reset form
+          setTimeout(() => resetTransferForm(), 2000);
         } else {
           showResult('❌ ' + (data.error || 'Eroare la transfer'), 'error');
         }
