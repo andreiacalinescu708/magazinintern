@@ -1,4 +1,83 @@
 
+// ========== TOAST NOTIFICATIONS SYSTEM ==========
+
+/**
+ * Afișează un toast notification modern
+ * @param {string} message - Mesajul de afișat
+ * @param {string} type - Tipul: 'success', 'error', 'warning', 'info'
+ * @param {number} duration - Durata în ms (default: 4000ms)
+ */
+function showToast(message, type = 'info', duration = 4000) {
+  // Creează containerul dacă nu există
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  // Iconițe pentru fiecare tip
+  const icons = {
+    success: '✓',
+    error: '✕',
+    warning: '⚠',
+    info: 'ℹ'
+  };
+
+  // Titluri pentru fiecare tip
+  const titles = {
+    success: 'Succes',
+    error: 'Eroare',
+    warning: 'Atenție',
+    info: 'Info'
+  };
+
+  // Creează elementul toast
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <div class="toast-icon">${icons[type]}</div>
+    <div class="toast-content">
+      <div class="toast-title">${titles[type]}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+    <div class="toast-progress">
+      <div class="toast-progress-bar"></div>
+    </div>
+  `;
+
+  // Adaugă în container
+  container.appendChild(toast);
+
+  // Auto-remove după duration
+  setTimeout(() => {
+    toast.classList.add('toast-exit');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// Override pentru alert() - înlocuiește alert-urile native cu toast-uri
+const originalAlert = window.alert;
+window.alert = function(message) {
+  // Detectează tipul mesajului
+  let type = 'info';
+  const lowerMsg = message.toLowerCase();
+  
+  if (lowerMsg.includes('✅') || lowerMsg.includes('succes') || lowerMsg.includes('trimis') || lowerMsg.includes('salvat')) {
+    type = 'success';
+  } else if (lowerMsg.includes('❌') || lowerMsg.includes('eroare') || lowerMsg.includes('error') || lowerMsg.includes('nu poate') || lowerMsg.includes('nu s-a')) {
+    type = 'error';
+  } else if (lowerMsg.includes('⚠') || lowerMsg.includes('atenție') || lowerMsg.includes('warning') || lowerMsg.includes('lips')) {
+    type = 'warning';
+  }
+  
+  showToast(message, type);
+};
+
+// Păstrează și funcția originală disponibilă dacă e nevoie
+window.alertNative = originalAlert;
 
   async function apiFetch(url, options = {}) {
     const res = await fetch(url, {
