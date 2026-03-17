@@ -360,16 +360,26 @@
     </select>
   </div>
 
-  <!-- Acesta e singurul dropdown pentru locatie - apare doar pt Depozit -->
-  <div class="form-group" id="locationGroup">
+  <!-- Dropdown pentru locații Depozit -->
+  <div class="form-group" id="locationDepozitGroup">
     <label class="form-label">Locație Depozit</label>
-    <select id="stockLocation" class="form-select">
-      <option value="A">📍 Locație A</option>
-      <option value="B">📍 Locație B</option>
-      <option value="C">📍 Locație C</option>
+    <select id="stockLocationDepozit" class="form-select">
+      <option value="D1">🏭 Depozit D1</option>
+      <option value="D2">🏭 Depozit D2</option>
+      <option value="D3">🏭 Depozit D3</option>
       <option value="R1">📦 Raft R1</option>
       <option value="R2">📦 Raft R2</option>
       <option value="R3">📦 Raft R3</option>
+    </select>
+  </div>
+
+  <!-- Dropdown pentru locații Magazin (ascuns inițial) -->
+  <div class="form-group" id="locationMagazinGroup" style="display: none;">
+    <label class="form-label">Locație Magazin</label>
+    <select id="stockLocationMagazin" class="form-select">
+      <option value="M1">🏪 Magazin M1</option>
+      <option value="M2">🏪 Magazin M2</option>
+      <option value="M3">🏪 Magazin M3</option>
     </select>
   </div>
 
@@ -499,7 +509,8 @@
               
               const hiddenInput = document.getElementById('stockProduct');
               const qtyInput = document.getElementById('stockQty');
-              const locationSelect = document.getElementById('locationDepozit');
+              const locationDepozitSelect = document.getElementById('stockLocationDepozit');
+              const locationMagazinSelect = document.getElementById('stockLocationMagazin');
               const warehouseSelect = document.getElementById('warehouseSelect');
               
               if (!hiddenInput?.value) {
@@ -523,7 +534,12 @@
                 }
                 
                 const warehouse = warehouseSelect ? warehouseSelect.value : 'depozit';
-                const stockLocation = warehouse === 'magazin' ? 'MAGAZIN' : (locationSelect ? locationSelect.value : 'A');
+                let stockLocation;
+                if (warehouse === 'magazin') {
+                  stockLocation = locationMagazinSelect ? locationMagazinSelect.value : 'M1';
+                } else {
+                  stockLocation = locationDepozitSelect ? locationDepozitSelect.value : 'D1';
+                }
                 const gtins = selectedProduct.gtins || [];
                 const gtin = gtins[0] || selectedProduct.gtin || '';
                 

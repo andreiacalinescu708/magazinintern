@@ -3465,8 +3465,10 @@ const resultsBox = document.getElementById("stockProductResults");
   const selectedName = document.getElementById("selectedProductName");
   const productSelectOk = document.getElementById("productSelectOk");
   const warehouseSelect = document.getElementById("warehouseSelect");
-  const locationGroup = document.getElementById("locationGroup");
-  const locationSelect = document.getElementById("stockLocation");
+  const locationDepozitGroup = document.getElementById("locationDepozitGroup");
+  const locationMagazinGroup = document.getElementById("locationMagazinGroup");
+  const locationDepozitSelect = document.getElementById("stockLocationDepozit");
+  const locationMagazinSelect = document.getElementById("stockLocationMagazin");
 
   // Încărcăm produsele MAI ÎNTÂI
   let products = [];
@@ -3806,14 +3808,18 @@ const resultsBox = document.getElementById("stockProductResults");
   }
 
   // ===== HANDLER: Schimbare gestiune =====
-  if (warehouseSelect && locationGroup) {
+  if (warehouseSelect) {
     warehouseSelect.addEventListener("change", () => {
       if (warehouseSelect.value === 'magazin') {
-        locationGroup.style.display = 'none';
-        if (locationSelect) locationSelect.value = 'MAGAZIN';
+        // Ascunde locații depozit, arată locații magazin
+        if (locationDepozitGroup) locationDepozitGroup.style.display = 'none';
+        if (locationMagazinGroup) locationMagazinGroup.style.display = 'block';
+        if (locationMagazinSelect) locationMagazinSelect.value = 'M1';
       } else {
-        locationGroup.style.display = 'block';
-        if (locationSelect) locationSelect.value = 'A';
+        // Ascunde locații magazin, arată locații depozit
+        if (locationMagazinGroup) locationMagazinGroup.style.display = 'none';
+        if (locationDepozitGroup) locationDepozitGroup.style.display = 'block';
+        if (locationDepozitSelect) locationDepozitSelect.value = 'D1';
       }
       loadStockForWarehouse(warehouseSelect.value);
     });
@@ -3843,7 +3849,12 @@ const resultsBox = document.getElementById("stockProductResults");
       }
       
       const warehouse = warehouseSelect ? warehouseSelect.value : 'depozit';
-      const location = warehouse === 'magazin' ? 'MAGAZIN' : (locationSelect ? locationSelect.value : 'A');
+      let location;
+      if (warehouse === 'magazin') {
+        location = locationMagazinSelect ? locationMagazinSelect.value : 'M1';
+      } else {
+        location = locationDepozitSelect ? locationDepozitSelect.value : 'D1';
+      }
       
       const lot = lotInput?.value.trim();
       const expiresAt = fromDisplayDate(expInput?.value);
