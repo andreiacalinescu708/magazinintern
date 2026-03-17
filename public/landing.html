@@ -776,10 +776,36 @@
           </div>
         </div>
 
-        <!-- Step 2: Autentificare -->
+        <!-- Step 2: Produse și prețuri -->
         <div class="tutorial-step">
           <div class="tutorial-content">
             <div class="tutorial-step-number">2</div>
+            <h3>Produse și prețuri</h3>
+            <p>În această secțiune poți adăuga produsele în baza de date a aplicației. Pentru fiecare produs introduci numele și categoria, ceea ce te va ajuta mai târziu să filtrezi și să găsești rapid produsele când creezi comenzi.</p>
+            <p style="margin-top: var(--space-3);">Poți introduce și codul GTIN (codul de bare al produsului). Unele produse pot avea mai multe coduri de bare, iar aplicația îți permite să adaugi coduri GTIN suplimentare, câte unul pe fiecare linie. Astfel, indiferent de codul de bare folosit, produsul va fi identificat rapid în sistem.</p>
+            <p style="margin-top: var(--space-3);">Prețul de listă reprezintă prețul standard al produsului. Ulterior, în fișa fiecărui client, acest preț poate fi modificat și se pot seta prețuri speciale negociate.</p>
+            <ul class="tutorial-features">
+              <li>Adăugare produse cu nume și categorie</li>
+              <li>Multiple coduri GTIN per produs</li>
+              <li>Preț de listă configurabil</li>
+              <li>Prețuri personalizate per client</li>
+            </ul>
+          </div>
+          <div class="tutorial-image" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); aspect-ratio: auto;">
+            <div style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-card); aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center;">
+              <img src="images/Adauga_produs_modal.png" alt="Adaugă produs modal" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'tutorial-image-placeholder\'><div class=\'placeholder-icon\' style=\'font-size: 2rem;\'>➕</div><p>Adaugă produs</p></div>';">
+            </div>
+            <div style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-card); aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center;">
+              <img src="images/Produse_adaugate.png" alt="Produse adăugate" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'tutorial-image-placeholder\'><div class=\'placeholder-icon\' style=\'font-size: 2rem;\'>📋</div><p>Produse adăugate</p></div>';">
+            </div>
+            <div class="tutorial-image-badge" style="right: var(--space-3);">Pasul 2</div>
+          </div>
+        </div>
+
+        <!-- Step 3: Autentificare -->
+        <div class="tutorial-step">
+          <div class="tutorial-content">
+            <div class="tutorial-step-number">3</div>
             <h3>Autentificare și Dashboard</h3>
             <p>Accesează platforma de pe orice dispozitiv. Dashboard-ul îți arată o privire de ansamblu asupra afacerii: comenzi recente, stocuri critice și alerte importante.</p>
             <ul class="tutorial-features">
@@ -797,10 +823,10 @@
           </div>
         </div>
 
-        <!-- Step 3: Gestiune Stoc -->
+        <!-- Step 4: Gestiune Stoc -->
         <div class="tutorial-step">
           <div class="tutorial-content">
-            <div class="tutorial-step-number">3</div>
+            <div class="tutorial-step-number">4</div>
             <h3>Gestionează Stocurile</h3>
             <p>Adaugă produse, organizează-le pe categorii și urmărește stocul în timp real. Primești alerte automate când produsele sunt pe terminate sau aproape de expirare.</p>
             <ul class="tutorial-features">
@@ -814,14 +840,14 @@
               <div class="placeholder-icon">📦</div>
               <p>Screenshot Gestiune Stoc</p>
             </div>
-            <div class="tutorial-image-badge">Pasul 3</div>
+            <div class="tutorial-image-badge">Pasul 4</div>
           </div>
         </div>
 
-        <!-- Step 4: Comenzi -->
+        <!-- Step 5: Comenzi -->
         <div class="tutorial-step">
           <div class="tutorial-content">
-            <div class="tutorial-step-number">4</div>
+            <div class="tutorial-step-number">5</div>
             <h3>Preia Comenzi Rapid</h3>
             <p>Creează comenzi noi în câteva secunde. Caută produsele, adaugă cantitățile și trimite comanda direct către depozit pentru picking.</p>
             <ul class="tutorial-features">
@@ -835,14 +861,14 @@
               <div class="placeholder-icon">🛒</div>
               <p>Screenshot Comandă</p>
             </div>
-            <div class="tutorial-image-badge">Pasul 4</div>
+            <div class="tutorial-image-badge">Pasul 5</div>
           </div>
         </div>
 
-        <!-- Step 5: Picking -->
+        <!-- Step 6: Picking -->
         <div class="tutorial-step">
           <div class="tutorial-content">
-            <div class="tutorial-step-number">5</div>
+            <div class="tutorial-step-number">6</div>
             <h3>Picking și Pregătire Livrare</h3>
             <p>Operatorii din depozit văd lista de picking direct pe telefon sau tabletă. Scanează produsele, confirmă cantitățile și pregătește comanda pentru livrare.</p>
             <ul class="tutorial-features">
@@ -863,7 +889,7 @@
         <!-- Step 6: Foi Parcurs -->
         <div class="tutorial-step">
           <div class="tutorial-content">
-            <div class="tutorial-step-number">6</div>
+            <div class="tutorial-step-number">7</div>
             <h3>Foi de Parcurs și Combustibil</h3>
             <p>Generează foi de parcurs pentru șoferi, înregistrează bonurile de combustibil și urmărește costurile de transport. Toate documentele sunt salvate digital.</p>
             <ul class="tutorial-features">
@@ -877,14 +903,14 @@
               <div class="placeholder-icon">🚛</div>
               <p>Screenshot Foi Parcurs</p>
             </div>
-            <div class="tutorial-image-badge">Pasul 6</div>
+            <div class="tutorial-image-badge">Pasul 7</div>
           </div>
         </div>
 
-        <!-- Step 7: Facturare -->
+        <!-- Step 8: Facturare -->
         <div class="tutorial-step">
           <div class="tutorial-content">
-            <div class="tutorial-step-number">7</div>
+            <div class="tutorial-step-number">8</div>
             <h3>Facturare Automată prin API</h3>
             <p>Conectează openBill cu programul tău de facturare (SmartBill, Saga, etc.) prin API. Comenzile livrate se transformă automat în facturi, fără dublă introducere.</p>
             <ul class="tutorial-features">
@@ -898,7 +924,7 @@
               <div class="placeholder-icon">🧾</div>
               <p>Screenshot Facturare</p>
             </div>
-            <div class="tutorial-image-badge">Pasul 7</div>
+            <div class="tutorial-image-badge">Pasul 8</div>
           </div>
         </div>
 
