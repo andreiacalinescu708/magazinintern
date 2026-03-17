@@ -903,14 +903,38 @@
                 <a href="images/Adauga_client_preturi_speciale.mp4" style="color: var(--primary-400);" download>Descarcă video</a>
               </p>
             </video>
-            <div class="tutorial-image-badge">Pasul 3</div>
+          </div>
+        </div>
+
+        <!-- Step 4: Receptie Marfa -->
+        <div class="tutorial-step">
+          <div class="tutorial-content">
+            <div class="tutorial-step-number">4</div>
+            <h3>Recepție Marfă</h3>
+            <p>În această secțiune se adaugă stocurile în sistem. Unele produse au pe cutie un cod Matrix (QR) care conține informații precum lotul, data de expirare și codul de bare al produsului. Dacă produsul are acest tip de cod, poți scana codul QR direct în primul câmp din pagină, iar aplicația va completa automat toate câmpurile necesare cu informațiile extrase din cod.</p>
+            <p style="margin-top: var(--space-3);">Dacă produsul nu are cod QR, toate informațiile pot fi introduse manual. Aplicația funcționează cu două gestiuni principale: <strong>Depozit</strong> și <strong>Magazin</strong>. Fiecare gestiune poate avea mai multe locații de stocare.</p>
+            <p style="margin-top: var(--space-3);">Atunci când o comandă este plasată prin aplicație, sistemul alocă automat stocul în următoarea ordine: mai întâi din locația D1 – Depozit 1, dacă produsul nu este disponibil în D1, se caută în D2, D3, R1, R2 și R3, iar dacă nu este găsit, aplicația va căuta în gestiunea Magazin.</p>
+            <ul class="tutorial-features">
+              <li>Scanare cod QR Matrix pentru autocompletare</li>
+              <li>Gestiuni: Depozit și Magazin</li>
+              <li>Alocare automată stoc după locații</li>
+              <li>Istoric ultimele intrări de stoc</li>
+            </ul>
+          </div>
+          <div class="tutorial-image" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); aspect-ratio: auto;">
+            <div style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-card); aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center;">
+              <img src="images/RM1.png" alt="Recepție Marfă - Scanare" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'tutorial-image-placeholder\'><div class=\'placeholder-icon\' style=\'font-size: 2rem;\'>📥</div><p>Scanare cod QR</p></div>';">
+            </div>
+            <div style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-card); aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center;">
+              <img src="images/R2.png" alt="Recepție Marfă - Intrări" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'tutorial-image-placeholder\'><div class=\'placeholder-icon\' style=\'font-size: 2rem;\'>📋</div><p>Ultimele intrări</p></div>';">
+            </div>
           </div>
         </div>
 
         <!-- Step 5: Gestiune Stoc -->
         <div class="tutorial-step">
           <div class="tutorial-content">
-            <div class="tutorial-step-number">5</div>
+            <div class="tutorial-step-number">6</div>
             <h3>Gestionează Stocurile</h3>
             <p>Adaugă produse, organizează-le pe categorii și urmărește stocul în timp real. Primești alerte automate când produsele sunt pe terminate sau aproape de expirare.</p>
             <ul class="tutorial-features">
@@ -924,14 +948,14 @@
               <div class="placeholder-icon">📦</div>
               <p>Screenshot Gestiune Stoc</p>
             </div>
-            <div class="tutorial-image-badge">Pasul 5</div>
+            <div class="tutorial-image-badge">Pasul 6</div>
           </div>
         </div>
 
-        <!-- Step 6: Comenzi -->
+        <!-- Step 7: Comenzi -->
         <div class="tutorial-step">
           <div class="tutorial-content">
-            <div class="tutorial-step-number">6</div>
+            <div class="tutorial-step-number">7</div>
             <h3>Preia Comenzi Rapid</h3>
             <p>Creează comenzi noi în câteva secunde. Caută produsele, adaugă cantitățile și trimite comanda direct către depozit pentru picking.</p>
             <ul class="tutorial-features">
@@ -945,14 +969,14 @@
               <div class="placeholder-icon">🛒</div>
               <p>Screenshot Comandă</p>
             </div>
-            <div class="tutorial-image-badge">Pasul 6</div>
+            <div class="tutorial-image-badge">Pasul 7</div>
           </div>
         </div>
 
-        <!-- Step 7: Picking -->
+        <!-- Step 8: Picking -->
         <div class="tutorial-step">
           <div class="tutorial-content">
-            <div class="tutorial-step-number">7</div>
+            <div class="tutorial-step-number">8</div>
             <h3>Picking și Pregătire Livrare</h3>
             <p>Operatorii din depozit văd lista de picking direct pe telefon sau tabletă. Scanează produsele, confirmă cantitățile și pregătește comanda pentru livrare.</p>
             <ul class="tutorial-features">
@@ -966,14 +990,14 @@
               <div class="placeholder-icon">📋</div>
               <p>Screenshot Picking</p>
             </div>
-            <div class="tutorial-image-badge">Pasul 7</div>
+            <div class="tutorial-image-badge">Pasul 8</div>
           </div>
         </div>
 
-        <!-- Step 8: Foi Parcurs -->
+        <!-- Step 9: Foi Parcurs -->
         <div class="tutorial-step">
           <div class="tutorial-content">
-            <div class="tutorial-step-number">8</div>
+            <div class="tutorial-step-number">9</div>
             <h3>Foi de Parcurs și Combustibil</h3>
             <p>Generează foi de parcurs pentru șoferi, înregistrează bonurile de combustibil și urmărește costurile de transport. Toate documentele sunt salvate digital.</p>
             <ul class="tutorial-features">
@@ -987,14 +1011,14 @@
               <div class="placeholder-icon">🚛</div>
               <p>Screenshot Foi Parcurs</p>
             </div>
-            <div class="tutorial-image-badge">Pasul 8</div>
+            <div class="tutorial-image-badge">Pasul 9</div>
           </div>
         </div>
 
-        <!-- Step 9: Facturare -->
+        <!-- Step 10: Facturare -->
         <div class="tutorial-step">
           <div class="tutorial-content">
-            <div class="tutorial-step-number">9</div>
+            <div class="tutorial-step-number">10</div>
             <h3>Facturare Automată prin API</h3>
             <p>Conectează openBill cu programul tău de facturare (SmartBill, Saga, etc.) prin API. Comenzile livrate se transformă automat în facturi, fără dublă introducere.</p>
             <ul class="tutorial-features">
@@ -1008,7 +1032,7 @@
               <div class="placeholder-icon">🧾</div>
               <p>Screenshot Facturare</p>
             </div>
-            <div class="tutorial-image-badge">Pasul 9</div>
+            <div class="tutorial-image-badge">Pasul 10</div>
           </div>
         </div>
 
