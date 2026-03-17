@@ -3038,9 +3038,11 @@ app.put("/api/stock/:id", async (req, res) => {
 
       const beforeQty = item.qty;
       const beforeLoc = item.location || "A";
+      const beforeLot = item.lot || "";
 
       if (req.body.qty != null) item.qty = Number(req.body.qty);
       if (req.body.location != null) item.location = String(req.body.location);
+      if (req.body.lot != null) item.lot = String(req.body.lot);
 
       writeJson(STOCK_FILE, stock);
 
@@ -3063,13 +3065,15 @@ await logAudit(req, "STOCK_EDIT", "stock", item.id, {
     const before = r0.rows[0];
     const newQty = req.body.qty != null ? Number(req.body.qty) : Number(before.qty);
     const newLoc = req.body.location != null ? String(req.body.location) : String(before.location || "A");
+    const newLot = req.body.lot != null ? String(req.body.lot) : String(before.lot || "");
 
-    await db.q(`UPDATE ${schemaName}.stock SET qty=$1, location=$2 WHERE id=$3`, [newQty, newLoc, id]);
+    await db.q(`UPDATE ${schemaName}.stock SET qty=$1, location=$2, lot=$3 WHERE id=$4`, [newQty, newLoc, newLot, id]);
 
-   await logAudit(req, "STOCK_EDIT", "stock", id, {
+    await logAudit(req, "STOCK_EDIT", "stock", id, {
       gtin: before.gtin,
       productName: before.product_name,
-      lot: before.lot,
+      beforeLot: before.lot,
+      afterLot: newLot,
       beforeQty: Number(before.qty),
       afterQty: newQty,
       beforeLoc: before.location,

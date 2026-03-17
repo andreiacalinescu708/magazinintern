@@ -404,14 +404,14 @@
           <value id="editProdName">-</value>
         </div>
         
-        <div class="form-readonly">
-          <label>LOT</label>
-          <value id="editLot">-</value>
-        </div>
-        
         <div class="form-readonly" id="editWarehouseBox">
           <label>Gestiune</label>
           <value id="editWarehouse">-</value>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">LOT</label>
+          <input type="text" id="editLot" class="form-input">
         </div>
 
         <div class="form-group">
@@ -419,15 +419,26 @@
           <input type="number" id="editQty" class="form-input" min="0">
         </div>
 
-        <div class="form-group" id="editLocationBox">
-          <label class="form-label">Locație</label>
-          <select id="editLocation" class="form-select">
-            <option value="A">📍 A</option>
-            <option value="B">📍 B</option>
-            <option value="C">📍 C</option>
-            <option value="R1">📦 R1</option>
-            <option value="R2">📦 R2</option>
-            <option value="R3">📦 R3</option>
+        <!-- Locații Depozit -->
+        <div class="form-group" id="editLocationDepozitBox">
+          <label class="form-label">Locație Depozit</label>
+          <select id="editLocationDepozit" class="form-select">
+            <option value="D1">🏭 Depozit D1</option>
+            <option value="D2">🏭 Depozit D2</option>
+            <option value="D3">🏭 Depozit D3</option>
+            <option value="R1">📦 Raft R1</option>
+            <option value="R2">📦 Raft R2</option>
+            <option value="R3">📦 Raft R3</option>
+          </select>
+        </div>
+
+        <!-- Locații Magazin -->
+        <div class="form-group" id="editLocationMagazinBox">
+          <label class="form-label">Locație Magazin</label>
+          <select id="editLocationMagazin" class="form-select">
+            <option value="M1">🏪 Magazin M1</option>
+            <option value="M2">🏪 Magazin M2</option>
+            <option value="M3">🏪 Magazin M3</option>
           </select>
         </div>
       </div>
@@ -610,17 +621,22 @@
       
       document.getElementById('editId').value = lotId;
       document.getElementById('editProdName').textContent = lot.productName;
-      document.getElementById('editLot').textContent = lot.lot;
+      document.getElementById('editLot').value = lot.lot || '';
       document.getElementById('editWarehouse').textContent = lot.warehouse === 'magazin' ? '🏪 Magazin' : '🏭 Depozit';
       document.getElementById('editQty').value = lot.qty;
       
-      // Gestionează locația (ascuns pentru magazin)
-      const locBox = document.getElementById('editLocationBox');
+      // Gestionează afișarea locațiilor în funcție de gestiune
+      const locDepozitBox = document.getElementById('editLocationDepozitBox');
+      const locMagazinBox = document.getElementById('editLocationMagazinBox');
+      
       if (lot.warehouse === 'magazin') {
-        locBox.style.display = 'none';
+        locDepozitBox.style.display = 'none';
+        locMagazinBox.style.display = 'block';
+        document.getElementById('editLocationMagazin').value = lot.location || 'M1';
       } else {
-        locBox.style.display = 'block';
-        document.getElementById('editLocation').value = lot.location || 'A';
+        locMagazinBox.style.display = 'none';
+        locDepozitBox.style.display = 'block';
+        document.getElementById('editLocationDepozit').value = lot.location || 'D1';
       }
       
       document.getElementById('editModal').classList.add('show');
@@ -633,13 +649,22 @@
     async function saveEdit() {
       const id = document.getElementById('editId').value;
       const qty = document.getElementById('editQty').value;
-      const location = document.getElementById('editLocation').value;
+      const lot = document.getElementById('editLot').value.trim();
+      
+      // Determină locația în funcție de gestiunea vizibilă
+      const locDepozitBox = document.getElementById('editLocationDepozitBox');
+      let location;
+      if (locDepozitBox.style.display === 'none') {
+        location = document.getElementById('editLocationMagazin').value;
+      } else {
+        location = document.getElementById('editLocationDepozit').value;
+      }
       
       try {
         const res = await fetch(`/api/stock/${id}`, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ qty: Number(qty), location })
+          body: JSON.stringify({ qty: Number(qty), lot, location })
         });
         
         if (res.ok) {
