@@ -2,13 +2,25 @@
 <html lang="ro">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Panou Administrare - Aprobări</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="global.css">
   <style>
     body { background: #0f172a; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; }
+    .topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+    @media (max-width: 767px) {
+      body { padding-top: 100px; }
+    }
+    @media (max-width: 479px) {
+      body { padding-top: 90px; }
+    }
     .topbar { background: #0284c7; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
     .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
     .card { background: #1e293b; border-radius: 1rem; padding: 2rem; margin-bottom: 2rem; border: 1px solid #334155; }
@@ -118,10 +130,238 @@
     th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #334155; }
     th { color: #94a3b8; font-weight: 600; }
     
-    @media (max-width: 768px) {
-      .user-card { flex-direction: column; align-items: flex-start; gap: 1rem; }
-      .tabs { flex-wrap: wrap; }
-      .tab { padding: 0.75rem 1rem; font-size: 0.9rem; }
+    /* ============== RESPONSIVE STYLES ============== */
+    
+    /* Tablet (768px - 1023px) */
+    @media (max-width: 1023px) {
+      .container { 
+        padding: 0 0.75rem; 
+        margin: 1rem auto;
+      }
+      .card { 
+        padding: 1.25rem; 
+        margin-bottom: 1rem;
+      }
+    }
+    
+    /* Mobile (< 768px) */
+    @media (max-width: 767px) {
+      /* Topbar responsive */
+      .topbar { 
+        padding: 0.75rem 1rem; 
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        height: auto;
+        min-height: 56px;
+      }
+      .topbar h2 {
+        font-size: 1rem;
+        order: 3;
+        width: 100%;
+        text-align: center;
+        margin-top: 0.5rem;
+      }
+      .topbar .navbar-brand span {
+        font-size: 1.1rem !important;
+      }
+      
+      /* Container */
+      .container { 
+        padding: 0 0.5rem; 
+        margin: 0.75rem auto;
+      }
+      .card { 
+        padding: 1rem; 
+        margin-bottom: 0.75rem;
+        border-radius: 0.75rem;
+      }
+      
+      /* Tabs - scrollable pe mobil */
+      .tabs { 
+        flex-wrap: nowrap; 
+        overflow-x: auto;
+        gap: 0.5rem;
+        padding-bottom: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+      }
+      .tabs::-webkit-scrollbar { 
+        display: none; /* Chrome/Safari */
+      }
+      .tab { 
+        padding: 0.625rem 0.875rem; 
+        font-size: 0.875rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      
+      /* User cards */
+      .user-card { 
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 0.75rem;
+        padding: 1rem;
+      }
+      .user-name { 
+        font-size: 1rem;
+        line-height: 1.4;
+      }
+      .user-meta { 
+        font-size: 0.8rem;
+        word-break: break-word;
+      }
+      .user-card > div:last-child {
+        width: 100%;
+        display: flex;
+        gap: 0.5rem;
+      }
+      .user-card .btn-approve,
+      .user-card .btn-reject,
+      .user-card .btn-unlock {
+        flex: 1;
+        padding: 0.625rem 0.75rem;
+        font-size: 0.875rem;
+        margin: 0;
+      }
+      
+      /* Tabele responsive */
+      .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -0.5rem;
+        padding: 0 0.5rem;
+      }
+      table {
+        min-width: 600px;
+        font-size: 0.875rem;
+      }
+      th, td { 
+        padding: 0.625rem 0.5rem; 
+      }
+      
+      /* Badges mai mici pe mobil */
+      .badge {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+      }
+      
+      /* Secțiunea Invitații - butoane */
+      #tab-invites h3 + div {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+      }
+      #tab-invites h3 + div button {
+        width: 100%;
+        padding: 0.625rem;
+        font-size: 0.875rem;
+      }
+      
+      /* Modal invitație */
+      #inviteModal > div {
+        width: 95%;
+        padding: 1.25rem;
+        margin: 1rem;
+      }
+      #inviteModal h3 {
+        font-size: 1.1rem;
+      }
+      
+      /* Empty state */
+      .empty-state {
+        padding: 2rem 1rem;
+        font-size: 0.9rem;
+      }
+    }
+    
+    /* Small mobile (< 480px) */
+    @media (max-width: 479px) {
+      .topbar h2 {
+        font-size: 0.875rem;
+      }
+      .tab {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+      }
+      .user-name {
+        font-size: 0.9375rem;
+      }
+      .user-card .btn-approve,
+      .user-card .btn-reject,
+      .user-card .btn-unlock {
+        font-size: 0.8rem;
+        padding: 0.5rem;
+      }
+      table {
+        font-size: 0.8rem;
+      }
+    }
+    
+    /* Fix pentru tabele pe mobil - transformare în carduri */
+    @media (max-width: 640px) {
+      #tab-all .card, #tab-invites .card {
+        padding: 0.75rem;
+      }
+      #tab-all table, #tab-invites table {
+        display: block;
+      }
+      #tab-all thead, #tab-invites thead {
+        display: none;
+      }
+      #tab-all tbody, #tab-invites tbody,
+      #tab-all tr, #tab-invites tr {
+        display: block;
+      }
+      #tab-all tr, #tab-invites tr {
+        margin-bottom: 0.75rem;
+        padding: 0.75rem;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 0.5rem;
+        border-left: 3px solid #0284c7;
+      }
+      #tab-invites tr {
+        border-left-color: #3b82f6;
+      }
+      #tab-all td, #tab-invites td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.4rem 0;
+        border: none;
+        font-size: 0.875rem;
+      }
+      #tab-all td::before, #tab-invites td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #94a3b8;
+        font-size: 0.8rem;
+      }
+      /* Labels pentru tabelul Toți Utilizatorii */
+      #tab-all td:first-child::before { content: "ID:"; }
+      #tab-all td:nth-child(2)::before { content: "Utilizator:"; }
+      #tab-all td:nth-child(3)::before { content: "Rol:"; }
+      #tab-all td:nth-child(4)::before { content: "Status:"; }
+      #tab-all td:nth-child(5)::before { content: "Înregistrat:"; }
+      /* Labels pentru tabelul Invitații */
+      #tab-invites td:first-child::before { content: "Email:"; }
+      #tab-invites td:nth-child(2)::before { content: "Nume:"; }
+      #tab-invites td:nth-child(3)::before { content: "Rol:"; }
+      #tab-invites td:nth-child(4)::before { content: "Status:"; }
+      #tab-invites td:nth-child(5)::before { content: "Invitat de:"; }
+      #tab-invites td:nth-child(6)::before { content: "Data:"; }
+      #tab-invites td:nth-child(7)::before { content: "Expiră:"; }
+      #tab-invites td:nth-child(8)::before { content: "Acțiuni:"; }
+      /* Butoane acțiuni pe mobil */
+      #tab-invites td:last-child {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        justify-content: flex-end;
+      }
+      #tab-invites td:last-child button {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
+      }
     }
 
     /* Userbar styles */
@@ -144,14 +384,14 @@
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <a href="index.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
-      <img src="favicon.svg" alt="oBill" style="height: 36px; width: auto;">
-      <span style="font-size: 1.5rem; font-weight: 700; color: var(--primary-500, #3b82f6);">openBill</span>
+  <div class="topbar" style="flex-wrap: wrap; min-height: 56px; height: auto; padding: 0.75rem 1rem;">
+    <a href="index.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; flex-shrink: 0;">
+      <img src="favicon.svg" alt="oBill" style="height: 32px; width: auto;">
+      <span style="font-size: 1.25rem; font-weight: 700; color: var(--primary-500, #3b82f6);">openBill</span>
     </a>
-    <h2>🔧 Panou Administrare Utilizatori</h2>
-    <div style="display: flex; align-items: center; gap: 1rem;">
-      <a href="index.html" class="btn btn-ghost btn-sm" style="color: white; border-color: rgba(255,255,255,0.3);">← Înapoi</a>
+    <h2 style="font-size: 1.125rem; margin: 0;">🔧 Panou Administrare</h2>
+    <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+      <a href="index.html" class="btn btn-ghost btn-sm" style="color: white; border-color: rgba(255,255,255,0.3); white-space: nowrap;">← Înapoi</a>
     </div>
   </div>
 
@@ -203,18 +443,20 @@
     <div id="tab-all" class="card" style="display: none;">
       <h3>Toți utilizatorii din sistem</h3>
       <div id="errorAll" class="error-box"></div>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Rol</th>
-            <th>Status</th>
-            <th>Data înregistrării</th>
-          </tr>
-        </thead>
-        <tbody id="allUsersList"></tbody>
-      </table>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Rol</th>
+              <th>Status</th>
+              <th>Data înregistrării</th>
+            </tr>
+          </thead>
+          <tbody id="allUsersList"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -405,16 +647,16 @@
                            user.role === 'admin' ? 'badge-approved' : 'badge-pending';
           return `
           <tr>
-            <td>${user.id}</td>
-            <td><strong>${escapeHtml(user.email)}</strong><br><small>${escapeHtml(user.first_name || '')} ${escapeHtml(user.last_name || '')}</small></td>
-            <td><span class="badge ${roleClass}">${roleText}</span></td>
-            <td>
+            <td data-label="ID">${user.id}</td>
+            <td data-label="Utilizator"><strong>${escapeHtml(user.email)}</strong><br><small>${escapeHtml(user.first_name || '')} ${escapeHtml(user.last_name || '')}</small></td>
+            <td data-label="Rol"><span class="badge ${roleClass}">${roleText}</span></td>
+            <td data-label="Status">
               <span class="badge badge-${user.is_approved ? 'approved' : 'pending'}">
                 ${user.is_approved ? '✓ Aprobat' : '⏳ În așteptare'}
                 ${user.failed_attempts >= 3 ? ' + 🔒 Blocat' : ''}
               </span>
             </td>
-            <td>${new Date(user.created_at).toLocaleDateString('ro-RO')}</td>
+            <td data-label="Înregistrat">${new Date(user.created_at).toLocaleDateString('ro-RO')}</td>
           </tr>
         `}).join('');
       } catch (err) {
@@ -575,7 +817,7 @@
           return;
         }
         
-        let html = '<table><thead><tr><th>Email</th><th>Nume</th><th>Rol</th><th>Status</th><th>Invitat de</th><th>Data</th><th>Expiră</th><th>Acțiuni</th></tr></thead><tbody>';
+        let html = '<div class="table-container"><table><thead><tr><th>Email</th><th>Nume</th><th>Rol</th><th>Status</th><th>Invitat de</th><th>Data</th><th>Expiră</th><th>Acțiuni</th></tr></thead><tbody>';
         
         for (const invite of invites) {
           const statusClass = invite.status === 'pending' ? 'badge-pending' : 
@@ -599,19 +841,19 @@
           
           html += `
             <tr>
-              <td>${escapeHtml(invite.email)}</td>
-              <td>${escapeHtml(fullName)}</td>
-              <td><span class="badge ${roleClass}">${roleText}</span></td>
-              <td><span class="badge ${statusClass}">${statusText}</span></td>
-              <td>${escapeHtml(invite.invited_by)}</td>
-              <td>${createdAt}</td>
-              <td>${expiresAt}</td>
-              <td>${actions}</td>
+              <td data-label="Email">${escapeHtml(invite.email)}</td>
+              <td data-label="Nume">${escapeHtml(fullName)}</td>
+              <td data-label="Rol"><span class="badge ${roleClass}">${roleText}</span></td>
+              <td data-label="Status"><span class="badge ${statusClass}">${statusText}</span></td>
+              <td data-label="Invitat de">${escapeHtml(invite.invited_by)}</td>
+              <td data-label="Data">${createdAt}</td>
+              <td data-label="Expiră">${expiresAt}</td>
+              <td data-label="Acțiuni">${actions}</td>
             </tr>
           `;
         }
         
-        html += '</tbody></table>';
+        html += '</tbody></table></div>';
         list.innerHTML = html;
         
       } catch (err) {

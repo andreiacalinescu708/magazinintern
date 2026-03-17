@@ -2,9 +2,14 @@
 <html lang="ro">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+  <meta name="theme-color" content="#3b82f6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Foi de Parcurs - oBill</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="favicon.svg">
   <link rel="stylesheet" href="global.css" />
   <style>
     .trip-container { max-width: 1200px; margin: 0 auto; }
@@ -470,17 +475,234 @@
       font-weight: bold;
       color: var(--primary-400);
     }
+    
+    /* ============== RESPONSIVE STYLES ============== */
+    
+    /* Tablet (768px - 1023px) */
+    @media (max-width: 1023px) {
+      .trip-container {
+        padding: 0 var(--space-3);
+      }
+      .trip-card {
+        padding: var(--space-4);
+      }
+      .trip-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--space-3);
+      }
+    }
+    
+    /* Mobile (< 768px) */
+    @media (max-width: 767px) {
+      /* Container */
+      .trip-container {
+        padding: 0 var(--space-2);
+      }
+      main.container {
+        padding: var(--space-3);
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: var(--space-4);
+      }
+      
+      /* Card-uri */
+      .trip-card {
+        padding: var(--space-3);
+        margin-bottom: var(--space-4);
+      }
+      .trip-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+      }
+      .trip-header h2 {
+        font-size: 1.125rem;
+      }
+      
+      /* Grid-uri - o singură coloană pe mobil */
+      .trip-grid {
+        grid-template-columns: 1fr !important;
+        gap: var(--space-3);
+        margin-bottom: var(--space-4);
+      }
+      
+      /* Form inputs mai mari pentru touch */
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        padding: var(--space-3);
+        font-size: 16px; /* Previne zoom pe iOS */
+        min-height: 44px;
+      }
+      .form-group label {
+        font-size: 0.8125rem;
+      }
+      
+      /* Select cu buton adăugare */
+      .select-with-add {
+        gap: var(--space-2);
+      }
+      .select-with-add select {
+        min-height: 44px;
+      }
+      .btn-add {
+        width: 36px;
+        height: 36px;
+        font-size: 1.25rem;
+      }
+      
+      /* KM Display */
+      .km-display {
+        font-size: 1.25rem;
+        height: auto;
+        min-height: 44px;
+        padding: var(--space-2) var(--space-3);
+      }
+      
+      /* Checkbox-uri */
+      .checkbox-group {
+        padding: var(--space-3);
+      }
+      .checkbox-group input[type="checkbox"] {
+        width: 24px;
+        height: 24px;
+      }
+      
+      /* Butoane formular */
+      .trip-card > div:last-child {
+        flex-direction: column;
+      }
+      .trip-card .btn {
+        width: 100%;
+        justify-content: center;
+        padding: var(--space-3) var(--space-4);
+        min-height: 44px;
+      }
+      
+      /* Istoric foi de parcurs */
+      .trip-sheet-item {
+        padding: var(--space-3);
+      }
+      .trip-sheet-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+      }
+      .trip-sheet-header > div:first-child {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2);
+      }
+      .trip-sheet-header strong {
+        font-size: 1rem !important;
+      }
+      .trip-sheet-header > div:last-child {
+        width: 100%;
+        display: flex;
+        gap: var(--space-2);
+        flex-wrap: wrap;
+      }
+      .trip-sheet-header .btn {
+        flex: 1;
+        min-height: 36px;
+        padding: var(--space-2) var(--space-3);
+        font-size: 0.8125rem;
+      }
+      
+      /* Meta info */
+      .trip-sheet-meta {
+        flex-direction: column;
+        gap: var(--space-2);
+        font-size: 0.8125rem;
+      }
+      .trip-sheet-meta span {
+        display: block;
+      }
+      
+      /* Badge */
+      .badge {
+        font-size: 0.6875rem;
+        padding: 2px 8px;
+      }
+      
+      /* Modale */
+      .modal-content {
+        width: 95%;
+        max-width: none;
+        margin: var(--space-3);
+        max-height: 90vh;
+      }
+      .modal-header {
+        padding: var(--space-3) var(--space-4);
+      }
+      .modal-header h3 {
+        font-size: 1rem;
+      }
+      .modal-body {
+        padding: var(--space-4);
+      }
+      .modal-footer {
+        flex-direction: column;
+        gap: var(--space-2);
+        padding: var(--space-3) var(--space-4);
+      }
+      .modal-footer .btn {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      /* Info box KM */
+      .km-info {
+        font-size: 0.6875rem;
+        padding: 2px 6px;
+      }
+    }
+    
+    /* Small mobile (< 480px) */
+    @media (max-width: 479px) {
+      h1 {
+        font-size: 1.25rem;
+      }
+      .trip-header h2 {
+        font-size: 1rem;
+      }
+      .form-group label {
+        font-size: 0.75rem;
+      }
+      .trip-sheet-header strong {
+        font-size: 0.9375rem !important;
+      }
+      .trip-number-display {
+        font-size: 0.75rem;
+      }
+    }
+    
+    /* Touch improvements */
+    @media (hover: none) and (pointer: coarse) {
+      .form-group input,
+      .form-group select,
+      .form-group textarea,
+      .btn,
+      .btn-add {
+        min-height: 44px;
+      }
+      .trip-sheet-item:hover {
+        transform: none;
+      }
+    }
   </style>
 </head>
 <body>
   <!-- Navbar -->
-  <nav class="navbar no-print">
-    <div class="navbar-inner">
+  <nav class="navbar no-print" style="padding: var(--space-3) 0;">
+    <div class="navbar-inner" style="flex-wrap: wrap; gap: var(--space-2);">
       <a href="index.html" class="navbar-brand" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
-        <img src="favicon.svg" alt="oBill" style="height: 36px; width: auto;">
-        <span style="font-size: 1.5rem; font-weight: 700; color: var(--primary-500, #3b82f6);">openBill</span>
+        <img src="favicon.svg" alt="oBill" style="height: 32px; width: auto;">
+        <span style="font-size: 1.25rem; font-weight: 700; color: var(--primary-500, #3b82f6);">openBill</span>
       </a>
-      <!-- Buton Înapoi eliminat - utilizatorul folosește butonul din pagină -->
+      <a href="index.html" class="btn btn-ghost btn-sm" style="margin-left: auto;">← Înapoi</a>
     </div>
   </nav>
 
