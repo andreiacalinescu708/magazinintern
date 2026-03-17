@@ -452,6 +452,22 @@
   <script>
     let allStock = [];
     let currentTab = 'depozit';
+    let userRole = 'user';
+    let canEditStock = false;
+    
+    // Verifică rolul utilizatorului la încărcare
+    async function checkUserRole() {
+      try {
+        const res = await fetch('/api/auth/check');
+        const data = await res.json();
+        if (data.loggedIn) {
+          userRole = data.user.role;
+          canEditStock = userRole === 'superadmin' || userRole === 'admin';
+        }
+      } catch (e) {
+        console.error('Eroare verificare rol:', e);
+      }
+    }
 
     function groupByProduct(stock) {
       const map = {};
@@ -517,10 +533,11 @@
               <span class="lot-label">Locație</span>
               <span class="lot-value">${isMagazin ? '🏪 Magazin' : `📍 ${lot.location || 'A'}`}</span>
             </div>
+            ${canEditStock ? `
             <div class="lot-actions">
               <button class="btn-icon" onclick="openEdit('${lot.id}', event)" title="Edit">✏️</button>
               <button class="btn-icon delete" onclick="deleteLot('${lot.id}', '${group.productName.replace(/'/g, "\\'")}', event)" title="Șterge">🗑️</button>
-            </div>
+            </div>` : ''}
           `;
           body.appendChild(lotRow);
         });
@@ -537,6 +554,9 @@
     }
 
    async function loadStock() {
+  // Verifică rolul utilizatorului înainte de încărcare
+  await checkUserRole();
+  
   try {
     const [dep, mag] = await Promise.all([
       fetch('/api/stock?warehouse=depozit').then(r => r.json()),

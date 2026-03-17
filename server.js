@@ -1863,7 +1863,7 @@ app.get("/api/products-tree", async (req, res) => {
 });
 
 
-app.put("/api/products/:id", async (req, res) => {
+app.put("/api/products/:id", isAdmin, async (req, res) => {
   try {
     const schemaName = req.session?.user?.schema_name || 'public';
     if (!db.hasDb()) return res.status(500).json({ error: "DB neconfigurat" });
@@ -1896,7 +1896,7 @@ app.put("/api/products/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/products/:id", async (req, res) => {
+app.delete("/api/products/:id", isAdmin, async (req, res) => {
   try {
     const schemaName = req.session?.user?.schema_name || 'public';
     if (!db.hasDb()) return res.status(500).json({ error: "DB neconfigurat" });
@@ -3026,7 +3026,7 @@ app.post("/api/stock", async (req, res) => {
 });
 
 // UPDATE stock lot
-app.put("/api/stock/:id", async (req, res) => {
+app.put("/api/stock/:id", isAdmin, async (req, res) => {
   try {
     const schemaName = req.session?.user?.schema_name || 'public';
     const id = String(req.params.id);
@@ -3088,7 +3088,7 @@ await logAudit(req, "STOCK_EDIT", "stock", item.id, {
 });
 
 // DELETE stock lot
-app.delete("/api/stock/:id", async (req, res) => {
+app.delete("/api/stock/:id", isAdmin, async (req, res) => {
   try {
     const schemaName = req.session?.user?.schema_name || 'public';
     const id = String(req.params.id);
