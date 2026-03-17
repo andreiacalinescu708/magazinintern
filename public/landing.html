@@ -969,108 +969,28 @@
           </div>
         </div>
 
-        <!-- Step 6: Gestiune Stoc -->
+        <!-- Step 6: Inventar stoc -->
         <div class="tutorial-step">
           <div class="tutorial-content">
             <div class="tutorial-step-number">6</div>
-            <h3>Gestionează Stocurile</h3>
-            <p>Adaugă produse, organizează-le pe categorii și urmărește stocul în timp real. Primești alerte automate când produsele sunt pe terminate sau aproape de expirare.</p>
+            <h3>Inventar stoc</h3>
+            <p>În această secțiune poți vedea stocul pentru fiecare produs din sistem. Pentru fiecare produs sunt afișate informații precum cantitatea disponibilă, locația de stocare și lotul produsului. Modificarea acestor informații poate fi realizată doar de către utilizatorii cu rol de Admin.</p>
+            <p style="margin-top: var(--space-3);">Produsele pot fi filtrate în funcție de gestiune sau pot fi găsite rapid folosind bara de căutare. Sistemul afișează atenționări pentru produsele care au stoc sub 30 de bucăți. Acest prag poate fi modificat în funcție de nevoile companiei.</p>
+            <p style="margin-top: var(--space-3);"><strong>Transfer între gestiuni:</strong> Selectezi produsul, lotul, locația sursă, locația destinație, introduci cantitatea și execuți transferul. După confirmare, stocul este actualizat automat.</p>
             <ul class="tutorial-features">
-              <li>Gestiune loturi și date expirare</li>
-              <li>Transferuri între depozite</li>
-              <li>Alerte stoc minim</li>
+              <li>Vizualizare stoc per produs, locație și lot</li>
+              <li>Filtrare pe gestiune și căutare rapidă</li>
+              <li>Atenționare stoc sub prag minim (30 buc)</li>
+              <li>Transfer rapid între gestiuni și locații</li>
             </ul>
           </div>
-          <div class="tutorial-image">
-            <div class="tutorial-image-placeholder">
-              <div class="placeholder-icon">📦</div>
-              <p>Screenshot Gestiune Stoc</p>
+          <div class="tutorial-image" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); aspect-ratio: auto;">
+            <div style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-card); aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center;">
+              <img src="images/Stoc1.png" alt="Inventar stoc" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'tutorial-image-placeholder\'><div class=\'placeholder-icon\' style=\'font-size: 2rem;\'>📦</div><p>Inventar stoc</p></div>';">
             </div>
-            <div class="tutorial-image-badge">Pasul 6</div>
-          </div>
-        </div>
-
-        <!-- Step 7: Comenzi -->
-        <div class="tutorial-step">
-          <div class="tutorial-content">
-            <div class="tutorial-step-number">7</div>
-            <h3>Preia Comenzi Rapid</h3>
-            <p>Creează comenzi noi în câteva secunde. Caută produsele, adaugă cantitățile și trimite comanda direct către depozit pentru picking.</p>
-            <ul class="tutorial-features">
-              <li>Căutare rapidă produse</li>
-              <li>Istoric prețuri personalizate</li>
-              <li>Duplicare comenzi recurente</li>
-            </ul>
-          </div>
-          <div class="tutorial-image">
-            <div class="tutorial-image-placeholder">
-              <div class="placeholder-icon">🛒</div>
-              <p>Screenshot Comandă</p>
+            <div style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-card); aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center;">
+              <img src="images/Transfer1.png" alt="Transfer între gestiuni" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'tutorial-image-placeholder\'><div class=\'placeholder-icon\' style=\'font-size: 2rem;\'>🔄</div><p>Transfer stoc</p></div>';">
             </div>
-            <div class="tutorial-image-badge">Pasul 7</div>
-          </div>
-        </div>
-
-        <!-- Step 8: Picking -->
-        <div class="tutorial-step">
-          <div class="tutorial-content">
-            <div class="tutorial-step-number">8</div>
-            <h3>Picking și Pregătire Livrare</h3>
-            <p>Operatorii din depozit văd lista de picking direct pe telefon sau tabletă. Scanează produsele, confirmă cantitățile și pregătește comanda pentru livrare.</p>
-            <ul class="tutorial-features">
-              <li>Liste picking digitale</li>
-              <li>Scanare coduri de bare</li>
-              <li>Status în timp real</li>
-            </ul>
-          </div>
-          <div class="tutorial-image">
-            <div class="tutorial-image-placeholder">
-              <div class="placeholder-icon">📋</div>
-              <p>Screenshot Picking</p>
-            </div>
-            <div class="tutorial-image-badge">Pasul 8</div>
-          </div>
-        </div>
-
-        <!-- Step 9: Foi Parcurs -->
-        <div class="tutorial-step">
-          <div class="tutorial-content">
-            <div class="tutorial-step-number">9</div>
-            <h3>Foi de Parcurs și Combustibil</h3>
-            <p>Generează foi de parcurs pentru șoferi, înregistrează bonurile de combustibil și urmărește costurile de transport. Toate documentele sunt salvate digital.</p>
-            <ul class="tutorial-features">
-              <li>Generare foi parcurs PDF</li>
-              <li>Înregistrare bonuri combustibil</li>
-              <li>Rapoarte cheltuieli transport</li>
-            </ul>
-          </div>
-          <div class="tutorial-image">
-            <div class="tutorial-image-placeholder">
-              <div class="placeholder-icon">🚛</div>
-              <p>Screenshot Foi Parcurs</p>
-            </div>
-            <div class="tutorial-image-badge">Pasul 9</div>
-          </div>
-        </div>
-
-        <!-- Step 10: Facturare -->
-        <div class="tutorial-step">
-          <div class="tutorial-content">
-            <div class="tutorial-step-number">10</div>
-            <h3>Facturare Automată prin API</h3>
-            <p>Conectează openBill cu programul tău de facturare (SmartBill, Saga, etc.) prin API. Comenzile livrate se transformă automat în facturi, fără dublă introducere.</p>
-            <ul class="tutorial-features">
-              <li>Integrare SmartBill, Saga</li>
-              <li>Emitere automată facturi</li>
-              <li>Sincronizare clienți și produse</li>
-            </ul>
-          </div>
-          <div class="tutorial-image">
-            <div class="tutorial-image-placeholder">
-              <div class="placeholder-icon">🧾</div>
-              <p>Screenshot Facturare</p>
-            </div>
-            <div class="tutorial-image-badge">Pasul 10</div>
           </div>
         </div>
 
