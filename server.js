@@ -1254,6 +1254,39 @@ app.put("/api/clients/:id/payment-terms", async (req, res) => {
   }
 });
 
+// Update CUI pentru client
+app.put("/api/clients/:id/cui", async (req, res) => {
+  try {
+    const schemaName = req.session?.user?.schema_name || 'public';
+    const { id } = req.params;
+    let { cui } = req.body;
+    
+    // Normalizare CUI: uppercase și trim
+    cui = String(cui || "").trim().toUpperCase();
+    
+    if (db.hasDb()) {
+      await db.q(
+        `UPDATE ${schemaName}.clients SET cui = $1 WHERE id = $2`,
+        [cui || null, id]
+      );
+      return res.json({ success: true, message: "CUI actualizat", cui: cui || null });
+    }
+    
+    // fallback local
+    const clients = readJson(CLIENTS_FILE, []);
+    const idx = clients.findIndex(c => String(c.id) === String(id));
+    if (idx >= 0) {
+      clients[idx].cui = cui || null;
+      writeJson(CLIENTS_FILE, clients);
+      return res.json({ success: true, message: "CUI actualizat", cui: cui || null });
+    }
+    return res.status(404).json({ error: "Client negăsit" });
+  } catch (e) {
+    console.error("PUT /api/clients/:id/cui error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
 // ===== COMPANY SETTINGS API =====
 // Doar SuperAdmin poate vedea/modifica setările companiei
 app.get("/api/company-settings", isSuperAdmin, async (req, res) => {

@@ -546,7 +546,18 @@
       container.innerHTML = `
         <h2 style="margin-top: 0; margin-bottom: 0.5rem;">${escapeHtml(c.name)}</h2>
         
-        ${c.cui ? `<div class="cui-badge">🏢 CUI: ${escapeHtml(c.cui)}</div>` : ''}
+        <div class="detail-row">
+          <div class="detail-label">🏢 CUI Firmă</div>
+          <div class="detail-value">${c.cui ? escapeHtml(c.cui) : '<em style="color: #64748b;">Nesetat</em>'}</div>
+          
+          <div class="form-group" style="margin-top: 0.5rem;">
+            <input type="text" id="editCui" class="input" placeholder="RO12345678" value="${c.cui ? escapeHtml(c.cui) : ''}" style="width: 200px; display: inline-block;">
+            <button class="btnSuccess" onclick="saveCui()" style="display: inline-block; margin-left: 0.5rem;">Salvează</button>
+          </div>
+          <div id="cuiMsg" class="msg"></div>
+        </div>
+        
+        <hr style="border-color: #334155; margin: 1.5rem 0;">
         
         <div class="detail-row">
           <div class="detail-label">Categorie / Zonă</div>
@@ -678,6 +689,38 @@
           msg.textContent = '✅ Termen de plată salvat!';
           msg.className = 'msg success';
           selectedClient.payment_terms = paymentTerms;
+          setTimeout(() => {
+            renderClientDetails();
+          }, 500);
+        } else {
+          const data = await res.json();
+          msg.textContent = '❌ ' + (data.error || 'Eroare');
+          msg.className = 'msg error';
+        }
+      } catch (e) {
+        msg.textContent = '❌ Eroare de rețea';
+        msg.className = 'msg error';
+      }
+    }
+
+    // Salvează CUI
+    async function saveCui() {
+      if (!selectedClient) return;
+      
+      const cui = document.getElementById('editCui').value.trim();
+      const msg = document.getElementById('cuiMsg');
+      
+      try {
+        const res = await fetch(`/api/clients/${selectedClient.id}/cui`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cui })
+        });
+        
+        if (res.ok) {
+          msg.textContent = '✅ CUI salvat!';
+          msg.className = 'msg success';
+          selectedClient.cui = cui || null;
           setTimeout(() => {
             renderClientDetails();
           }, 500);
