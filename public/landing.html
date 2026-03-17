@@ -5,11 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>openBill - Sistem de Management pentru Distribuție</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="global.css" />
   <style>
-    /* Smooth scroll */
+    /* Smooth scroll cu offset pentru navbar */
     html {
       scroll-behavior: smooth;
+      scroll-padding-top: 100px;
+    }
+
+    /* Font modern */
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     /* Hero Section */
@@ -364,6 +373,7 @@
       padding: var(--space-16) var(--space-6);
       background: var(--bg-primary);
       position: relative;
+      scroll-margin-top: 80px;
     }
 
     .tutorial::before {
