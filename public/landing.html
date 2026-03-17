@@ -569,6 +569,79 @@
       margin-bottom: var(--space-6);
     }
 
+    /* Lightbox pentru imagini */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
+      cursor: zoom-out;
+    }
+
+    .lightbox.active {
+      display: flex;
+    }
+
+    .lightbox img {
+      max-width: 95vw;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      cursor: default;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: var(--space-4);
+      right: var(--space-4);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .lightbox-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+
+    .lightbox-caption {
+      position: absolute;
+      bottom: var(--space-4);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-full);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* Cursor pointer pe imaginile din tutorial */
+    .tutorial-image img {
+      cursor: zoom-in;
+      transition: transform var(--transition-fast);
+    }
+
+    .tutorial-image img:hover {
+      transform: scale(1.02);
+    }
+
     /* Show tutorial link on desktop */
     @media (min-width: 768px) {
       .navbar-actions a[href="#cum-functioneaza"] {
@@ -783,7 +856,7 @@
             <h3>Produse și prețuri</h3>
             <p>În această secțiune poți adăuga produsele în baza de date a aplicației. Pentru fiecare produs introduci numele și categoria, ceea ce te va ajuta mai târziu să filtrezi și să găsești rapid produsele când creezi comenzi.</p>
             <p style="margin-top: var(--space-3);">Poți introduce și codul GTIN (codul de bare al produsului). Unele produse pot avea mai multe coduri de bare, iar aplicația îți permite să adaugi coduri GTIN suplimentare, câte unul pe fiecare linie. Astfel, indiferent de codul de bare folosit, produsul va fi identificat rapid în sistem.</p>
-            <p style="margin-top: var(--space-3);">Prețul de listă reprezintă prețul standard al produsului. Ulterior, în fișa fiecărui client, acest preț poate fi modificat și se pot seta prețuri speciale negociate.</p>
+            <p style="margin-top: var(--space-3);">Prețul de listă reprezintă prețul standard al produsului. Ulterior, în fișa fiecărui client, acest preț poate fi modificat și se pot seta prețuri speciale negociate.Produsele Pot fi modificate/sterse din acelasi panou.</p>
             <ul class="tutorial-features">
               <li>Adăugare produse cu nume și categorie</li>
               <li>Multiple coduri GTIN per produs</li>
@@ -1064,5 +1137,53 @@
       </div>
     </footer>
   </div>
+  <!-- Lightbox Modal -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox(event)">✕</button>
+    <img src="" alt="" id="lightbox-img">
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
+
+  <script>
+    // Lightbox functionality
+    function openLightbox(src, caption) {
+      const lightbox = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      const captionEl = document.getElementById('lightbox-caption');
+      
+      img.src = src;
+      img.alt = caption || '';
+      captionEl.textContent = caption || '';
+      lightbox.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox(event) {
+      // Nu închide dacă s-a dat click pe imagine
+      if (event.target.tagName === 'IMG') return;
+      
+      const lightbox = document.getElementById('lightbox');
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // Adaugă click handler pe toate imaginile din tutorial
+    document.querySelectorAll('.tutorial-image img').forEach(img => {
+      img.addEventListener('click', function() {
+        openLightbox(this.src, this.alt);
+      });
+    });
+
+    // Închide cu Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const lightbox = document.getElementById('lightbox');
+        if (lightbox.classList.contains('active')) {
+          lightbox.classList.remove('active');
+          document.body.style.overflow = '';
+        }
+      }
+    });
+  </script>
 </body>
 </html>
