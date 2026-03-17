@@ -926,7 +926,16 @@
               <img src="images/RM1.png" alt="Recepție Marfă - Scanare" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'tutorial-image-placeholder\'><div class=\'placeholder-icon\' style=\'font-size: 2rem;\'>📥</div><p>Scanare cod QR</p></div>';">
             </div>
             <div style="border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-card); aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center;">
-              <img src="images/R2.png" alt="Recepție Marfă - Intrări" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'tutorial-image-placeholder\'><div class=\'placeholder-icon\' style=\'font-size: 2rem;\'>📋</div><p>Ultimele intrări</p></div>';">
+              <video 
+                controls 
+                style="width: 100%; height: 100%; object-fit: cover;"
+                onclick="event.stopPropagation();"
+              >
+                <source src="images/R2.mp4" type="video/mp4">
+                <p style="color: var(--text-muted); text-align: center; padding: var(--space-4);">
+                  Browser-ul tău nu suportă video HTML5.
+                </p>
+              </video>
             </div>
           </div>
         </div>
