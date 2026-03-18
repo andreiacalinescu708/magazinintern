@@ -3948,6 +3948,36 @@ app.post("/api/invites", isAdmin, async (req, res) => {
       return res.status(500).json({ error: "Company ID negăsit" });
     }
     
+    // Verifică planul companiei și limita de utilizatori
+    const companyPlanRes = await db.q(
+      `SELECT plan FROM public.companies WHERE id = $1`,
+      [companyId]
+    );
+    
+    const plan = companyPlanRes.rows[0]?.plan || 'starter';
+    const userLimits = { starter: 3, pro: 10, enterprise: Infinity };
+    const maxUsers = userLimits[plan] || 3;
+    
+    // Numără utilizatorii existenți (inclusiv cei în așteptare)
+    const userCountRes = await db.q(
+      `SELECT COUNT(*) as count FROM ${schemaName}.users WHERE role = 'user'`,
+    );
+    const pendingInvitesRes = await db.q(
+      `SELECT COUNT(*) as count FROM public.user_invites WHERE company_id = $1 AND status = 'pending'`,
+      [companyId]
+    );
+    
+    const currentUsers = parseInt(userCountRes.rows[0].count);
+    const pendingInvites = parseInt(pendingInvitesRes.rows[0].count);
+    const total = currentUsers + pendingInvites;
+    
+    if (total >= maxUsers) {
+      return res.status(403).json({ 
+        error: `Ai atins limita maximă de ${maxUsers} utilizatori pentru planul ${plan}. ` +
+               `Upgradează la Pro sau Enterprise pentru mai mulți utilizatori.`
+      });
+    }
+    
     // Verifică dacă email-ul e deja folosit în schema companiei
     const existingUser = await db.q(
       `SELECT id FROM ${schemaName}.users WHERE email = $1`,
