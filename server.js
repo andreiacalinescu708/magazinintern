@@ -1465,7 +1465,9 @@ app.post("/api/telegram/generate-code", async (req, res) => {
       }
     } else {
       // Verificăm că utilizatorul este admin
+      console.log('🔍 Verificare rol pentru generate-code:', req.session.user.email, 'rol:', req.session.user.role);
       if (req.session.user.role !== 'admin') {
+        console.log('❌ Acces refuzat - rolul este:', req.session.user.role, '(se așteaptă: admin)');
         return res.status(403).json({ error: "Doar adminii pot genera coduri" });
       }
       
