@@ -11,6 +11,10 @@ const path = require("path");
 const db = require("./db");
 const crypto = require("crypto");
 
+// Telegram Bot
+const telegram = require("./telegram");
+let telegramBot = null;
+
 // ===== EMAIL CONFIG (Nodemailer) =====
 const nodemailer = require("nodemailer");
 
@@ -1379,6 +1383,200 @@ app.put("/api/company-settings", isSuperAdmin, async (req, res) => {
     console.error("PUT /api/company-settings error:", e.message);
     console.error("Stack:", e.stack);
     res.status(500).json({ error: "Eroare server: " + e.message });
+  }
+});
+
+// ============================================
+// TELEGRAM BOT API ENDPOINTS
+// ============================================
+
+// GET /api/telegram/status - Verifică statusul Telegram pentru compania curentă
+app.get("/api/telegram/status", async (req, res) => {
+  try {
+    // Verificăm autentificarea
+    if (!req.session?.user?.email && !req.session?.superadmin?.id) {
+      return res.status(401).json({ error: "Neautentificat" });
+    }
+
+    let companyId;
+    
+    if (req.session?.superadmin?.id) {
+      // Superadmin poate verifica orice companie prin query param
+      companyId = req.query.company_id;
+      if (!companyId) {
+        return res.status(400).json({ error: "Lipsește company_id" });
+      }
+    } else {
+      // Utilizator normal - găsim compania după email
+      const schemaInfo = await db.getSchemaByEmail(req.session.user.email);
+      if (!schemaInfo) {
+        return res.status(404).json({ error: "Companie negăsită" });
+      }
+      
+      // Obținem ID-ul companiei din schema_name
+      const companyResult = await db.q(
+        'SELECT id FROM public.companies WHERE schema_name = $1',
+        [schemaInfo.schema_name]
+      );
+      
+      if (companyResult.rows.length === 0) {
+        return res.status(404).json({ error: "Companie negăsită" });
+      }
+      
+      companyId = companyResult.rows[0].id;
+    }
+
+    const result = await telegram.getTelegramStatus(db.pool, companyId);
+    res.json(result);
+  } catch (e) {
+    console.error("GET /api/telegram/status error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// POST /api/telegram/generate-code - Generează cod nou de activare
+app.post("/api/telegram/generate-code", async (req, res) => {
+  try {
+    // Verificăm autentificarea
+    if (!req.session?.user?.email && !req.session?.superadmin?.id) {
+      return res.status(401).json({ error: "Neautentificat" });
+    }
+
+    let companyId;
+    
+    if (req.session?.superadmin?.id) {
+      companyId = req.body.company_id;
+      if (!companyId) {
+        return res.status(400).json({ error: "Lipsește company_id" });
+      }
+    } else {
+      // Verificăm că utilizatorul este admin
+      if (req.session.user.role !== 'admin') {
+        return res.status(403).json({ error: "Doar adminii pot genera coduri" });
+      }
+      
+      const schemaInfo = await db.getSchemaByEmail(req.session.user.email);
+      if (!schemaInfo) {
+        return res.status(404).json({ error: "Companie negăsită" });
+      }
+      
+      const companyResult = await db.q(
+        'SELECT id FROM public.companies WHERE schema_name = $1',
+        [schemaInfo.schema_name]
+      );
+      
+      if (companyResult.rows.length === 0) {
+        return res.status(404).json({ error: "Companie negăsită" });
+      }
+      
+      companyId = companyResult.rows[0].id;
+    }
+
+    const result = await telegram.generateTelegramCode(db.pool, companyId);
+    res.json(result);
+  } catch (e) {
+    console.error("POST /api/telegram/generate-code error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// POST /api/telegram/reset-code - Resetează codul și deconectează utilizatorii
+app.post("/api/telegram/reset-code", async (req, res) => {
+  try {
+    // Verificăm autentificarea
+    if (!req.session?.user?.email && !req.session?.superadmin?.id) {
+      return res.status(401).json({ error: "Neautentificat" });
+    }
+
+    let companyId;
+    
+    if (req.session?.superadmin?.id) {
+      companyId = req.body.company_id;
+      if (!companyId) {
+        return res.status(400).json({ error: "Lipsește company_id" });
+      }
+    } else {
+      if (req.session.user.role !== 'admin') {
+        return res.status(403).json({ error: "Doar adminii pot reseta coduri" });
+      }
+      
+      const schemaInfo = await db.getSchemaByEmail(req.session.user.email);
+      if (!schemaInfo) {
+        return res.status(404).json({ error: "Companie negăsită" });
+      }
+      
+      const companyResult = await db.q(
+        'SELECT id FROM public.companies WHERE schema_name = $1',
+        [schemaInfo.schema_name]
+      );
+      
+      if (companyResult.rows.length === 0) {
+        return res.status(404).json({ error: "Companie negăsită" });
+      }
+      
+      companyId = companyResult.rows[0].id;
+    }
+
+    const result = await telegram.resetTelegramCode(db.pool, companyId);
+    res.json(result);
+  } catch (e) {
+    console.error("POST /api/telegram/reset-code error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// PUT /api/telegram/enable - Activează/dezactivează Telegram pentru o companie (superadmin)
+app.put("/api/telegram/enable", async (req, res) => {
+  try {
+    // Doar superadmin poate activa/dezactiva Telegram
+    if (!req.session?.superadmin?.id) {
+      return res.status(403).json({ error: "Doar SuperAdmin poate activa/dezactiva Telegram" });
+    }
+
+    const { company_id, enabled } = req.body;
+    
+    if (!company_id) {
+      return res.status(400).json({ error: "Lipsește company_id" });
+    }
+    
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ error: "Lipsește sau este invalid parametrul enabled" });
+    }
+
+    const result = await telegram.setTelegramEnabled(db.pool, company_id, enabled);
+    res.json(result);
+  } catch (e) {
+    console.error("PUT /api/telegram/enable error:", e);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// GET /api/telegram/companies - Lista companiilor cu status Telegram (superadmin)
+app.get("/api/telegram/companies", async (req, res) => {
+  try {
+    // Doar superadmin poate vedea toate companiile
+    if (!req.session?.superadmin?.id) {
+      return res.status(403).json({ error: "Acces interzis" });
+    }
+
+    const result = await db.q(`
+      SELECT 
+        c.id, 
+        c.name, 
+        c.schema_name, 
+        c.admin_email, 
+        c.telegram_enabled, 
+        c.telegram_code,
+        (SELECT COUNT(*) FROM public.telegram_users tu WHERE tu.company_id = c.id AND tu.is_active = true) as telegram_users
+      FROM public.companies c
+      WHERE c.status = 'active'
+      ORDER BY c.name
+    `);
+    
+    res.json({ success: true, companies: result.rows });
+  } catch (e) {
+    console.error("GET /api/telegram/companies error:", e);
+    res.status(500).json({ error: "Eroare server" });
   }
 });
 
@@ -6302,6 +6500,9 @@ console.log("⏰ Cron job curățare: fiecare 60 secunde");
     await db.ensureSuperadminsTable();
     await db.ensureDefaultSuperadmin();
     console.log("✅ DB ready (multi-tenant)");
+    
+    // Inițializare Telegram Bot
+    telegramBot = await telegram.initTelegramBot(db.pool);
     // Configurare seed: Admin + Produse (fara clienti)
     // await seedClientsFromFileIfEmpty();  // Dezactivat - clienti goi
     await seedProductsFromFileIfEmpty();      // Activat - produse din JSON

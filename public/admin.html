@@ -402,6 +402,7 @@
       <button class="tab" onclick="showTab('locked')">🔒 Blocați</button>
       <button class="tab" onclick="showTab('invites')">📧 Invitații</button>
       <button class="tab" onclick="showTab('all')">👥 Toți Utilizatorii</button>
+      <button class="tab" onclick="showTab('telegram')">🤖 Telegram</button>
     </div>
 
     <!-- Secțiunea În Așteptare -->
@@ -456,6 +457,59 @@
           </thead>
           <tbody id="allUsersList"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Secțiunea Telegram -->
+    <div id="tab-telegram" class="card" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3>🤖 Configurare Telegram Bot</h3>
+        <span id="telegramStatusBadge" class="badge" style="display: none;"></span>
+      </div>
+      
+      <div id="telegramError" class="error-box" style="display: none;"></div>
+      <div id="telegramSuccess" class="success-box" style="display: none; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;"></div>
+      
+      <div id="telegramDisabled" style="display: none; text-align: center; padding: 2rem;">
+        <p style="color: #94a3b8; font-size: 1.1rem;">🚫 Funcționalitatea Telegram nu este activată pentru compania ta.</p>
+        <p style="color: #64748b; font-size: 0.9rem; margin-top: 0.5rem;">Contactează SuperAdmin pentru activare.</p>
+      </div>
+      
+      <div id="telegramEnabled">
+        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem;">
+          <h4 style="margin-top: 0; color: #e2e8f0;">📱 Cod de Activare</h4>
+          <p style="color: #94a3b8; margin-bottom: 1rem;">Utilizatorii trebuie să folosească acest cod în botul Telegram pentru a se conecta la compania ta.</p>
+          
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <code id="telegramCode" style="background: #0f172a; padding: 0.75rem 1rem; border-radius: 0.5rem; font-size: 1.5rem; font-weight: bold; color: #38bdf8; letter-spacing: 2px; font-family: monospace;">-</code>
+            <button onclick="copyTelegramCode()" style="background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">📋 Copiază</button>
+          </div>
+          
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button onclick="generateTelegramCode()" style="background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">🔄 Generează Cod Nou</button>
+            <button onclick="resetTelegramCode()" style="background: #ef4444; color: white; border:: 0.5rem; cursor: pointer;">🔄 Resetează Cod și Utilizatori</button>
+          </div>
+        </div>
+        
+        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem;">
+          <h4 style="margin-top: 0; color: #e2e8f0;">📊 Statistici</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <div style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; text-align: center;">
+              <div id="telegramUserCount" style="font-size: 2rem; font-weight: bold; color: #38bdf8;">-</div>
+              <div style="color: #64748b; font-size: 0.875rem;">Utilizatori conectați</div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #0f172a; border-radius: 0.5rem; border-left: 4px solid #10b981;">
+          <h5 style="margin-top: 0; color: #e2e8f0;">💡 Instrucțiuni pentru utilizatori:</h5>
+          <ol style="color: #94a3b8; margin-bottom: 0; padding-left: 1.5rem;">
+            <li>Deschide Telegram și caută botul <strong>@openbill_ro_bot</strong></li>
+            <li>Apasă pe <strong>START</strong></li>
+            <li>Introdu codul de activare de mai sus</li>
+            <li>Folosește <strong>/adauga</strong> pentru a trimite facturi PDF</li>
+          </ol>
+        </div>
       </div>
     </div>
   </div>
@@ -1022,6 +1076,161 @@
         alert('Eroare la inițializare: ' + err.message);
       }
     }
+
+    // ============================================
+    // TELEGRAM BOT FUNCTIONS
+    // ============================================
+    
+    // Încarcă statusul Telegram
+    async function loadTelegramStatus() {
+      try {
+        const res = await fetch('/api/telegram/status');
+        const data = await res.json();
+        
+        if (!res.ok) {
+          showTelegramError(data.error || 'Eroare la încărcarea statusului');
+          return;
+        }
+        
+        if (!data.success) {
+          showTelegramError(data.error || 'Eroare necunoscută');
+          return;
+        }
+        
+        const status = data.data;
+        
+        // Actualizăm UI-ul
+        if (!status.telegram_enabled) {
+          document.getElementById('telegramDisabled').style.display = 'block';
+          document.getElementById('telegramEnabled').style.display = 'none';
+          document.getElementById('telegramStatusBadge').textContent = 'Dezactivat';
+          document.getElementById('telegramStatusBadge').style.background = '#ef4444';
+          document.getElementById('telegramStatusBadge').style.display = 'inline-block';
+        } else {
+          document.getElementById('telegramDisabled').style.display = 'none';
+          document.getElementById('telegramEnabled').style.display = 'block';
+          document.getElementById('telegramStatusBadge').textContent = 'Activ';
+          document.getElementById('telegramStatusBadge').style.background = '#10b981';
+          document.getElementById('telegramStatusBadge').style.display = 'inline-block';
+          
+          // Afișăm codul
+          document.getElementById('telegramCode').textContent = status.telegram_code || 'N/A';
+          document.getElementById('telegramUserCount').textContent = status.user_count || 0;
+        }
+      } catch (err) {
+        console.error('Eroare la încărcarea statusului Telegram:', err);
+        showTelegramError('Eroare la încărcarea datelor');
+      }
+    }
+    
+    // Generează cod nou
+    async function generateTelegramCode() {
+      if (!confirm('Ești sigur că vrei să generezi un cod nou? Codul vechi nu va mai funcționa.')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/telegram/generate-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok || !data.success) {
+          showTelegramError(data.error || 'Eroare la generarea codului');
+          return;
+        }
+        
+        document.getElementById('telegramCode').textContent = data.code;
+        showTelegramSuccess('Cod generat cu succes!');
+        
+      } catch (err) {
+        console.error('Eroare:', err);
+        showTelegramError('Eroare la generarea codului');
+      }
+    }
+    
+    // Resetează codul și deconectează utilizatorii
+    async function resetTelegramCode() {
+      if (!confirm('ATENȚIE! Vei genera un cod nou și TOȚI utilizatorii conectați vor fi deconectați. Ești sigur?')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/telegram/reset-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok || !data.success) {
+          showTelegramError(data.error || 'Eroare la resetare');
+          return;
+        }
+        
+        document.getElementById('telegramCode').textContent = data.code;
+        document.getElementById('telegramUserCount').textContent = '0';
+        showTelegramSuccess('Cod resetat cu succes! Toți utilizatorii au fost deconectați.');
+        
+      } catch (err) {
+        console.error('Eroare:', err);
+        showTelegramError('Eroare la resetare');
+      }
+    }
+    
+    // Copiază codul în clipboard
+    function copyTelegramCode() {
+      const code = document.getElementById('telegramCode').textContent;
+      if (code === '-' || code === 'N/A') {
+        showTelegramError('Nu există cod de copiat');
+        return;
+      }
+      
+      navigator.clipboard.writeText(code).then(() => {
+        showTelegramSuccess('Cod copiat în clipboard!');
+      }).catch(() => {
+        showTelegramError('Nu s-a putut copia codul');
+      });
+    }
+    
+    // Afișează eroare Telegram
+    function showTelegramError(message) {
+      const el = document.getElementById('telegramError');
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 5000);
+    }
+    
+    // Afișează succes Telegram
+    function showTelegramSuccess(message) {
+      const el = document.getElementById('telegramSuccess');
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 3000);
+    }
+    
+    // Modificăm funcția showTab pentru a încărca statusul Telegram
+    const originalShowTab = showTab;
+    showTab = function(tabName) {
+      // Ascunde toate secțiunile
+      document.querySelectorAll('.card').forEach(el => el.style.display = 'none');
+      // Dezactivează toate tab-urile
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      
+      // Activează tab-ul selectat
+      event.target.classList.add('active');
+      // Afișează secțiunea corespunzătoare
+      document.getElementById(`tab-${tabName}`).style.display = 'block';
+      
+      // Încarcă datele specifice
+      if (tabName === 'pending') loadPending();
+      if (tabName === 'locked') loadLocked();
+      if (tabName === 'invites') loadInvites();
+      if (tabName === 'all') loadAllUsers();
+      if (tabName === 'telegram') loadTelegramStatus();
+    };
 
     init();
   </script>

@@ -463,6 +463,102 @@ async function ensureCompaniesTable() {
   await q(`CREATE INDEX IF NOT EXISTS idx_companies_admin_email ON public.companies(admin_email)`);
   await q(`CREATE INDEX IF NOT EXISTS idx_companies_created_at ON public.companies(created_at)`);
   await q(`CREATE INDEX IF NOT EXISTS idx_companies_plan ON public.companies(plan)`);
+  
+  // 5. Migrații pentru Telegram Bot
+  await ensureTelegramMigrations();
+}
+
+// Migrații pentru funcționalitatea Telegram Bot
+async function ensureTelegramMigrations() {
+  if (!pool) return;
+  
+  try {
+    // Adăugare coloane pentru Telegram în tabela companies
+    await q(`ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS telegram_enabled BOOLEAN NOT NULL DEFAULT false`);
+    await q(`ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS telegram_code TEXT UNIQUE`);
+    
+    // Indexuri pentru Telegram
+    await q(`CREATE INDEX IF NOT EXISTS idx_companies_telegram_code ON public.companies(telegram_code)`);
+    await q(`CREATE INDEX IF NOT EXISTS idx_companies_telegram_enabled ON public.companies(telegram_enabled)`);
+    
+    // Tabel pentru asocieri Telegram-Companie
+    await q(`
+      CREATE TABLE IF NOT EXISTS public.telegram_users (
+        id SERIAL PRIMARY KEY,
+        chat_id TEXT NOT NULL,
+        company_id TEXT NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+        username TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(chat_id, company_id)
+      )
+    `);
+    
+    await q(`CREATE INDEX IF NOT EXISTS idx_telegram_users_chat_id ON public.telegram_users(chat_id)`);
+    await q(`CREATE INDEX IF NOT EXISTS idx_telegram_users_company_id ON public.telegram_users(company_id)`);
+    
+    // Tabel pentru facturi procesate via Telegram
+    await q(`
+      CREATE TABLE IF NOT EXISTS public.telegram_invoices (
+        id SERIAL PRIMARY KEY,
+        company_id TEXT NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+        chat_id TEXT NOT NULL,
+        file_id TEXT NOT NULL,
+        file_name TEXT,
+        extracted_text TEXT,
+        matched_products JSONB NOT NULL DEFAULT '[]'::jsonb,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    
+    await q(`CREATE INDEX IF NOT EXISTS idx_telegram_invoices_company_id ON public.telegram_invoices(company_id)`);
+    await q(`CREATE INDEX IF NOT EXISTS idx_telegram_invoices_chat_id ON public.telegram_invoices(chat_id)`);
+    await q(`CREATE INDEX IF NOT EXISTS idx_telegram_invoices_status ON public.telegram_invoices(status)`);
+    
+    // Funcție pentru generare cod unic
+    await q(`
+      CREATE OR REPLACE FUNCTION generate_telegram_code()
+      RETURNS TEXT AS $$
+      DECLARE
+        new_code TEXT;
+        code_exists BOOLEAN;
+      BEGIN
+        LOOP
+          new_code := UPPER(SUBSTRING(MD5(RANDOM()::TEXT), 1, 8));
+          SELECT EXISTS(SELECT 1 FROM public.companies WHERE telegram_code = new_code) INTO code_exists;
+          EXIT WHEN NOT code_exists;
+        END LOOP;
+        RETURN new_code;
+      END;
+      $$ LANGUAGE plpgsql
+    `);
+    
+    // Trigger pentru actualizare updated_at
+    await q(`
+      CREATE OR REPLACE FUNCTION update_updated_at_column()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql
+    `);
+    
+    await q(`DROP TRIGGER IF EXISTS update_telegram_users_updated_at ON public.telegram_users`);
+    await q(`CREATE TRIGGER update_telegram_users_updated_at BEFORE UPDATE ON public.telegram_users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()`);
+    
+    await q(`DROP TRIGGER IF EXISTS update_telegram_invoices_updated_at ON public.telegram_invoices`);
+    await q(`CREATE TRIGGER update_telegram_invoices_updated_at BEFORE UPDATE ON public.telegram_invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()`);
+    
+    console.log('✅ Migrații Telegram aplicate cu succes');
+  } catch (error) {
+    console.error('❌ Eroare la migrațiile Telegram:', error.message);
+  }
 }
 
 // Tabel pentru superadmini
@@ -901,6 +997,7 @@ module.exports = {
   ensureTables, 
   hasDb, 
   auditLog,
+  pool,  // Export pool pentru Telegram bot
   // Multi-tenant exports
   ensureCompaniesTable,
   ensureSuperadminsTable,

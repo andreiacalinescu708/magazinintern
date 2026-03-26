@@ -338,6 +338,7 @@
               <th>Admin</th>
               <th>Plan</th>
               <th>Status</th>
+              <th>Telegram</th>
               <th>Trial Expiră</th>
               <th>Utilizatori</th>
               <th>Clienți</th>
@@ -465,7 +466,8 @@
     // Load companies
     async function loadCompanies() {
       try {
-        const res = await fetch('/api/superadmin/companies');
+        // Folosim noul endpoint care include datele Telegram
+        const res = await fetch('/api/telegram/companies');
         const data = await res.json();
         
         if (!data.success) {
@@ -479,6 +481,33 @@
       } catch (e) {
         console.error('Eroare:', e);
         alert('Eroare la încărcarea companiilor');
+      }
+    }
+    
+    // Toggle Telegram pentru o companie
+    async function toggleTelegram(companyId, enable) {
+      const action = enable ? 'activare' : 'dezactivare';
+      if (!confirm(`Ești sigur că vrei să ${action}ezi Telegram pentru această companie?`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/telegram/enable', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company_id: companyId, enabled: enable })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          loadCompanies();
+        } else {
+          alert(data.error || 'Eroare la actualizare');
+        }
+      } catch (e) {
+        console.error('Eroare:', e);
+        alert('Eroare de conexiune');
       }
     }
 
@@ -499,6 +528,10 @@
           : '-';
         
         const row = document.createElement('tr');
+        const telegramBadge = company.telegram_enabled 
+          ? `<span class="badge" style="background: #10b981;">✅ Activ</span>` 
+          : `<span class="badge" style="background: #64748b;">❌ Inactiv</span>`;
+        
         row.innerHTML = `
           <td>
             <strong>${escapeHtml(company.name)}</strong><br>
@@ -507,6 +540,14 @@
           <td>${escapeHtml(company.admin_email)}</td>
           <td><span class="badge badge-${company.plan}">${company.plan}</span></td>
           <td><span class="badge badge-${company.status}">${company.status}</span></td>
+          <td>
+            ${telegramBadge}<br>
+            <small style="color: var(--text-muted);">${company.telegram_users || 0} utilizatori</small><br>
+            <button class="btn btn-sm" onclick="toggleTelegram('${company.id}', ${!company.telegram_enabled})" 
+              style="margin-top: 4px; padding: 2px 8px; font-size: 11px; background: ${company.telegram_enabled ? '#ef4444' : '#10b981'}; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              ${company.telegram_enabled ? 'Dezactivează' : 'Activează'}
+            </button>
+          </td>
           <td>${trialDate}</td>
           <td>${company.user_count}</td>
           <td>${company.client_count}</td>
