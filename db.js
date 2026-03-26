@@ -508,11 +508,16 @@ async function ensureTelegramMigrations() {
       await q(`ALTER TABLE public.telegram_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()`);
       await q(`ALTER TABLE public.telegram_users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`);
       
-      // Facem user_id nullable (dacă există) - utilizatorii Telegram nu au neapărat cont în aplicație
+      // Facem user_id și telegram_chat_id nullable (dacă există) - utilizatorii Telegram nu au neapărat cont în aplicație
       try {
         await q(`ALTER TABLE public.telegram_users ALTER COLUMN user_id DROP NOT NULL`);
       } catch (e) {
         // Coloana user_id poate să nu existe, ignorăm eroarea
+      }
+      try {
+        await q(`ALTER TABLE public.telegram_users ALTER COLUMN telegram_chat_id DROP NOT NULL`);
+      } catch (e) {
+        // Coloana telegram_chat_id poate să nu existe, ignorăm eroarea
       }
     } catch (colError) {
       // Ignorăm erorile dacă coloanele există deja
