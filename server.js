@@ -1450,9 +1450,15 @@ app.post("/api/telegram/generate-code", async (req, res) => {
     let companyId;
     
     if (req.session?.superadmin?.id) {
+      // Superadmin poate genera cod pentru orice companie
+      // Dacă nu e specificat, luăm prima companie activă
       companyId = req.body.company_id;
       if (!companyId) {
-        return res.status(400).json({ error: "Lipsește company_id" });
+        const firstCompany = await db.q(`SELECT id FROM public.companies WHERE status = 'active' ORDER BY name LIMIT 1`);
+        if (firstCompany.rows.length === 0) {
+          return res.status(404).json({ error: "Nu există nicio companie activă" });
+        }
+        companyId = firstCompany.rows[0].id;
       }
     } else {
       // Verificăm că utilizatorul este admin
@@ -1496,9 +1502,15 @@ app.post("/api/telegram/reset-code", async (req, res) => {
     let companyId;
     
     if (req.session?.superadmin?.id) {
+      // Superadmin poate reseta cod pentru orice companie
+      // Dacă nu e specificat, luăm prima companie activă
       companyId = req.body.company_id;
       if (!companyId) {
-        return res.status(400).json({ error: "Lipsește company_id" });
+        const firstCompany = await db.q(`SELECT id FROM public.companies WHERE status = 'active' ORDER BY name LIMIT 1`);
+        if (firstCompany.rows.length === 0) {
+          return res.status(404).json({ error: "Nu există nicio companie activă" });
+        }
+        companyId = firstCompany.rows[0].id;
       }
     } else {
       if (req.session.user.role !== 'admin') {
