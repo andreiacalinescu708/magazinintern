@@ -539,21 +539,45 @@ async function ensureTelegramMigrations() {
     `);
     
     // Trigger pentru actualizare updated_at
-    await q(`
-      CREATE OR REPLACE FUNCTION update_updated_at_column()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        NEW.updated_at = NOW();
-        RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql
-    `);
-    
-    await q(`DROP TRIGGER IF EXISTS update_telegram_users_updated_at ON public.telegram_users`);
-    await q(`CREATE TRIGGER update_telegram_users_updated_at BEFORE UPDATE ON public.telegram_users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()`);
-    
-    await q(`DROP TRIGGER IF EXISTS update_telegram_invoices_updated_at ON public.telegram_invoices`);
-    await q(`CREATE TRIGGER update_telegram_invoices_updated_at BEFORE UPDATE ON public.telegram_invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()`);
+    try {
+      await q(`
+        CREATE OR REPLACE FUNCTION update_updated_at_column()
+        RETURNS TRIGGER AS $$
+        BEGIN
+          NEW.updated_at = NOW();
+          RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql
+      `);
+      
+      // Verificăm dacă tabelul telegram_users există și are coloana updated_at
+      const usersTableExists = await q(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' AND table_name = 'telegram_users'
+        )
+      `);
+      
+      if (usersTableExists.rows[0].exists) {
+        await q(`DROP TRIGGER IF EXISTS update_telegram_users_updated_at ON public.telegram_users`);
+        await q(`CREATE TRIGGER update_telegram_users_updated_at BEFORE UPDATE ON public.telegram_users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()`);
+      }
+      
+      // Verificăm dacă tabelul telegram_invoices există
+      const invoicesTableExists = await q(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' AND table_name = 'telegram_invoices'
+        )
+      `);
+      
+      if (invoicesTableExists.rows[0].exists) {
+        await q(`DROP TRIGGER IF EXISTS update_telegram_invoices_updated_at ON public.telegram_invoices`);
+        await q(`CREATE TRIGGER update_telegram_invoices_updated_at BEFORE UPDATE ON public.telegram_invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()`);
+      }
+    } catch (triggerError) {
+      console.log('Note: Trigger migration:', triggerError.message);
+    }
     
     console.log('✅ Migrații Telegram aplicate cu succes');
   } catch (error) {

@@ -30,8 +30,15 @@ async function initTelegramBot(pool) {
   }
 
   try {
-    // Creare bot în mod polling
-    bot = new TelegramBot(TOKEN, { polling: true });
+    // Creare bot fără polling mai întâi
+    bot = new TelegramBot(TOKEN, { polling: false });
+    
+    // Verificăm dacă tokenul e valid
+    const me = await bot.getMe();
+    console.log(`🤖 Bot Telegram valid: @${me.username}`);
+    
+    // Pornim polling abia după ce verificăm tokenul
+    bot.startPolling();
     console.log('🤖 Bot Telegram inițializat cu succes!');
 
     // Setup handlers
@@ -42,6 +49,7 @@ async function initTelegramBot(pool) {
     return bot;
   } catch (error) {
     console.error('❌ Eroare la inițializarea botului Telegram:', error.message);
+    console.log('⚠️  Botul Telegram nu va fi disponibil. Verifică TELEGRAM_BOT_TOKEN.');
     return null;
   }
 }
