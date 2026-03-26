@@ -1464,10 +1464,10 @@ app.post("/api/telegram/generate-code", async (req, res) => {
         companyId = firstCompany.rows[0].id;
       }
     } else {
-      // Verificăm că utilizatorul este admin
+      // Verificăm că utilizatorul este admin sau superadmin
       console.log('🔍 Verificare rol pentru generate-code:', req.session.user.email, 'rol:', req.session.user.role);
-      if (req.session.user.role !== 'admin') {
-        console.log('❌ Acces refuzat - rolul este:', req.session.user.role, '(se așteaptă: admin)');
+      if (req.session.user.role !== 'admin' && req.session.user.role !== 'superadmin') {
+        console.log('❌ Acces refuzat - rolul este:', req.session.user.role, '(se așteaptă: admin sau superadmin)');
         return res.status(403).json({ error: "Doar adminii pot genera coduri" });
       }
       
@@ -1518,7 +1518,7 @@ app.post("/api/telegram/reset-code", async (req, res) => {
         companyId = firstCompany.rows[0].id;
       }
     } else {
-      if (req.session.user.role !== 'admin') {
+      if (req.session.user.role !== 'admin' && req.session.user.role !== 'superadmin') {
         return res.status(403).json({ error: "Doar adminii pot reseta coduri" });
       }
       
