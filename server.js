@@ -595,23 +595,26 @@ app.get("/api/auth/check", async (req, res) => {
   
   // Verifică dacă rolul s-a schimbat în DB (pentru multi-tenant)
   try {
-    const r = await db.q(
-      `SELECT role, is_approved, first_name, last_name, email FROM users WHERE id = $1`,
-      [req.session.user.id]
-    );
+    // Obținem schema utilizatorului
+    const schemaInfo = await db.getSchemaByEmail(req.session.user.email);
     
-    if (r.rows.length > 0) {
-      const dbUser = r.rows[0];
-      // Actualizează session dacă rolul s-a schimbat
-      if (dbUser.role !== req.session.user.role) {
-        console.log(`🔄 Rol actualizat pentru ${req.session.user.email}: ${req.session.user.role} → ${dbUser.role}`);
-        req.session.user.role = dbUser.role;
+    if (schemaInfo && schemaInfo.schema_name) {
+      const query = 'SELECT role, is_approved, first_name, last_name, email FROM "' + schemaInfo.schema_name + '".users WHERE id = $1';
+      const r = await db.q(query, [req.session.user.id]);
+      
+      if (r.rows.length > 0) {
+        const dbUser = r.rows[0];
+        // Actualizează session dacă rolul s-a schimbat
+        if (dbUser.role !== req.session.user.role) {
+          console.log(`🔄 Rol actualizat pentru ${req.session.user.email}: ${req.session.user.role} → ${dbUser.role}`);
+          req.session.user.role = dbUser.role;
+        }
+        // Actualizează și alte câmpuri
+        req.session.user.is_approved = dbUser.is_approved;
+        if (dbUser.first_name) req.session.user.first_name = dbUser.first_name;
+        if (dbUser.last_name) req.session.user.last_name = dbUser.last_name;
+        if (dbUser.email) req.session.user.email = dbUser.email;
       }
-      // Actualizează și alte câmpuri
-      req.session.user.is_approved = dbUser.is_approved;
-      if (dbUser.first_name) req.session.user.first_name = dbUser.first_name;
-      if (dbUser.last_name) req.session.user.last_name = dbUser.last_name;
-      if (dbUser.email) req.session.user.email = dbUser.email;
     }
   } catch (e) {
     console.error('Eroare verificare rol:', e);
