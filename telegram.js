@@ -458,6 +458,21 @@ async function handlePdfUpload(pool, chatId, document, companyId) {
       extractedText = await extractTextFromPdf(pdfBuffer);
       console.log(`✅ Text extras: ${extractedText.length} caractere`);
       console.log('📝 Primele 500 caractere:', extractedText.substring(0, 500));
+      
+      // Verificăm dacă PDF-ul e scanat (imagine-based)
+      if (extractedText.length < 50) {
+        await bot.sendMessage(chatId,
+          '⚠️ *PDF scanat detectat*\n\n' +
+          'Factura ta pare să fie scanată (imagine), nu poate fi procesată automat.\n\n' +
+          '📋 *Ce poți face:*\n' +
+          '1. Folosește aplicația web openbill.ro\n' +
+          '2. Mergi la secțiunea "Gestiune → Intrări"\n' +
+          '3. Adaugă manual produsele din factură\n\n' +
+          'Sau trimite factura în format digital (PDF text) dacă o ai disponibilă.',
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
     } catch (pdfError) {
       console.error('❌ Eroare la extragerea textului din PDF:', pdfError);
       extractedText = '[Eroare la procesarea PDF-ului]';
