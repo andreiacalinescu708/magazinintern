@@ -833,16 +833,48 @@ async function handleInvoiceLines(pool, chatId, text, session) {
 // Parsează liniile introduse manual
 function parseManualLines(text) {
   const lines = [];
-  const textLines = text.split('\n');
+  const textLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   
-  for (const rawLine of textLines) {
-    const line = rawLine.trim();
-    if (!line || line.length < 5) continue;
+  // Unim liniile consecutive: dacă o linie nu are LOT dar următoarea are,
+  // le unim (produs pe 2 rânduri din PDF)
+  const mergedLines = [];
+  let pendingLine = null;
+  
+  for (let i = 0; i < textLines.length; i++) {
+    const line = textLines[i];
+    const hasLot = /LOT[:\s]*[A-Z0-9]+/i.test(line);
+    const hasDate = /\d{4}-\d{2}-\d{2}/.test(line);
     
-    // Pattern complet: Nume LOT:XXXX YYYY-MM-DD QTY
-    // Ex: Scutece chilot adulti Seni Active Classic Small pachet a'30 LOT:1402437237 2031-01-31 30
+    if (hasLot && hasDate) {
+      // Linie completă - are și LOT și dată
+      if (pendingLine) {
+        // Dacă aveam o linie pending, o unim cu asta
+        mergedLines.push(pendingLine + ' ' + line);
+        pendingLine = null;
+      } else {
+        mergedLines.push(line);
+      }
+    } else if (!hasLot && !hasDate) {
+      // Doar nume produs - o păstrăm pentru următoarea linie
+      pendingLine = line;
+    } else if (hasLot && !hasDate && pendingLine) {
+      // Are LOT dar nu are dată, și avem pending - le unim
+      mergedLines.push(pendingLine + ' ' + line);
+      pendingLine = null;
+    }
+  }
+  
+  // Dacă a rămas ceva pending, îl adăugăm separat (poate fi incomplet)
+  if (pendingLine) {
+    mergedLines.push(pendingLine);
+  }
+  
+  console.log(`📝 Linii după merge: ${mergedLines.length}`);
+  
+  for (const line of mergedLines) {
+    if (line.length < 5) continue;
     
-    // Extragem lotul (LOT: urmat de cifre/litere, fără spațiu obligatoriu)
+    // Extragem lotul (LOT: urmat de cifre/litere)
     const lotMatch = line.match(/LOT[:\s]*([A-Z0-9]+)/i);
     const lot = lotMatch ? lotMatch[1] : 'N/A';
     
@@ -850,18 +882,11 @@ function parseManualLines(text) {
     const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})/);
     const expiresAt = dateMatch ? dateMatch[1] : '2099-12-31';
     
-    // Extragem cantitatea - numărul de la final după dată
+    // Extragem cantitatea - numărul după dată
     let quantity = 1;
-    // Cautăm pattern: DATA spatiu NUMAR (cantitatea)
     const qtyAfterDate = line.match(/\d{4}-\d{2}-\d{2}\s+(\d+)(?:\s|$)/);
     if (qtyAfterDate) {
       quantity = parseInt(qtyAfterDate[1]);
-    } else {
-      // Fallback: ultimul număr din linie
-      const lastNumber = line.match(/(\d+)(?:\s*$|\s+buc)/i);
-      if (lastNumber) {
-        quantity = parseInt(lastNumber[1]);
-      }
     }
     
     // Numele produsului = tot ce e înainte de LOT:
