@@ -835,67 +835,46 @@ function parseManualLines(text) {
   const lines = [];
   const textLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   
-  // Reparăm cuvintele tăiate de Telegram (ex: "Smallp" + "achet" = "Small pachet")
-  // și unim liniile care aparțin aceluiași produs
-  let fullText = textLines.join(' ');
+  // Soluție simplă: procesăm fiecare linie individual
+  // și căutăm produsele chiar dacă textul e fragmentat
+  const lines = [];
   
-  // Pattern pentru a repara cuvinte tăiate: literă la final + literă la început
-  // Ex: "Smallp achet" -> "Small pachet"
-  // Facem mai multe treceri pentru a repara toate cazurile
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const prevLength = fullText.length;
-    fullText = fullText.replace(/([a-z])([a-z]{2,})\s+([a-z]{2,})/gi, (match, charBefore, wordEnd, wordStart) => {
-      // Verificăm dacă lipirea celor două părți formează un cuvânt comun
-      const combined = wordEnd + wordStart;
-      const commonWords = ['pachet', 'scutece', 'adulti', 'classic', 'active', 'medium', 'small', 'large'];
-      
-      for (const word of commonWords) {
-        if (combined.toLowerCase() === word || 
-            word.includes(combined.toLowerCase()) ||
-            combined.toLowerCase().includes(word)) {
-          // Reparăm: punem spațiu între charBefore și rest
-          return charBefore + ' ' + combined;
-        }
-      }
-      return match;
-    });
+  for (const rawLine of textLines) {
+    const line = rawLine.trim();
+    if (!line || line.length < 3) continue;
     
-    if (fullText.length === prevLength) break; // Nu s-a mai făcut nicio modificare
-  }
-  
-  // Împărțim în linii după LOT (fiecare produs are LOT)
-  // Folosim un regex care găsește tot ce e între două LOT-uri
-  const productBlocks = [];
-  const lotPattern = /LOT[:\s]*[A-Z0-9]+/gi;
-  let match;
-  let lastIndex = 0;
-  
-  while ((match = lotPattern.exec(fullText)) !== null) {
-    const lotStart = match.index;
-    // Găsim sfârșitul acestui produs (începutul următorului LOT sau final)
-    const nextLotMatch = lotPattern.exec(fullText);
-    lotPattern.lastIndex = match.index + match[0].length; // Reset pentru următoarea căutare
+    // Extragem LOT-ul
+    const lotMatch = line.match(/LOT[:\s]*([A-Z0-9]+)/i);
+    if (!lotMatch) continue; // Ignorăm liniile fără LOT
     
-    const blockEnd = nextLotMatch ? nextLotMatch.index : fullText.length;
-    const block = fullText.substring(lastIndex, blockEnd).trim();
+    const lot = lotMatch[1];
     
-    if (block) {
-      productBlocks.push(block);
+    // Extragem data
+    const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})/);
+    const expiresAt = dateMatch ? dateMatch[1] : '2099-12-31';
+    
+    // Extragem cantitatea - numărul după dată sau la final
+    let quantity = 1;
+    const qtyMatch = line.match(/\d{4}-\d{2}-\d{2}\s+(\d+)/) || 
+                     line.match(/(\d+)\s*$/);
+    if (qtyMatch) {
+      quantity = parseInt(qtyMatch[1]);
     }
-    lastIndex = lotStart;
-  }
-  
-  // Adăugăm și ultimul bloc
-  if (lastIndex < fullText.length) {
-    const lastBlock = fullText.substring(lastIndex).trim();
-    if (lastBlock && !productBlocks.includes(lastBlock)) {
-      productBlocks.push(lastBlock);
+    
+    // Numele produsului = tot ce e înainte de LOT
+    let name = line.substring(0, line.toUpperCase().indexOf('LOT:')).trim();
+    
+    // Curățăm numele de fragmente ciudate
+    name = name.replace(/\s+/g, ' ').trim();
+    
+    if (name.length > 3) {
+      lines.push({ name, lot, expiresAt, quantity });
+      console.log(`✅ Parsat: "${name}" LOT:${lot} QTY:${quantity}`);
     }
   }
   
-  console.log(`📝 Blocuri produse găsite: ${productBlocks.length}`);
-  
-  for (const line of productBlocks) {
+  return lines;
+}
     if (line.length < 5) continue;
     
     // Extragem lotul (LOT: urmat de cifre/litere)
