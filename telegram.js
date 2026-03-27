@@ -7,7 +7,7 @@
  */
 
 const TelegramBot = require('node-telegram-bot-api');
-const PDFExtract = require('pdf-extraction').PDFExtract;
+
 const { Pool } = require('pg');
 
 // Configurare - TOKEN trebuie setat în .env
@@ -403,29 +403,23 @@ async function isTelegramEnabled(pool, companyId) {
 // ============================================
 
 async function extractTextFromPdf(pdfBuffer) {
-  return new Promise((resolve, reject) => {
-    const pdfExtract = new PDFExtract();
-    pdfExtract.extractBuffer(pdfBuffer, {}, (err, data) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      
-      let text = '';
-      if (data && data.pages) {
-        for (const page of data.pages) {
-          if (page.content) {
-            for (const item of page.content) {
-              if (item.str) {
-                text += item.str + '\n';
-              }
-            }
-          }
-        }
-      }
-      resolve(text);
-    });
-  });
+  // Încercăm să convertim bufferul într-un string și căutăm text
+  const text = pdfBuffer.toString('utf-8');
+  
+  // PDF-urile au textul îngropat în binar, dar uneori putem extrage secvențe
+  // Căutăm pattern-uri de text între paranteze sau direct
+  const matches = text.match(/\(([^)]{10,100})\)/g) || [];
+  
+  let extractedText = '';
+  for (const match of matches) {
+    // Eliminăm parantezele și backslash-urile escape
+    const cleanText = match.slice(1, -1).replace(/\\/g, '');
+    if (cleanText.match(/[a-zA-Z]{5,}/)) {
+      extractedText += cleanText + '\n';
+    }
+  }
+  
+  return extractedText;
 }
 
 async function handlePdfUpload(pool, chatId, document, companyId) {
