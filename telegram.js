@@ -76,7 +76,7 @@ function setupCommandHandlers(pool) {
     userSessions.set(chatId, { step: 'waiting_code' });
   });
 
-  // /adauga - Adăugare factură nouă
+  // /adauga - Adăugare produse din factură
   bot.onText(/\/adauga/, async (msg) => {
     const chatId = msg.chat.id;
     
@@ -102,13 +102,36 @@ function setupCommandHandlers(pool) {
     }
 
     await bot.sendMessage(chatId,
-      '📄 *Adăugare Factură Furnizor*\n\n' +
-      'Te rog să trimiți factura în format PDF.\n\n' +
-      'Botul va extrage automat informațiile și va face matching cu produsele din baza de date.',
-      { parse_mode: 'Markdown' }
+      '📄 *Adăugare Produse din Factură*\n\n' +
+      'Trimite liniile cu produsele din factură.\n\n' +
+      '*Format acceptat:*\n' +
+      '`Nume Produs LOT:numar DATA_CANTITATE`\n\n' +
+      '*Exemple:*\n' +
+      '`Scutece chilot adulti Seni Active Classic Small pachet a\'30 LOT:1402437237 2031-01-31 30`\n' +
+      '`Seni Classic Air Medium a\'30 LOT:1302451845 2031-03-31 144`\n\n' +
+      'Poți trimite *mai multe linii deodată*, câte una pe rând.',
+      { 
+        parse_mode: 'Markdown',
+        reply_markup: {
+          keyboard: [['❌ Anulează']],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      }
     );
     
-    userSessions.set(chatId, { step: 'waiting_pdf', company_id: companyId });
+    userSessions.set(chatId, { 
+      step: 'waiting_invoice_lines', 
+      company_id: companyId,
+      pendingLines: []
+    });
+  });
+  
+  // Buton "Adaugă" în meniul principal
+  bot.onText(/Adaugă/, async (msg) => {
+    // Simulăm comanda /adauga
+    msg.text = '/adauga';
+    bot.emitText(msg);
   });
 
   // /help - Ajutor
@@ -196,6 +219,22 @@ function setupMessageHandlers(pool) {
       return;
     }
     
+    // Procesare linii factură
+    if (session?.step === 'waiting_invoice_lines') {
+      // Verificăm dacă e anulare
+      if (text === '❌ Anulează') {
+        userSessions.delete(chatId);
+        await bot.sendMessage(chatId, '✅ Operațiune anulată.', {
+          reply_markup: { remove_keyboard: true }
+        });
+        return;
+      }
+      
+      // Procesăm liniile trimise
+      await handleInvoiceLines(pool, chatId, text, session);
+      return;
+    }
+    
     // Dacă nu e cod și nu e în session, informăm utilizatorul
     await bot.sendMessage(chatId, 
       '❓ Nu înțeleg mesajul.\n\n' +
@@ -245,6 +284,8 @@ function setupCallbackHandlers(pool) {
     const data = query.data;
 
     await bot.answerCallbackQuery(query.id);
+    
+    const session = userSessions.get(chatId);
 
     if (data === 'confirm_disconnect') {
       await disconnectUser(pool, chatId);
@@ -261,6 +302,15 @@ function setupCallbackHandlers(pool) {
     } else if (data.startsWith('cancel_match_')) {
       const invoiceId = data.replace('cancel_match_', '');
       await handleCancelMatch(pool, chatId, invoiceId);
+    } else if (data === 'confirm_add_stock') {
+      await handleConfirmAddStock(pool, chatId, session);
+    } else if (data === 'add_more_lines') {
+      await handleAddMoreLines(chatId, session);
+    } else if (data === 'cancel_add') {
+      userSessions.delete(chatId);
+      await bot.sendMessage(chatId, '❌ Adăugare anulată.', {
+        reply_markup: { remove_keyboard: true }
+      });
     }
   });
 }
@@ -712,6 +762,220 @@ async function addToStock(pool, schemaName, product, line) {
   } catch (error) {
     console.error(`❌ Eroare la adăugare în stock: ${error.message}`);
   }
+}
+
+// ============================================
+// PROCESARE LINII FACTURĂ (TEXT MANUAL)
+// ============================================
+
+async function handleInvoiceLines(pool, chatId, text, session) {
+  try {
+    const companyId = session.company_id;
+    const schemaName = await getSchemaName(pool, companyId);
+    
+    // Parsează liniile
+    const lines = parseManualLines(text);
+    console.log(`📝 Linii parseate: ${lines.length}`);
+    
+    if (lines.length === 0) {
+      await bot.sendMessage(chatId, 
+        '❌ Nu am găsit linii valide.\n\n' +
+        'Format așteptat:\n' +
+        '`Nume Produs LOT:numar DATA CANTITATE`\n\n' +
+        'Exemplu:\n' +
+        '`Seni Classic Air Medium LOT:1302451845 2031-03-31 144`'
+      );
+      return;
+    }
+    
+    // Căutăm produsele în DB
+    const productsResult = await pool.query(
+      `SELECT id, name, gtin, gtins, category FROM ${schemaName}.products WHERE active = true`
+    );
+    const products = productsResult.rows;
+    
+    // Match-uim liniile cu produsele
+    const matches = [];
+    for (const line of lines) {
+      let bestMatch = null;
+      let bestScore = 0;
+      
+      for (const product of products) {
+        const score = calculateMatchScoreForLine(product, line);
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = product;
+        }
+      }
+      
+      matches.push({
+        line: line,
+        product: bestMatch,
+        score: bestScore,
+        found: bestScore > 0.3
+      });
+    }
+    
+    // Salvăm în session pentru confirmare
+    session.pendingMatches = matches;
+    session.step = 'confirming_matches';
+    userSessions.set(chatId, session);
+    
+    // Afișăm rezultatele
+    await displayMatchesForConfirmation(chatId, matches);
+    
+  } catch (error) {
+    console.error('Eroare la procesare linii:', error);
+    await bot.sendMessage(chatId, '❌ Eroare la procesare. Încearcă din nou.');
+  }
+}
+
+// Parsează liniile introduse manual
+function parseManualLines(text) {
+  const lines = [];
+  const textLines = text.split('\n');
+  
+  for (const rawLine of textLines) {
+    const line = rawLine.trim();
+    if (!line || line.length < 5) continue;
+    
+    // Extragem lotul
+    const lotMatch = line.match(/LOT[:\s]*([A-Z0-9]+)/i);
+    const lot = lotMatch ? lotMatch[1] : 'N/A';
+    
+    // Extragem data (YYYY-MM-DD)
+    const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})/);
+    const expiresAt = dateMatch ? dateMatch[1] : '2099-12-31';
+    
+    // Extragem cantitatea (număr la final sau înainte de data)
+    let quantity = 1;
+    const qtyMatch = line.match(/(\d+)\s*(?:buc)?\s*$/i) || 
+                     line.match(/(\d+)\s+\d{4}-\d{2}-\d{2}/);
+    if (qtyMatch) {
+      quantity = parseInt(qtyMatch[1]);
+    }
+    
+    // Numele produsului (eliminăm LOT, data, cantitate)
+    let name = line
+      .replace(/LOT[:\s]*[A-Z0-9]+/i, '')
+      .replace(/\d{4}-\d{2}-\d{2}/, '')
+      .replace(/\d+\s*(?:buc)?\s*$/i, '')
+      .trim();
+    
+    if (name.length > 3) {
+      lines.push({ name, lot, expiresAt, quantity });
+    }
+  }
+  
+  return lines;
+}
+
+// Afișează match-urile pentru confirmare
+async function displayMatchesForConfirmation(chatId, matches) {
+  let message = '📋 *Produse găsite:*\n\n';
+  let foundCount = 0;
+  let notFoundCount = 0;
+  
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    if (m.found) {
+      foundCount++;
+      const score = Math.round(m.score * 100);
+      message += `${i + 1}. ✅ *${m.product.name}*\n`;
+      message += `   📝 Factură: \`${m.line.name.substring(0, 40)}...\`\n`;
+      message += `   📦 LOT: ${m.line.lot} | EXP: ${m.line.expiresAt} | QTY: ${m.line.quantity}\n`;
+      message += `   📊 Match: ${score}%\n\n`;
+    } else {
+      notFoundCount++;
+      message += `${i + 1}. ❌ *Negăsit:* \`${m.line.name.substring(0, 40)}...\`\n`;
+      message += `   📦 LOT: ${m.line.lot} | QTY: ${m.line.quantity}\n\n`;
+    }
+  }
+  
+  message += `*Rezumat:* ${foundCount} găsite, ${notFoundCount} negăsite\n\n`;
+  message += 'Ce dorești să faci?';
+  
+  await bot.sendMessage(chatId, message, {
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '✅ Confirmă și adaugă în stoc', callback_data: 'confirm_add_stock' }],
+        [{ text: '✏️ Adaugă mai multe', callback_data: 'add_more_lines' }],
+        [{ text: '❌ Anulează', callback_data: 'cancel_add' }]
+      ]
+    }
+  });
+}
+
+// Obține schema name pentru companie
+async function getSchemaName(pool, companyId) {
+  const result = await pool.query(
+    'SELECT schema_name FROM public.companies WHERE id = $1',
+    [companyId]
+  );
+  return result.rows[0]?.schema_name || 'public';
+}
+
+// Confirmă adăugarea în stoc
+async function handleConfirmAddStock(pool, chatId, session) {
+  if (!session?.pendingMatches) {
+    await bot.sendMessage(chatId, '❌ Sesiune expirată. Folosește /adauga din nou.');
+    return;
+  }
+  
+  const companyId = session.company_id;
+  const schemaName = await getSchemaName(pool, companyId);
+  const matches = session.pendingMatches;
+  
+  let addedCount = 0;
+  let errorCount = 0;
+  
+  for (const match of matches) {
+    if (match.found && match.product) {
+      try {
+        await addToStock(pool, schemaName, match.product, match.line);
+        addedCount++;
+      } catch (error) {
+        console.error('Eroare la adăugare:', error);
+        errorCount++;
+      }
+    }
+  }
+  
+  // Ștergem sesiunea
+  userSessions.delete(chatId);
+  
+  // Afișăm rezultatul
+  let message = '✅ *Produse adăugate în stoc!*\n\n';
+  message += `📦 ${addedCount} produse adăugate cu succes\n`;
+  if (errorCount > 0) {
+    message += `❌ ${errorCount} erori\n`;
+  }
+  message += '\nFolosește /adauga pentru a adăuga mai multe.';
+  
+  await bot.sendMessage(chatId, message, {
+    parse_mode: 'Markdown',
+    reply_markup: { remove_keyboard: true }
+  });
+}
+
+// Adaugă mai multe linii
+async function handleAddMoreLines(chatId, session) {
+  session.step = 'waiting_invoice_lines';
+  session.pendingMatches = [];
+  userSessions.set(chatId, session);
+  
+  await bot.sendMessage(chatId, 
+    '✏️ Trimite următoarele linii din factură:\n\n' +
+    'Sau apasă ❌ Anulează pentru a termina.',
+    {
+      reply_markup: {
+        keyboard: [['❌ Anulează']],
+        resize_keyboard: true,
+        one_time_keyboard: true
+      }
+    }
+  );
 }
 
 function calculateMatchScore(product, text) {
