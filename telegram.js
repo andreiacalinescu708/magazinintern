@@ -7,7 +7,7 @@
  */
 
 const TelegramBot = require('node-telegram-bot-api');
-const { PDFParse } = require('pdf-parse');
+const pdfParseLib = require('pdf-parse');
 const { Pool } = require('pg');
 
 // Configurare - TOKEN trebuie setat în .env
@@ -421,10 +421,13 @@ async function handlePdfUpload(pool, chatId, document, companyId) {
     // Extragem textul din PDF
     let extractedText = '';
     try {
-      const pdfData = await PDFParse(pdfBuffer);
+      console.log('📄 Începere extracție text din PDF...');
+      const pdfData = await pdfParseLib(pdfBuffer);
       extractedText = pdfData.text || '';
+      console.log(`✅ Text extras: ${extractedText.length} caractere`);
+      console.log('📝 Primele 500 caractere:', extractedText.substring(0, 500));
     } catch (pdfError) {
-      console.error('Eroare la extragerea textului din PDF:', pdfError);
+      console.error('❌ Eroare la extragerea textului din PDF:', pdfError);
       extractedText = '[Eroare la procesarea PDF-ului]';
     }
 
@@ -477,12 +480,18 @@ async function matchProducts(pool, schemaName, text) {
   const matches = [];
   
   try {
+    console.log(`🔍 Căutare produse în schema: ${schemaName}`);
+    
     // Obținem toate produsele din compania respectivă
     const productsResult = await pool.query(
       `SELECT id, name, gtin, gtins, category FROM ${schemaName}.products WHERE active = true`
     );
 
     const products = productsResult.rows;
+    console.log(`📊 Produse în DB: ${products.length}`);
+    if (products.length > 0) {
+      console.log('📝 Primele 3 produse:', products.slice(0, 3).map(p => p.name));
+    }
     
     // Parsează liniile de produse din factură
     const invoiceLines = parseInvoiceLines(text);
@@ -546,34 +555,60 @@ function parseInvoiceLines(text) {
   const lines = [];
   const textLines = text.split('\n');
   
-  // Pattern pentru linii de produs din factură
-  // Ex: "Scutece chilot adulti Seni Active Classic Small pachet a'30 LOT:1402437237 2031-01-31 30 58.00"
-  const productPattern = /(.+?)(?:\s+LOT[:\s]*([A-Z0-9]+))?(?:\s+(\d{4}-\d{2}-\d{2}))?(?:\s+(\d+))?(?:\s+\d+[.,]\d+)?\s*$/i;
+  console.log(`📝 Total linii în text: ${textLines.length}`);
   
-  for (const line of textLines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.length < 10) continue;
+  for (let i = 0; i < textLines.length; i++) {
+    const line = textLines[i].trim();
+    if (!line || line.length < 5) continue;
     
-    // Verificăm dacă linia arată ca un produs (conține cuvinte cheie sau pattern)
-    const match = trimmed.match(productPattern);
-    if (match) {
-      const name = match[1]?.trim();
-      const lot = match[2] || extractLotFromLine(trimmed);
-      const expiresAt = match[3] || extractDateFromLine(trimmed);
-      const quantity = parseInt(match[4]) || extractQuantityFromLine(trimmed) || 1;
+    // Ignorăm linii care nu sunt produse
+    if (line.match(/^(factura|total|valoare|tva|cif|nr\.?\s*doc|furnizor|client|produs|denumire)/i)) continue;
+    if (line.match(/^(subtotal|total factura|termen plata|cota tva)/i)) continue;
+    
+    // Pattern pentru linie de produs cu număr la început
+    // Ex: "1 Scutece chilot adulti Seni Active Classic Small pachet a'30 LOT:1402437237 2031-01-31 30 58.00"
+    const lineMatch = line.match(/^(?:\d+\s+)?(.+?)(?:\s+LOT[:\s]*([A-Z0-9]+))?\s+(\d{4}-\d{2}-\d{2})\s+(\d+)\s+\d+[.,]\d+/i);
+    
+    if (lineMatch) {
+      const name = lineMatch[1].trim();
+      const lot = lineMatch[2] || extractLotFromLine(line) || 'N/A';
+      const expiresAt = lineMatch[3];
+      const quantity = parseInt(lineMatch[4]) || 1;
       
-      // Verificăm dacă numele pare a fi un produs (are lungime rezonabilă)
-      if (name && name.length > 5 && !name.match(/^(factura|total|valoare|tva|cif|nr\.?\s*doc)/i)) {
-        lines.push({
-          name: name,
-          lot: lot || 'N/A',
-          expiresAt: expiresAt || '2099-12-31',
-          quantity: quantity
-        });
+      console.log(`✅ Linie produs găsită: "${name.substring(0, 50)}..." QTY:${quantity} LOT:${lot}`);
+      
+      lines.push({
+        name: name,
+        lot: lot,
+        expiresAt: expiresAt,
+        quantity: quantity
+      });
+    } else {
+      // Încercăm pattern alternativ pentru linii fără număr la început
+      const altMatch = line.match(/^(.+?)(?:\s+LOT[:\s]*([A-Z0-9]+))?\s+(\d{4}-\d{2}-\d{2})/i);
+      if (altMatch && altMatch[1].length > 10) {
+        // Căutăm cantitatea în restul liniei
+        const qtyMatch = line.match(/(\d{4}-\d{2}-\d{2})\s+(\d+)\s+\d+[.,]\d+/);
+        if (qtyMatch) {
+          const name = altMatch[1].trim();
+          const lot = altMatch[2] || extractLotFromLine(line) || 'N/A';
+          const expiresAt = altMatch[3];
+          const quantity = parseInt(qtyMatch[2]) || 1;
+          
+          console.log(`✅ Linie produs (alt pattern): "${name.substring(0, 50)}..." QTY:${quantity}`);
+          
+          lines.push({
+            name: name,
+            lot: lot,
+            expiresAt: expiresAt,
+            quantity: quantity
+          });
+        }
       }
     }
   }
   
+  console.log(`📦 Total produse extrase: ${lines.length}`);
   return lines;
 }
 
