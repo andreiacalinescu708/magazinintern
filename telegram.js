@@ -7,7 +7,7 @@
  */
 
 const TelegramBot = require('node-telegram-bot-api');
-const pdf = require('pdf-parse');
+const PDFExtract = require('pdf-extraction').PDFExtract;
 const { Pool } = require('pg');
 
 // Configurare - TOKEN trebuie setat în .env
@@ -403,8 +403,29 @@ async function isTelegramEnabled(pool, companyId) {
 // ============================================
 
 async function extractTextFromPdf(pdfBuffer) {
-  const data = await pdf(pdfBuffer);
-  return data.text;
+  return new Promise((resolve, reject) => {
+    const pdfExtract = new PDFExtract();
+    pdfExtract.extractBuffer(pdfBuffer, {}, (err, data) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      let text = '';
+      if (data && data.pages) {
+        for (const page of data.pages) {
+          if (page.content) {
+            for (const item of page.content) {
+              if (item.str) {
+                text += item.str + '\n';
+              }
+            }
+          }
+        }
+      }
+      resolve(text);
+    });
+  });
 }
 
 async function handlePdfUpload(pool, chatId, document, companyId) {
