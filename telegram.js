@@ -835,44 +835,67 @@ function parseManualLines(text) {
   const lines = [];
   const textLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   
-  // Unim liniile consecutive: dacă o linie nu are LOT dar următoarea are,
-  // le unim (produs pe 2 rânduri din PDF)
-  const mergedLines = [];
-  let pendingName = null;
+  // Reparăm cuvintele tăiate de Telegram (ex: "Smallp" + "achet" = "Small pachet")
+  // și unim liniile care aparțin aceluiași produs
+  let fullText = textLines.join(' ');
   
-  for (let i = 0; i < textLines.length; i++) {
-    const line = textLines[i];
-    const hasLot = /LOT[:\s]*[A-Z0-9]+/i.test(line);
-    const hasDate = /\d{4}-\d{2}-\d{2}/.test(line);
+  // Pattern pentru a repara cuvinte tăiate: literă la final + literă la început
+  // Ex: "Smallp achet" -> "Small pachet"
+  // Facem mai multe treceri pentru a repara toate cazurile
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const prevLength = fullText.length;
+    fullText = fullText.replace(/([a-z])([a-z]{2,})\s+([a-z]{2,})/gi, (match, charBefore, wordEnd, wordStart) => {
+      // Verificăm dacă lipirea celor două părți formează un cuvânt comun
+      const combined = wordEnd + wordStart;
+      const commonWords = ['pachet', 'scutece', 'adulti', 'classic', 'active', 'medium', 'small', 'large'];
+      
+      for (const word of commonWords) {
+        if (combined.toLowerCase() === word || 
+            word.includes(combined.toLowerCase()) ||
+            combined.toLowerCase().includes(word)) {
+          // Reparăm: punem spațiu între charBefore și rest
+          return charBefore + ' ' + combined;
+        }
+      }
+      return match;
+    });
     
-    if (hasLot) {
-      // Această linie conține LOT - o procesăm
-      if (pendingName) {
-        // Dacă aveam un nume pending din linia anterioară, îl unim
-        mergedLines.push(pendingName + ' ' + line);
-        pendingName = null;
-      } else {
-        mergedLines.push(line);
-      }
-    } else if (!hasLot && !hasDate) {
-      // Nu are nici LOT nici dată - e numele produsului (sau parte din el)
-      if (pendingName) {
-        // Dacă aveam deja un nume pending, îl concatenăm
-        pendingName = pendingName + ' ' + line;
-      } else {
-        pendingName = line;
-      }
+    if (fullText.length === prevLength) break; // Nu s-a mai făcut nicio modificare
+  }
+  
+  // Împărțim în linii după LOT (fiecare produs are LOT)
+  // Folosim un regex care găsește tot ce e între două LOT-uri
+  const productBlocks = [];
+  const lotPattern = /LOT[:\s]*[A-Z0-9]+/gi;
+  let match;
+  let lastIndex = 0;
+  
+  while ((match = lotPattern.exec(fullText)) !== null) {
+    const lotStart = match.index;
+    // Găsim sfârșitul acestui produs (începutul următorului LOT sau final)
+    const nextLotMatch = lotPattern.exec(fullText);
+    lotPattern.lastIndex = match.index + match[0].length; // Reset pentru următoarea căutare
+    
+    const blockEnd = nextLotMatch ? nextLotMatch.index : fullText.length;
+    const block = fullText.substring(lastIndex, blockEnd).trim();
+    
+    if (block) {
+      productBlocks.push(block);
+    }
+    lastIndex = lotStart;
+  }
+  
+  // Adăugăm și ultimul bloc
+  if (lastIndex < fullText.length) {
+    const lastBlock = fullText.substring(lastIndex).trim();
+    if (lastBlock && !productBlocks.includes(lastBlock)) {
+      productBlocks.push(lastBlock);
     }
   }
   
-  // Dacă a rămas ceva pending, îl adăugăm separat
-  if (pendingName) {
-    mergedLines.push(pendingName);
-  }
+  console.log(`📝 Blocuri produse găsite: ${productBlocks.length}`);
   
-  console.log(`📝 Linii după merge: ${mergedLines.length}`);
-  
-  for (const line of mergedLines) {
+  for (const line of productBlocks) {
     if (line.length < 5) continue;
     
     // Extragem lotul (LOT: urmat de cifre/litere)
