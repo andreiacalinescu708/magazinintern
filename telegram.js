@@ -7,7 +7,7 @@
  */
 
 const TelegramBot = require('node-telegram-bot-api');
-const PDFParser = require('pdf2json');
+const PDFExtract = require('pdf-extraction').PDFExtract;
 const { Pool } = require('pg');
 
 // Configurare - TOKEN trebuie setat în .env
@@ -403,35 +403,31 @@ async function isTelegramEnabled(pool, companyId) {
 // ============================================
 
 async function extractTextFromPdf(pdfBuffer) {
+  const pdfExtract = new PDFExtract();
+  const options = {};
+  
   return new Promise((resolve, reject) => {
-    const pdfParser = new PDFParser();
-    
-    pdfParser.on('pdfParser_dataReady', (pdfData) => {
-      let text = '';
+    pdfExtract.extractBuffer(pdfBuffer, options, (err, data) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
       // Extragem textul din toate paginile
-      if (pdfData.formImage && pdfData.formImage.Pages) {
-        for (const page of pdfData.formImage.Pages) {
-          if (page.Texts) {
-            for (const textItem of page.Texts) {
-              if (textItem.R) {
-                for (const r of textItem.R) {
-                  text += r.T + ' ';
-                }
+      let text = '';
+      if (data && data.pages) {
+        for (const page of data.pages) {
+          if (page.content) {
+            for (const item of page.content) {
+              if (item.str) {
+                text += item.str + ' ';
               }
             }
           }
         }
       }
-      // Decodificăm caracterele speciale
-      text = decodeURIComponent(text.replace(/\+/g, ' '));
-      resolve(text);
+      resolve(text.trim());
     });
-    
-    pdfParser.on('pdfParser_dataError', (error) => {
-      reject(error);
-    });
-    
-    pdfParser.parseBuffer(pdfBuffer);
   });
 }
 
