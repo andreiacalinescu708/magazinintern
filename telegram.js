@@ -343,10 +343,10 @@ async function handleActivationCode(pool, chatId, code, userInfo) {
       console.log(`   - ${r.name}: "${r.telegram_code}" (status: ${r.status})`);
     });
     
-    // Căutăm compania după cod
+    // Căutăm compania după cod (acceptăm 'active', 'trial' sau orice status în afară de 'pending_verification')
     const result = await pool.query(
-      'SELECT id, name, telegram_enabled, telegram_code FROM public.companies WHERE telegram_code = $1 AND status = $2',
-      [code.toUpperCase(), 'active']
+      'SELECT id, name, telegram_enabled, telegram_code FROM public.companies WHERE telegram_code = $1 AND status != $2',
+      [code.toUpperCase(), 'pending_verification']
     );
     
     console.log(`📊 Rezultat căutare: ${result.rows.length} companii găsite`);
