@@ -1421,23 +1421,13 @@
       const dateFrom = document.getElementById('filterDateFrom').value;
       const dateTo = document.getElementById('filterDateTo').value;
       
-      // DEBUG: Log filter values
-      console.log('Filter values:', { vehicleFilter, driverFilter, dateFrom, dateTo });
-      console.log('Sample sheet:', allTripSheets[0]);
-      
       // Filtrează foile
       let filtered = allTripSheets.filter(sheet => {
         // Filtru mașină (compară ca string)
-        if (vehicleFilter && String(sheet.vehicle_id) !== vehicleFilter) {
-          console.log(`Filtering out sheet ${sheet.id}: vehicle_id ${sheet.vehicle_id} !== ${vehicleFilter}`);
-          return false;
-        }
+        if (vehicleFilter && String(sheet.vehicle_id) !== vehicleFilter) return false;
         
         // Filtru șofer (compară ca string)
-        if (driverFilter && String(sheet.driver_id) !== driverFilter) {
-          console.log(`Filtering out sheet ${sheet.id}: driver_id ${sheet.driver_id} !== ${driverFilter}`);
-          return false;
-        }
+        if (driverFilter && String(sheet.driver_id) !== driverFilter) return false;
         
         // Filtru dată "de la"
         if (dateFrom && new Date(sheet.date) < new Date(dateFrom)) return false;

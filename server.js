@@ -5075,6 +5075,8 @@ app.get("/api/trip-sheets", async (req, res) => {
         t.trip_number, t.departure_time, t.arrival_time, 
         t.purpose, t.tech_check_departure, t.tech_check_arrival,
         t.created_at,
+        t.driver_id,
+        t.vehicle_id,
         d.name as driver_name,
         v.plate_number
       FROM ${schemaName}.trip_sheets t
