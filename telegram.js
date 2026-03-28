@@ -719,31 +719,60 @@ function extractQuantityFromLine(line) {
 
 // Calculează scorul de matching pentru o linie de factură
 function calculateMatchScoreForLine(product, line) {
-  const productName = product.name.toLowerCase();
-  const lineName = line.name.toLowerCase();
+  const productName = product.name.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const lineName = line.name.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   
   // Match exact
   if (productName === lineName) return 1.0;
   
-  // Conține numele produsului
-  if (lineName.includes(productName) || productName.includes(lineName)) return 0.95;
+  // Conține numele produsului complet
+  if (lineName.includes(productName)) return 0.95;
   
-  // Cuvinte cheie comune
-  const productWords = productName.split(/\s+/).filter(w => w.length > 3);
-  const lineWords = lineName.split(/\s+/).filter(w => w.length > 3);
+  // Cuvinte cheie (minim 2 caractere pentru a include "xl", "xs", etc)
+  const productWords = productName.split(/\s+/).filter(w => w.length >= 2);
+  const lineWords = lineName.split(/\s+/).filter(w => w.length >= 2);
   
-  let commonWords = 0;
+  // Cuvinte care TREBUIE să match-uiască exact (cuvinte cheie importante)
+  const criticalWords = ['active', 'classic', 'air', 'small', 'medium', 'large', 'xl', 'xsmall'];
+  
+  let exactMatches = 0;
+  let partialMatches = 0;
+  let criticalMismatches = 0;
+  
   for (const word of productWords) {
-    if (lineWords.some(lw => lw.includes(word) || word.includes(lw))) {
-      commonWords++;
+    // Match exact
+    if (lineWords.includes(word)) {
+      exactMatches++;
+    } 
+    // Match parțial (conține sau e conținut)
+    else if (lineWords.some(lw => lw.includes(word) || word.includes(lw))) {
+      partialMatches++;
+    }
+    // Verificăm dacă e cuvânt critic care nu a match-uit
+    else if (criticalWords.includes(word)) {
+      criticalMismatches++;
     }
   }
   
-  if (productWords.length > 0) {
-    return commonWords / productWords.length;
+  // Scor bazat pe match-uri exacte (80%) și parțiale (20%)
+  const totalWords = productWords.length;
+  if (totalWords === 0) return 0;
+  
+  let score = (exactMatches / totalWords) * 0.8 + (partialMatches / totalWords) * 0.2;
+  
+  // Penalizăm heavy dacă lipsesc cuvinte critice
+  if (criticalMismatches > 0) {
+    score = score * Math.pow(0.5, criticalMismatches);
   }
   
-  return 0;
+  // Bonus dacă toate cuvintele critice din produs sunt prezente
+  const productCriticalWords = productWords.filter(w => criticalWords.includes(w));
+  const matchedCriticalWords = productCriticalWords.filter(w => lineWords.includes(w));
+  if (productCriticalWords.length > 0 && matchedCriticalWords.length === productCriticalWords.length) {
+    score = Math.min(1.0, score * 1.2);
+  }
+  
+  return score;
 }
 
 // Adaugă produsul în stock
