@@ -134,6 +134,71 @@ function setupCommandHandlers(pool) {
     bot.emitText(msg);
   });
 
+  // /comanda - Creare comandă nouă pentru client
+  bot.onText(/\/comanda/, async (msg) => {
+    const chatId = msg.chat.id;
+    
+    // Verificăm dacă utilizatorul este asociat cu o companie
+    const companyId = await getCompanyByChatId(pool, chatId);
+    
+    if (!companyId) {
+      await bot.sendMessage(chatId, 
+        '❌ Nu ești conectat la nicio companie.\n\n' +
+        'Folosește /start și introdu codul de activare primit de la administrator.'
+      );
+      return;
+    }
+
+    // Verificăm dacă Telegram este activat pentru companie
+    const isEnabled = await isTelegramEnabled(pool, companyId);
+    if (!isEnabled) {
+      await bot.sendMessage(chatId, 
+        '❌ Funcționalitatea Telegram nu este activată pentru compania ta.\n\n' +
+        'Contactează administratorul pentru detalii.'
+      );
+      return;
+    }
+
+    // Obținem lista de clienți
+    const schemaName = await getSchemaName(pool, companyId);
+    const clients = await getClientsForOrder(pool, schemaName);
+    
+    if (clients.length === 0) {
+      await bot.sendMessage(chatId, 
+        '❌ Nu există clienți în sistem.\n\n' +
+        'Adaugă clienți în aplicația web înainte de a crea comenzi.'
+      );
+      return;
+    }
+
+    // Creăm butoane pentru clienți (câte 2 pe rând)
+    const clientButtons = [];
+    for (let i = 0; i < clients.length; i += 2) {
+      const row = [];
+      row.push({ text: clients[i].name, callback_data: `select_client_${clients[i].id}` });
+      if (clients[i + 1]) {
+        row.push({ text: clients[i + 1].name, callback_data: `select_client_${clients[i + 1].id}` });
+      }
+      clientButtons.push(row);
+    }
+    clientButtons.push([{ text: '❌ Anulează', callback_data: 'cancel_order' }]);
+
+    await bot.sendMessage(chatId,
+      '🛒 *Comandă Nouă*\n\n' +
+      'Selectează clientul pentru comandă:',
+      { 
+        parse_mode: 'Markdown',
+        reply_markup: { inline_keyboard: clientButtons }
+      }
+    );
+    
+    userSessions.set(chatId, { 
+      step: 'selecting_client', 
+      company_id: companyId,
+      schema_name: schemaName
+    });
+  });
+
   // /help - Ajutor
   bot.onText(/\/help/, async (msg) => {
     const chatId = msg.chat.id;
@@ -142,6 +207,7 @@ function setupCommandHandlers(pool) {
       '📚 *Comenzi disponibile:*\n\n' +
       '`/start` - Conectare la companie\n' +
       '`/adauga` - Adăugare factură PDF\n' +
+      '`/comanda` - Creare comandă client\n' +
       '`/status` - Verificare status conexiune\n' +
       '`/help` - Afișare ajutor\n\n' +
       '📧 Pentru suport: contact@openbill.ro',
@@ -322,6 +388,20 @@ function setupCallbackHandlers(pool) {
       await bot.sendMessage(chatId, '❌ Adăugare anulată.', {
         reply_markup: { remove_keyboard: true }
       });
+    } else if (data.startsWith('select_client_')) {
+      await handleSelectClient(pool, chatId, data.replace('select_client_', ''), session);
+    } else if (data === 'cancel_order') {
+      userSessions.delete(chatId);
+      await bot.sendMessage(chatId, '❌ Comandă anulată.');
+    } else if (data.startsWith('add_product_')) {
+      await handleAddProduct(pool, chatId, data.replace('add_product_', ''), session);
+    } else if (data === 'finish_order') {
+      await handleFinishOrder(pool, chatId, session);
+    } else if (data === 'confirm_order') {
+      await handleConfirmOrder(pool, chatId, session);
+    } else if (data === 'cancel_order_confirm') {
+      userSessions.delete(chatId);
+      await bot.sendMessage(chatId, '❌ Comandă anulată.');
     }
   });
 }
@@ -400,8 +480,9 @@ async function handleActivationCode(pool, chatId, code, userInfo) {
     await bot.sendMessage(chatId,
       `✅ *Conectare reușită!*\n\n` +
       `🏢 Ești acum conectat la compania: *${company.name}*\n\n` +
-      `Comenzi disponibile:\n` +
+      `*Comenzi disponibile:*\n` +
       `• /adauga - Adaugă factură furnizor\n` +
+      `• /comanda - Crează comandă client\n` +
       `• /status - Verifică status conexiune\n` +
       `• /help - Ajutor\n\n` +
       `Pentru a te deconecta, folosește /deconectare`,
@@ -971,6 +1052,109 @@ async function getSchemaName(pool, companyId) {
   return result.rows[0]?.schema_name || 'public';
 }
 
+// ================= FUNCȚII PENTRU COMENZI =================
+
+// Obține lista de clienți pentru comandă
+async function getClientsForOrder(pool, schemaName) {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, category FROM "${schemaName}".clients WHERE active = true ORDER BY name`
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Eroare la obținerea clienților:', error);
+    return [];
+  }
+}
+
+// Obține lista de produse disponibile
+async function getProductsForOrder(pool, schemaName) {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, gtin, price FROM "${schemaName}".products WHERE active = true ORDER BY name`
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Eroare la obținerea produselor:', error);
+    return [];
+  }
+}
+
+// Obține stoc disponibil pentru un produs
+async function getStockForProduct(pool, schemaName, productId) {
+  try {
+    const result = await pool.query(
+      `SELECT id, gtin, product_name, lot, expires_at, qty, location 
+       FROM "${schemaName}".stock 
+       WHERE qty > 0 AND (gtin = (SELECT gtin FROM "${schemaName}".products WHERE id = $1) 
+       OR gtin IN (SELECT jsonb_array_elements_text(gtins) FROM "${schemaName}".products WHERE id = $1))
+       ORDER BY expires_at ASC`,
+      [productId]
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Eroare la obținerea stocului:', error);
+    return [];
+  }
+}
+
+// Salvează comanda în baza de date
+async function saveOrder(pool, schemaName, clientId, clientData, items) {
+  const orderId = 'ORD-' + Date.now();
+  
+  try {
+    await pool.query(
+      `INSERT INTO "${schemaName}".orders (id, client, items, status, created_at, sent_to_smartbill, smartbill_draft_sent)
+       VALUES ($1, $2::jsonb, $3::jsonb, $4, NOW(), false, false)`,
+      [orderId, JSON.stringify(clientData), JSON.stringify(items), 'in_procesare']
+    );
+    return { success: true, orderId };
+  } catch (error) {
+    console.error('Eroare la salvarea comenzii:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Procesează alocarea stocului pentru o comandă
+async function allocateStockForOrder(pool, schemaName, items) {
+  const allocatedItems = [];
+  
+  for (const item of items) {
+    const stockItems = await getStockForProduct(pool, schemaName, item.id);
+    let remainingQty = item.qty;
+    const allocations = [];
+    
+    for (const stock of stockItems) {
+      if (remainingQty <= 0) break;
+      
+      const allocQty = Math.min(remainingQty, stock.qty);
+      allocations.push({
+        stockId: stock.id,
+        lot: stock.lot,
+        expiresAt: stock.expires_at,
+        location: stock.location,
+        qty: allocQty
+      });
+      
+      // Reducem stocul
+      await pool.query(
+        `UPDATE "${schemaName}".stock SET qty = qty - $1 WHERE id = $2`,
+        [allocQty, stock.id]
+      );
+      
+      remainingQty -= allocQty;
+    }
+    
+    allocatedItems.push({
+      ...item,
+      allocations,
+      fullyAllocated: remainingQty === 0
+    });
+  }
+  
+  return allocatedItems;
+}
+
 // Confirmă adăugarea în stoc
 async function handleConfirmAddStock(pool, chatId, session) {
   if (!session?.pendingMatches) {
@@ -1239,6 +1423,171 @@ async function handleCancelMatch(pool, chatId, invoiceId) {
   } catch (error) {
     console.error('Eroare la anulare:', error);
     await bot.sendMessage(chatId, '❌ Eroare la anulare.');
+  }
+}
+
+// ============================================
+// FUNCȚII PENTRU COMENZI (HANDLERS)
+// ============================================
+
+async function handleSelectClient(pool, chatId, clientId, session) {
+  if (!session || session.step !== 'selecting_client') return;
+  
+  try {
+    // Obținem datele clientului
+    const clientResult = await pool.query(
+      `SELECT id, name, prices FROM "${session.schema_name}".clients WHERE id = $1`,
+      [clientId]
+    );
+    
+    if (clientResult.rows.length === 0) {
+      await bot.sendMessage(chatId, '❌ Client negăsit.');
+      return;
+    }
+    
+    const client = clientResult.rows[0];
+    
+    // Obținem lista de produse
+    const products = await getProductsForOrder(pool, session.schema_name);
+    
+    if (products.length === 0) {
+      await bot.sendMessage(chatId, '❌ Nu există produse în sistem.');
+      return;
+    }
+    
+    // Salvăm în sesiune
+    session.step = 'adding_products';
+    session.client_id = clientId;
+    session.client_data = client;
+    session.order_items = [];
+    userSessions.set(chatId, session);
+    
+    await bot.sendMessage(chatId,
+      `✅ Client selectat: *${client.name}*\n\n` +
+      `Acum trimite produsele în format:\n` +
+      \`Cod/Nume Produs Cantitate\` +
+      `\n*Exemple:*\n` +
+      \`Seni Active Classic 30\` +
+      \`5949031201234 50\` +
+      `\nSau selectează din lista de mai jos:`,
+      { parse_mode: 'Markdown' }
+    );
+    
+    // Afișăm lista de produse
+    let productList = '📦 *Produse disponibile:*\n\n';
+    products.slice(0, 20).forEach((p, i) => {
+      productList += \`${i + 1}. \${p.name.substring(0, 40)}\${p.name.length > 40 ? '...' : ''}\n   GTIN: \${p.gtin || 'N/A'}\n\n\`;
+    });
+    if (products.length > 20) {
+      productList += `... și încă ${products.length - 20} produse`;
+    }
+    
+    await bot.sendMessage(chatId, productList, { parse_mode: 'Markdown' });
+    
+  } catch (error) {
+    console.error('Eroare la selectarea clientului:', error);
+    await bot.sendMessage(chatId, '❌ Eroare la selectarea clientului.');
+  }
+}
+
+async function handleAddProduct(pool, chatId, productId, session) {
+  if (!session || session.step !== 'adding_products') return;
+  
+  // Aici vom procesa adăugarea produsului cu cantitate
+  // Pentru moment, cerem cantitatea
+  await bot.sendMessage(chatId, 
+    '⌨️ *Introdu cantitatea:*\n\n' +
+    'Exemplu: `30` sau `100`',
+    { 
+      parse_mode: 'Markdown',
+      reply_markup: {
+        keyboard: [['1', '5', '10', '30'], ['50', '100', '❌ Anulează']],
+        resize_keyboard: true
+      }
+    }
+  );
+  
+  session.pending_product_id = productId;
+  userSessions.set(chatId, session);
+}
+
+async function handleFinishOrder(pool, chatId, session) {
+  if (!session || session.step !== 'adding_products') return;
+  
+  if (session.order_items.length === 0) {
+    await bot.sendMessage(chatId, '❌ Nu ai adăugat niciun produs.');
+    return;
+  }
+  
+  // Afișăm rezumatul comenzii
+  let summary = `🛒 *Rezumat Comandă*\n\n`;
+  summary += `👤 Client: *${session.client_data.name}*\n\n`;
+  summary += `📦 Produse:\n`;
+  
+  let total = 0;
+  session.order_items.forEach((item, i) => {
+    summary += `${i + 1}. ${item.name} x ${item.qty}\n`;
+    total += (item.price || 0) * item.qty;
+  });
+  
+  summary += `\n💰 Total: ${total.toFixed(2)} RON\n\n`;
+  summary += `Confirmi comanda?`;
+  
+  await bot.sendMessage(chatId, summary, {
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '✅ Confirmă Comanda', callback_data: 'confirm_order' }],
+        [{ text: '❌ Anulează', callback_data: 'cancel_order_confirm' }]
+      ]
+    }
+  });
+  
+  session.step = 'confirming_order';
+  userSessions.set(chatId, session);
+}
+
+async function handleConfirmOrder(pool, chatId, session) {
+  if (!session || session.step !== 'confirming_order') return;
+  
+  try {
+    // Alocăm stocul
+    const allocatedItems = await allocateStockForOrder(
+      pool, 
+      session.schema_name, 
+      session.order_items
+    );
+    
+    // Salvăm comanda
+    const result = await saveOrder(
+      pool,
+      session.schema_name,
+      session.client_id,
+      { id: session.client_id, name: session.client_data.name },
+      allocatedItems
+    );
+    
+    if (result.success) {
+      let message = `✅ *Comandă Salvată!*\n\n`;
+      message += `📋 Număr: \`${result.orderId}\`\n`;
+      message += `👤 Client: ${session.client_data.name}\n`;
+      message += `📦 Produse: ${session.order_items.length}\n\n`;
+      message += `Comanda este în status *În procesare*.\n`;
+      message += `Poți vedea detalii în aplicația web.`;
+      
+      await bot.sendMessage(chatId, message, {
+        parse_mode: 'Markdown',
+        reply_markup: { remove_keyboard: true }
+      });
+    } else {
+      await bot.sendMessage(chatId, '❌ Eroare la salvarea comenzii.');
+    }
+    
+    userSessions.delete(chatId);
+    
+  } catch (error) {
+    console.error('Eroare la confirmarea comenzii:', error);
+    await bot.sendMessage(chatId, '❌ Eroare la salvarea comenzii.');
   }
 }
 
