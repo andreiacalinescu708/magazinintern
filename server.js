@@ -2837,6 +2837,111 @@ app.delete("/api/orders/:id", async (req, res) => {
 });
 
 
+// =============================================================================
+// RETURNARE STOC ȘI ȘTERGERE COMANDĂ TRIMISĂ (DOAR SUPERADMIN)
+// =============================================================================
+// Acest endpoint permite superadminului să:
+// 1. Returneze stocul în inventar pentru o comandă deja trimisă la SmartBill
+// 2. Șteargă comanda din sistem
+// Util când: comanda a fost ștearsă din SmartBill, clientul nu o mai vrea, 
+// sau se dorește returul comenzii
+// =============================================================================
+app.post("/api/orders/:id/return-stock", async (req, res) => {
+  try {
+    const schemaName = req.session?.user?.schema_name || 'public';
+    const orderId = String(req.params.id);
+    
+    if (!db.hasDb()) {
+      return res.status(500).json({ error: "DB neconfigurat" });
+    }
+    
+    // Verifică dacă utilizatorul este superadmin
+    if (!req.session?.user?.id) {
+      return res.status(403).json({ error: "Nu ești autentificat." });
+    }
+    
+    const userCheck = await db.q(`SELECT role FROM ${schemaName}.users WHERE id = $1`, [req.session.user.id]);
+    if (userCheck.rows.length === 0 || userCheck.rows[0].role !== 'superadmin') {
+      return res.status(403).json({ error: "Acces interzis. Doar Administratorul principal poate returna stocul." });
+    }
+    
+    // Ia comanda din DB
+    const orderRes = await db.q(
+      `SELECT * FROM ${schemaName}.orders WHERE id = $1`,
+      [orderId]
+    );
+    
+    if (!orderRes.rows.length) {
+      return res.status(404).json({ error: "Comandă inexistentă" });
+    }
+    
+    const order = orderRes.rows[0];
+    
+    // Verifică dacă comanda a fost trimisă la SmartBill
+    if (!order.sent_to_smartbill) {
+      return res.status(400).json({ 
+        error: "Comanda nu a fost trimisă la SmartBill. Folosește funcția de ștergere normală." 
+      });
+    }
+    
+    // Începe tranzacția
+    await db.q("BEGIN");
+    
+    try {
+      // 1. Returnează stocul în inventar
+      const items = order.items || [];
+      let returnedItems = 0;
+      
+      for (const item of items) {
+        const allocations = item.allocations || [];
+        for (const alloc of allocations) {
+          if (alloc.stockId && alloc.qty) {
+            await db.q(
+              `UPDATE ${schemaName}.stock SET qty = qty + $1 WHERE id = $2`,
+              [alloc.qty, alloc.stockId]
+            );
+            returnedItems++;
+          }
+        }
+      }
+      
+      // 2. Șterge comanda
+      await db.q(`DELETE FROM ${schemaName}.orders WHERE id = $1`, [orderId]);
+      
+      await db.q("COMMIT");
+      
+      // Loghează acțiunea
+      await logAudit(req, "ORDER_RETURN_STOCK", "order", orderId, {
+        clientName: order.client?.name,
+        smartbillSeries: order.smartbill_series,
+        smartbillNumber: order.smartbill_number,
+        itemsReturned: returnedItems,
+        reason: req.body.reason || 'Returnare stoc și ștergere comandă'
+      });
+      
+      res.json({ 
+        ok: true, 
+        message: "Stoc returnat cu succes și comandă ștearsă",
+        details: {
+          clientName: order.client?.name,
+          smartbillSeries: order.smartbill_series,
+          smartbillNumber: order.smartbill_number,
+          itemsReturned: returnedItems
+        }
+      });
+      
+    } catch (err) {
+      await db.q("ROLLBACK");
+      throw err;
+    }
+    
+  } catch (e) {
+    console.error("POST /api/orders/:id/return-stock error:", e);
+    res.status(500).json({ error: e.message || "Eroare la returnarea stocului" });
+  }
+});
+
+
 app.post("/api/orders/:id/replace-lot", async (req, res) => {
   const schemaName = req.session?.user?.schema_name || 'public';
   const orderId = String(req.params.id);

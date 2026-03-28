@@ -2223,6 +2223,18 @@ async function initOrdersPage() {
 
   let orders = [];
   let clients = [];
+  
+  // Verifică rolul utilizatorului pentru funcționalități de superadmin
+  let isSuperAdmin = false;
+  try {
+    const authRes = await fetch('/api/auth/check');
+    const authData = await authRes.json();
+    if (authData.loggedIn && authData.user.role === 'superadmin') {
+      isSuperAdmin = true;
+    }
+  } catch (e) {
+    console.error('Eroare verificare rol:', e);
+  }
 
   function getFilterState() {
     // Citește statusul din TAB-UL ACTIV
@@ -2539,6 +2551,87 @@ if (!o.sentToSmartbill) {
     }
   };
   head.appendChild(deleteBtn);
+} else if (isSuperAdmin) {
+  // =============================================================================
+  // BUTON RETURNARE STOC (DOAR PENTRU SUPERADMIN ȘI COMENZI TRIMISE)
+  // =============================================================================
+  // Permite superadminului să returneze stocul în inventar și să șteargă comanda
+  // chiar dacă a fost trimisă la SmartBill. Util pentru:
+  // - Comenzi șterse din SmartBill
+  // - Clientul nu mai vrea comanda
+  // - Retur comenzi
+  // =============================================================================
+  const returnStockBtn = document.createElement("button");
+  returnStockBtn.textContent = "↩️ Returnează Stoc";
+  returnStockBtn.style.cssText = "background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; margin-left: 8px; font-weight: 600; font-size: 0.8125rem;";
+  returnStockBtn.title = "Returnează stocul în inventar și șterge comanda (doar SuperAdmin)";
+  returnStockBtn.onclick = async (e) => {
+    e.stopPropagation();
+    
+    const confirmMsg = `⚠️ SIGUR vrei să returnezi stocul pentru comanda ${o.client?.name || 'client'}?\n\n` +
+      `Această acțiune va:\n` +
+      `• Returna TOATE produsele în inventar\n` +
+      `• Șterge comanda din sistem\n` +
+      `• NU poate fi anulată!\n\n` +
+      `Serie SmartBill: ${o.smartbillSeries || '-'}\n` +
+      `Număr: ${o.smartbillNumber || '-'}`;
+    
+    if (!confirm(confirmMsg)) {
+      return;
+    }
+    
+    // Confirmare suplimentară cu codul comenzii
+    const confirmCode = prompt(`Pentru confirmare, tastează numărul facturii SmartBill (${o.smartbillNumber || 'comanda'}):`);
+    if (confirmCode !== String(o.smartbillNumber || '')) {
+      alert("❌ Confirmare eșuată. Codul introdus nu corespunde.");
+      return;
+    }
+    
+    returnStockBtn.disabled = true;
+    returnStockBtn.textContent = "⏳ Se procesează...";
+    
+    try {
+      const res = await apiFetch(`/api/orders/${o.id}/return-stock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Returnare stoc și ștergere comandă de către SuperAdmin' })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.ok) {
+        // Elimină cardul din DOM cu animație
+        card.style.transition = "all 0.3s ease";
+        card.style.opacity = "0";
+        card.style.transform = "translateX(-20px)";
+        
+        setTimeout(() => {
+          card.remove();
+          
+          // Dacă nu mai sunt comenzi, re-render
+          const remaining = list.querySelectorAll('.orderCard');
+          if (remaining.length === 0) {
+            render();
+          }
+          
+          // Update tabs counts
+          renderTabs();
+        }, 300);
+        
+        showToast(`↩️ Stoc returnat! ${data.details?.itemsReturned || 0} articole au fost adăugate înapoi în inventar.`);
+      } else {
+        alert(`❌ Eroare: ${data.error || 'Nu s-a putut returna stocul'}`);
+        returnStockBtn.disabled = false;
+        returnStockBtn.textContent = "↩️ Returnează Stoc";
+      }
+    } catch (err) {
+      console.error('Eroare returnare stoc:', err);
+      alert('❌ Eroare de rețea la returnarea stocului');
+      returnStockBtn.disabled = false;
+      returnStockBtn.textContent = "↩️ Returnează Stoc";
+    }
+  };
+  head.appendChild(returnStockBtn);
 }
 
       // Buton Detalii (toate)
