@@ -874,38 +874,6 @@ function parseManualLines(text) {
   
   return lines;
 }
-    if (line.length < 5) continue;
-    
-    // Extragem lotul (LOT: urmat de cifre/litere)
-    const lotMatch = line.match(/LOT[:\s]*([A-Z0-9]+)/i);
-    const lot = lotMatch ? lotMatch[1] : 'N/A';
-    
-    // Extragem data (YYYY-MM-DD)
-    const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})/);
-    const expiresAt = dateMatch ? dateMatch[1] : '2099-12-31';
-    
-    // Extragem cantitatea - numărul după dată
-    let quantity = 1;
-    const qtyAfterDate = line.match(/\d{4}-\d{2}-\d{2}\s+(\d+)(?:\s|$)/);
-    if (qtyAfterDate) {
-      quantity = parseInt(qtyAfterDate[1]);
-    }
-    
-    // Numele produsului = tot ce e înainte de LOT:
-    let name = line;
-    const lotIndex = line.toUpperCase().indexOf('LOT:');
-    if (lotIndex > 0) {
-      name = line.substring(0, lotIndex).trim();
-    }
-    
-    if (name.length > 3) {
-      lines.push({ name, lot, expiresAt, quantity });
-      console.log(`✅ Parsat: "${name.substring(0, 40)}..." LOT:${lot} EXP:${expiresAt} QTY:${quantity}`);
-    }
-  }
-  
-  return lines;
-}
 
 // Afișează match-urile pentru confirmare
 async function displayMatchesForConfirmation(chatId, matches) {
