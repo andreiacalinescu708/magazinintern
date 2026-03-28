@@ -750,7 +750,8 @@ function calculateMatchScoreForLine(product, line) {
 async function addToStock(pool, schemaName, product, line) {
   try {
     const id = Date.now().toString() + Math.random().toString(36).slice(2);
-    const gtin = product.gtin || 'N/A';
+    // Folosim primul GTIN din array-ul gtins sau gtin singular
+    const gtin = (product.gtins && product.gtins[0]) || product.gtin || 'N/A';
     
     await pool.query(
       `INSERT INTO ${schemaName}.stock (id, gtin, product_name, lot, expires_at, qty, location, warehouse)
