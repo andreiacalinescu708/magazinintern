@@ -419,29 +419,37 @@ const smartbillPayload = {
   
   console.log(`[SmartBill] Procesare ${order.items?.length || 0} items pentru comanda ${order.id}`);
   
-  for (const item of order.items || []) {
+  // Pentru fiecare discount, trebuie să știm câte produse (non-discount) sunt înaintea lui
+  let productCountSinceLastDiscount = 0;
+  
+  for (let i = 0; i < order.items.length; i++) {
+    const item = order.items[i];
     console.log(`[SmartBill] Item: ${item.name}, type: ${item.type}, price: ${item.price}`);
     
     if (item.type === 'discount') {
-      // Linie discount - trimis ca produs cu preț negativ
-      // SmartBill nu recunoaște isDiscount: true corect
+      // Acest discount se aplică pe productCountSinceLastDiscount produse
+      // Conform doc SmartBill: discountType 2 = procentual
       const discountLine = {
         name: item.name || `Discount ${item.percent}%`,
         code: '',
         measuringUnitName: "BUC",
         currency: 'RON',
         quantity: 1,
-        price: Number(item.amount || 0),  // Valoare negativă directă
+        price: 0,
         isTaxIncluded: false,
         taxName: 'Normala',
         taxPercentage: 21,
-        isDiscount: false,  // Trimis ca produs normal
-        isService: true,    // Marcat ca serviciu să nu afecteze stocul
+        isDiscount: true,
+        isService: false,
         saveToDb: false,
-        productDescription: ''
+        productDescription: '',
+        numberOfItems: productCountSinceLastDiscount,
+        discountType: 2,
+        discountPercentage: Number(item.percent || 0)
       };
       console.log(`[SmartBill] Discount creat:`, JSON.stringify(discountLine));
       smartbillProducts.push(discountLine);
+      productCountSinceLastDiscount = 0;
     } else {
       // Produs normal
       smartbillProducts.push({
@@ -464,6 +472,7 @@ const smartbillPayload = {
           return `LOT: ${lot} | EXP: ${exp}`;
         }).join('\n')
       });
+      productCountSinceLastDiscount++;
     }
   }
 
@@ -2449,27 +2458,40 @@ app.post("/api/orders/:id/send", async (req, res) => {
     const company = await getCompanyDetails(req);
     
     // Mapare produse și discounturi pentru SmartBill
+    // Conform documentației SmartBill, discountul trebuie să fie imediat după produse
+    // și să aibă numberOfItems = numărul de produse anterioare pe care se aplică
     const smartbillProducts = [];
     
-    for (const item of order.items || []) {
+    // Parcurgem items și construim lista pentru SmartBill
+    // Pentru fiecare discount, trebuie să știm câte produse (non-discount) sunt înaintea lui
+    let productCountSinceLastDiscount = 0;
+    
+    for (let i = 0; i < order.items.length; i++) {
+      const item = order.items[i];
+      
       if (item.type === 'discount') {
-        // Linie discount - trimis ca produs cu preț negativ
-        // SmartBill nu recunoaște isDiscount: true corect
+        // Acest discount se aplică pe productCountSinceLastDiscount produse
+        // Conform doc SmartBill: discountType 2 = procentual
         smartbillProducts.push({
           name: item.name || `Discount ${item.percent}%`,
           code: '',
           measuringUnitName: "BUC",
           currency: 'RON',
           quantity: 1,
-          price: Number(item.amount || 0),  // Valoare negativă directă
+          price: 0,  // Prețul e 0 pentru discounturi
           isTaxIncluded: false,
           taxName: 'Normala',
           taxPercentage: 21,
-          isDiscount: false,  // Trimis ca produs normal
-          isService: true,    // Marcat ca serviciu să nu afecteze stocul
+          isDiscount: true,  // Este discount
+          isService: false,
           saveToDb: false,
-          productDescription: ''
+          productDescription: '',
+          numberOfItems: productCountSinceLastDiscount,  // Nr produse anterioare
+          discountType: 2,  // 2 = procentual
+          discountPercentage: Number(item.percent || 0)  // Procentul
         });
+        // Resetăm contorul după discount
+        productCountSinceLastDiscount = 0;
       } else {
         // Produs normal
         smartbillProducts.push({
@@ -2492,6 +2514,8 @@ app.post("/api/orders/:id/send", async (req, res) => {
             return `LOT: ${lot} | EXP: ${exp}`;
           }).join('\n')
         });
+        // Incrementăm contorul de produse
+        productCountSinceLastDiscount++;
       }
     }
 
