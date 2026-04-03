@@ -424,21 +424,23 @@ const smartbillPayload = {
     
     if (item.type === 'discount') {
       // Linie discount SmartBill - conform documentației
-      // Discountul NU trebuie să aibă warehouseName
+      // Trebuie să includem discountPercentage și discountValue
       const discountLine = {
         name: item.name || `Discount ${item.percent}%`,
         code: '',
         measuringUnitName: "BUC",
         currency: 'RON',
         quantity: 1,
-        price: Number(item.amount || 0),  // Valoare negativă
+        price: 0,  // Prețul e 0, discountul e în discountValue
         isTaxIncluded: false,
         taxName: 'Normala',
         taxPercentage: 21,
-        isDiscount: true,  // <-- Acesta e important!
+        isDiscount: true,
         isService: false,
         saveToDb: false,
-        productDescription: ''
+        productDescription: '',
+        discountPercentage: Number(item.percent || 0),
+        discountValue: Math.abs(Number(item.amount || 0))  // Valoare pozitivă
       };
       console.log(`[SmartBill] Discount creat:`, JSON.stringify(discountLine));
       smartbillProducts.push(discountLine);
@@ -2453,21 +2455,24 @@ app.post("/api/orders/:id/send", async (req, res) => {
     
     for (const item of order.items || []) {
       if (item.type === 'discount') {
-        // Linie discount
+        // Linie discount - conform documentației SmartBill
+        // Trebuie să includem discountPercentage și discountValue
         smartbillProducts.push({
           name: item.name || `Discount ${item.percent}%`,
           code: '',
           measuringUnitName: "BUC",
           currency: 'RON',
           quantity: 1,
-          price: Number(item.amount || 0),
+          price: 0,  // Prețul e 0, discountul e în discountValue
           isTaxIncluded: false,
           taxName: 'Normala',
           taxPercentage: 21,
           isDiscount: true,
           isService: false,
           saveToDb: false,
-          productDescription: ''
+          productDescription: '',
+          discountPercentage: Number(item.percent || 0),
+          discountValue: Math.abs(Number(item.amount || 0))  // Valoare pozitivă
         });
       } else {
         // Produs normal
