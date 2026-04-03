@@ -2524,7 +2524,12 @@ app.post("/api/orders/:id/send", async (req, res) => {
       
       const responseData = await response.json().catch(() => ({}));
       
+      console.log('=== SMARTBILL RESPONSE ===');
+      console.log('Status:', response.status);
+      console.log('Data:', JSON.stringify(responseData, null, 2));
+      
       if (!response.ok) {
+        console.error('SmartBill eroare:', responseData);
         throw new Error(responseData.error || responseData.message || `Eroare HTTP ${response.status}`);
       }
       
