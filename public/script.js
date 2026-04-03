@@ -3345,20 +3345,42 @@ function selectProductByGTIN(gtin) {
 
         row.append(left, right);
         list.appendChild(row);
+        
+        // Adaugă buton "+ Discount" după fiecare produs (nu după discounturi)
+        if (it.type !== 'discount') {
+          const btnAddHere = document.createElement("button");
+          btnAddHere.className = "btn";
+          btnAddHere.innerHTML = "🏷️ + Discount";
+          btnAddHere.style.cssText = `
+            background: transparent;
+            border: 1px dashed rgba(245, 158, 11, 0.4);
+            color: #f59e0b;
+            font-size: 0.75rem;
+            padding: 4px 12px;
+            margin: 4px 0 12px 0;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.2s;
+          `;
+          btnAddHere.onmouseover = () => btnAddHere.style.opacity = '1';
+          btnAddHere.onmouseout = () => btnAddHere.style.opacity = '0.7';
+          btnAddHere.onclick = () => showDiscountModal(idx);
+          list.appendChild(btnAddHere);
+        }
       });
 
-      // Adaugă butonul "+ Discount" la finalul listei
+      // Adaugă butonul "+ Discount" la finalul listei (pentru discount la final)
       const addDiscountRow = document.createElement("div");
       addDiscountRow.style.marginTop = "1rem";
       addDiscountRow.style.textAlign = "center";
       
       const btnAddDiscount = document.createElement("button");
       btnAddDiscount.className = "btn btn-secondary";
-      btnAddDiscount.innerHTML = "🏷️ + Adaugă linie discount";
+      btnAddDiscount.innerHTML = "🏷️ + Adaugă linie discount la final";
       btnAddDiscount.style.background = 'rgba(245, 158, 11, 0.2)';
       btnAddDiscount.style.borderColor = 'rgba(245, 158, 11, 0.4)';
       btnAddDiscount.style.color = '#f59e0b';
-      btnAddDiscount.onclick = () => showDiscountModal();
+      btnAddDiscount.onclick = () => showDiscountModal(editItems.length - 1);
       
       addDiscountRow.appendChild(btnAddDiscount);
       list.appendChild(addDiscountRow);
@@ -3422,21 +3444,37 @@ function selectProductByGTIN(gtin) {
     search.addEventListener("input", () => renderProductResults(search.value));
 
     // Funcție pentru afișare modal discount
-    function showDiscountModal() {
-      // Calculează suma produselor de la ultimul discount încoace
-      let lastDiscountIndex = -1;
-      for (let i = editItems.length - 1; i >= 0; i--) {
+    // afterIndex = indexul produsului după care se adaugă discountul
+    function showDiscountModal(afterIndex = null) {
+      // Dacă nu e specificat un index, punem la final
+      if (afterIndex === null) {
+        afterIndex = editItems.length - 1;
+      }
+      
+      // Găsim următorul discount după poziția specificată
+      let nextDiscountIndex = editItems.length;
+      for (let i = afterIndex + 1; i < editItems.length; i++) {
         if (editItems[i].type === 'discount') {
-          lastDiscountIndex = i;
+          nextDiscountIndex = i;
           break;
         }
       }
       
+      // Calculăm suma produselor între afterIndex și nextDiscountIndex
       let baseAmount = 0;
-      for (let i = lastDiscountIndex + 1; i < editItems.length; i++) {
+      for (let i = afterIndex + 1; i < nextDiscountIndex; i++) {
         const it = editItems[i];
         if (it.type !== 'discount') {
           baseAmount += Number(it.price || 0) * Number(it.qty || 1);
+        }
+      }
+      
+      // Dacă nu avem produse după poziția respectivă, verificăm dacă avem produse înainte
+      if (baseAmount <= 0) {
+        // Verificăm dacă produsul de la afterIndex există și e produs (nu discount)
+        const targetItem = editItems[afterIndex];
+        if (targetItem && targetItem.type !== 'discount') {
+          baseAmount = Number(targetItem.price || 0) * Number(targetItem.qty || 1);
         }
       }
       
@@ -3456,7 +3494,9 @@ function selectProductByGTIN(gtin) {
       
       const discountAmount = -(baseAmount * p / 100);
       
-      editItems.push({
+      // Inserăm discountul la poziția corectă (după afterIndex)
+      const insertIndex = afterIndex + 1;
+      editItems.splice(insertIndex, 0, {
         id: `discount_${Date.now()}`,
         type: 'discount',
         name: `Discount ${p}%`,
