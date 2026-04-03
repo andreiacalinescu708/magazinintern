@@ -475,6 +475,42 @@ const smartbillPayload = {
       productCountSinceLastDiscount++;
     }
   }
+  
+  // Sortare specială pentru Fast Medical Distribution
+  // "Seni Active Classic" trebuie să fie primele
+  if (company.cui === 'RO47095864') {
+    console.log('[SmartBill] Sortare pentru Fast Medical Distribution');
+    
+    // Separăm produsele în două grupe
+    const seniActiveProducts = [];
+    const otherProducts = [];
+    
+    for (const p of smartbillProducts) {
+      if (p.name && p.name.toLowerCase().includes('seni active classic')) {
+        seniActiveProducts.push(p);
+      } else {
+        otherProducts.push(p);
+      }
+    }
+    
+    console.log(`[SmartBill] Seni Active Classic: ${seniActiveProducts.length}, Altele: ${otherProducts.length}`);
+    
+    // Reconstruim lista sortată
+    const sortedProducts = [...seniActiveProducts, ...otherProducts];
+    
+    // Recalculăm numberOfItems pentru discounturi după sortare
+    let count = 0;
+    for (let i = 0; i < sortedProducts.length; i++) {
+      if (sortedProducts[i].isDiscount) {
+        sortedProducts[i].numberOfItems = count;
+        count = 0;
+      } else {
+        count++;
+      }
+    }
+    
+    smartbillProducts = sortedProducts;
+  }
 
   const payload = {
     companyVatCode: company.cui,
@@ -2517,6 +2553,42 @@ app.post("/api/orders/:id/send", async (req, res) => {
         // Incrementăm contorul de produse
         productCountSinceLastDiscount++;
       }
+    }
+    
+    // Sortare specială pentru Fast Medical Distribution
+    // "Seni Active Classic" trebuie să fie primele
+    if (company.cui === 'RO47095864') {
+      console.log('[SmartBill] Sortare pentru Fast Medical Distribution');
+      
+      // Separăm produsele în două grupe
+      const seniActiveProducts = [];
+      const otherProducts = [];
+      
+      for (const p of smartbillProducts) {
+        if (p.name && p.name.toLowerCase().includes('seni active classic')) {
+          seniActiveProducts.push(p);
+        } else {
+          otherProducts.push(p);
+        }
+      }
+      
+      console.log(`[SmartBill] Seni Active Classic: ${seniActiveProducts.length}, Altele: ${otherProducts.length}`);
+      
+      // Reconstruim lista sortată
+      const sortedProducts = [...seniActiveProducts, ...otherProducts];
+      
+      // Recalculăm numberOfItems pentru discounturi după sortare
+      let count = 0;
+      for (let i = 0; i < sortedProducts.length; i++) {
+        if (sortedProducts[i].isDiscount) {
+          sortedProducts[i].numberOfItems = count;
+          count = 0;
+        } else {
+          count++;
+        }
+      }
+      
+      smartbillProducts = sortedProducts;
     }
 
     const payload = {
