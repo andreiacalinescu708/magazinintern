@@ -415,7 +415,7 @@ const smartbillPayload = {
 };
 
   // Mapare produse și discounturi pentru SmartBill
-  const smartbillProducts = [];
+  let smartbillProducts = [];
   
   console.log(`[SmartBill] Procesare ${order.items?.length || 0} items pentru comanda ${order.id}`);
   
@@ -2496,7 +2496,7 @@ app.post("/api/orders/:id/send", async (req, res) => {
     // Mapare produse și discounturi pentru SmartBill
     // Conform documentației SmartBill, discountul trebuie să fie imediat după produse
     // și să aibă numberOfItems = numărul de produse anterioare pe care se aplică
-    const smartbillProducts = [];
+    let smartbillProducts = [];
     
     // Parcurgem items și construim lista pentru SmartBill
     // Pentru fiecare discount, trebuie să știm câte produse (non-discount) sunt înaintea lui
